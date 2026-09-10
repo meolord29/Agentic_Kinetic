@@ -56,6 +56,10 @@ Provide other project related links here such as GitHub repositories, project we
 2. https:// Title & Description - Should we do a project website/Visual imagery is good? --> Draft (not yet reviewed/rewritten): https://docs.google.com/document/d/1uHZ9Y7Yjq9hVPHIO1eZ2TaoMmesDhNG8s4CyxvZny_I/edit?tab=t.0#heading=h.jwc35sloqfuz
 3. (same as above) --> Not sure about this powerpoint unless it's very visual but we may want to do a video: https://docs.google.com/presentation/d/1mOu_S_HuGJ7VmLbSBwwPBFuU9zt0-vck8D6lbTyohi4/edit?slide=id.ak_s12#slide=id.ak_s12
 
+Link options for a website:
+1. Add content to this repo = simplest.  We could try to render images of the app for the patient & the doctor with example questions to show the UX.
+2. A one-page site with the story, video, screenshots and links — no live agent. Host on Google Cloud Run?
+3. Optional: Actual doctor dashboard, built with CopilotKit and hosted on Google Cloud Run, with a short intro section (story, video, links). Best evidence for 'working agent' and uses two sponsors for real but this takes extra time.
 
 F. PRIOR WORK:
 Please describe any prior work, code, designs, or other work your team is building upon so that judges know what was created during the hackathon and what was created prior to the hackathon (if any). e.g. Our project starts with a RAG pipeline I built for my research lab.
