@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Agentic Kinetic · patient app wireframe</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --chrome:#EAE3D2; --chrome-ink:#1F3229; --chrome-muted:#5F6D60; --chrome-line:#D8CFB8; --chrome-card:#F6F2E7;
+  --ground:#F6F2E7; --glow-a:rgba(95,180,214,.18); --glow-b:rgba(226,196,136,.16);
+  --surface:#FFFDF8; --raised:#EFE9DA; --line:#E3DAC6;
+  --ink:#1F3229; --muted:#5F6D60;
+  --chip:#EFE9DA; --chip-ink:#1F3229; --chip-line:#E3DAC6;
+  --btn:#1E7A54; --btn-ink:#FFFFFF;
+  --cyan:#5FB4D6; --violet:#52B584; --magenta:#E2C488;
+  --accent-text:#1D6E96;
+  --done:#1E7A54; --done-tint:#E3F5EE;
+  --tile:#1F3229; --fab:#1F3229; --fab-ink:#FFFFFF;
+  --shadow:0 1px 2px rgba(31,50,41,.05),0 6px 18px rgba(31,50,41,.05);
+  --now-glow:0 12px 30px rgba(30,122,84,.15);
+  --frame:#D8CFB8;
+  --todo:#C81E54;
+  --display:"Poppins",ui-sans-serif,system-ui,sans-serif;
+  --sans:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--chrome);color:var(--chrome-ink);font-family:var(--sans)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.board{padding-inline:40px;padding-block:0 56px}
+@media (max-width:700px){.board{padding-inline:16px}}
+
+.head{display:grid;align-content:center;gap:14px;padding-block:28px}
+.head h1{margin:0;font:600 26px/1.2 var(--display);text-wrap:balance}
+.head h1 span{font-weight:500;color:var(--chrome-muted)}
+.head .lead{margin:0;max-width:88ch;font-size:15px;line-height:1.55;color:var(--chrome-muted)}
+.switches{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;font-size:14px}
+.switches label{display:inline-flex;gap:8px;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--chrome-line);border-radius:999px}
+.switches input{accent-color:#1E7A54;width:15px;height:15px;margin:0}
+.switches .sep{width:1px;height:22px;background:var(--chrome-line)}
+.switches .grp{font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--chrome-muted)}
+
+.rail{display:flex;gap:40px;overflow-x:auto;padding-bottom:8px}
+.col{flex:none;width:390px;display:grid;gap:12px;align-content:start}
+.cap{margin:0;font-size:14px;line-height:1.5;color:var(--chrome-muted);max-width:390px}
+.cap b{font:600 12px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--chrome-ink);margin-right:6px}
+.tag{display:inline-block;font:600 10.5px var(--display);letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--chrome-line);color:var(--chrome-muted);border-radius:999px;padding:1px 8px;margin-left:4px;vertical-align:1px}
+.tag.todo{color:var(--todo);border-color:var(--todo)}
+.ann{margin:2px 0 0;padding:0;list-style:none;display:grid;gap:5px;max-width:390px}
+.ann li{display:flex;gap:8px;font-size:13px;line-height:1.45;color:var(--chrome-muted)}
+.ann i{flex:none;width:18px;height:18px;border-radius:50%;background:var(--chrome-line);color:var(--chrome-ink);display:grid;place-items:center;font:600 10.5px var(--display);font-style:normal;margin-top:2px}
+
+.sh{display:flex;align-items:baseline;gap:12px;margin:46px 0 14px;flex-wrap:wrap}
+.sh h2{margin:0;font:600 20px var(--display)}
+.sh span{font-size:13.5px;color:var(--chrome-muted)}
+
+.screen{width:390px;height:844px;border-radius:46px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  background-color:var(--ground);color:var(--ink);font-family:var(--sans);
+  background-image:radial-gradient(95% 38% at 0% 0%,var(--glow-a),transparent 62%),radial-gradient(85% 34% at 100% 0%,var(--glow-b),transparent 62%);
+  box-shadow:0 0 0 1px var(--frame)}
+.status{height:48px;flex:none;display:flex;justify-content:space-between;align-items:flex-end;padding:0 32px 6px;font:600 15px var(--sans)}
+.status i{font-style:normal;display:flex;gap:6px;align-items:center;font-size:12px;letter-spacing:.04em;color:var(--muted)}
+.status svg{width:24px;height:12px}
+.homebar{position:absolute;left:50%;bottom:8px;width:134px;height:5px;border-radius:3px;background:var(--ink);opacity:.3;transform:translateX(-50%)}
+
+.hdr{display:flex;align-items:center;gap:12px;padding:8px 20px 12px}
+.hdr .mark{width:38px;height:38px;flex:none}
+.hello b{display:block;font:600 17px/1.2 var(--display)}
+.hello span{font-size:13px;color:var(--muted)}
+.lvl{margin-left:auto;width:48px;height:48px;flex:none;border-radius:50%;background:conic-gradient(var(--violet) 0 24%,var(--raised) 24% 100%);position:relative}
+.lvl::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--surface)}
+.lvl b{position:absolute;inset:0;display:grid;place-items:center;font:600 13px var(--display);z-index:1}
+.menu{width:40px;height:40px;border:0;background:none;display:grid;place-items:center;color:var(--muted);flex:none}
+.menu svg{width:22px;height:22px}
+
+.stack{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:2px 16px 110px}
+.stack.center{justify-content:center;align-items:center;text-align:center;padding-bottom:60px}
+
+.w{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:var(--shadow)}
+.w.now{border:1.5px solid transparent;border-radius:26px;padding:20px;
+  background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(125deg,var(--cyan),var(--violet) 55%,var(--magenta)) border-box;
+  box-shadow:var(--now-glow)}
+.eyebrow{display:flex;align-items:center;gap:8px;font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.eyebrow .pip{width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--magenta));flex:none}
+.eyebrow svg{width:16px;height:16px;color:var(--ink)}
+.w h2{margin:8px 0 4px;font:600 22px/1.25 var(--display);text-wrap:balance}
+.w h3{margin:0;font:600 17px/1.3 var(--display)}
+.w p{margin:0;font-size:15px;line-height:1.45;color:var(--muted)}
+.w p.say{color:var(--ink);font-size:17px;line-height:1.4}
+
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.answers.three{grid-template-columns:repeat(3,1fr)}
+.answers.three .chip{font-size:14px;padding:6px 4px;white-space:nowrap}
+.chip{min-height:52px;border-radius:16px;border:1px solid var(--chip-line);background:var(--chip);color:var(--chip-ink);font:600 15px var(--display);padding:6px 8px}
+.btn{min-height:50px;border-radius:16px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);font:600 15px var(--display);padding:0 14px;width:100%}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+
+.row{position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:20px}
+.ic{width:40px;height:40px;border-radius:12px;background:var(--raised);display:grid;place-items:center;color:var(--ink);flex:none}
+.ic svg{width:22px;height:22px}
+.row .t1{font:600 11px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.row .t2{font:600 15px/1.3 var(--display)}
+.row .chev{margin-left:auto;width:20px;height:20px;color:var(--muted);flex:none}
+
+.done{position:relative;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.done .ok{width:28px;height:28px;border-radius:50%;background:var(--done-tint);color:var(--done);display:grid;place-items:center;flex:none}
+.done .ok svg{width:16px;height:16px}
+.done b{font:600 15px var(--display)}
+.done span{margin-left:auto;font:600 13px var(--display);color:var(--done)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{position:relative;display:grid;gap:10px;align-content:start;padding:14px}
+.tile b{font:600 15px/1.25 var(--display)}
+.tile small{font-size:13px;line-height:1.35;color:var(--muted)}
+
+.fab-wrap{position:absolute;right:20px;bottom:34px;display:flex;align-items:center;gap:10px}
+.hint{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--display);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 13px;box-shadow:var(--shadow)}
+.hint svg{width:16px;height:16px;color:var(--muted)}
+.fab{position:relative;width:66px;height:66px;border-radius:50%;padding:3px;border:0;background:conic-gradient(from 210deg,var(--cyan),var(--violet),var(--magenta),var(--cyan));box-shadow:var(--now-glow)}
+.fab span{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;background:var(--fab);color:var(--fab-ink)}
+.fab svg{width:26px;height:26px}
+
+.plus{margin-top:6px;font:600 13px var(--display);background:var(--raised);color:var(--ink);border-radius:999px;padding:5px 12px}
+.badge-w{display:grid;justify-items:center;text-align:center;gap:6px}
+.bdg{border-radius:50%;padding:3.5px;background:linear-gradient(135deg,var(--cyan),var(--violet),var(--magenta));display:inline-grid;place-items:center}
+.bdg i{width:100%;height:100%;border-radius:50%;background:var(--raised);display:grid;place-items:center;font:600 20px var(--display);color:var(--ink);font-style:normal}
+.bdg.big{width:112px;height:112px}.bdg.big i{font-size:36px}
+.bdg.sm{width:44px;height:44px}.bdg.sm i{font-size:15px}
+.bdg.mini{width:34px;height:34px}.bdg.mini i{font-size:12px}
+.bdg.tick i{color:transparent;position:relative}
+.bdg.tick i::after{content:"";position:absolute;width:11px;height:6px;border-left:2.4px solid var(--ink);border-bottom:2.4px solid var(--ink);transform:rotate(-45deg) translate(1px,-1px)}
+.bdg.lock{filter:grayscale(1);opacity:.35}
+.shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin-top:12px;padding-top:14px;border-top:1px solid var(--line)}
+.shelf div{display:grid;justify-items:center;gap:4px}
+.shelf span{font:600 12px var(--display);color:var(--ink)}
+.shelf small{font-size:12px;color:var(--muted)}
+
+.wave{display:flex;align-items:center;gap:3px;height:40px;margin:12px 0}
+.wave i{flex:1;border-radius:3px;background:linear-gradient(90deg,var(--cyan),var(--violet),var(--magenta));opacity:.85}
+.rows{display:grid;margin-top:10px}
+.rows .r{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+.rows .r span{font-size:14px;color:var(--muted);width:92px;flex:none}
+.rows .r b{font:600 15px var(--display)}
+.rows .r button{margin-left:auto;border:0;background:none;font:600 14px var(--display);color:var(--accent-text);padding:6px 0}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.tl{position:relative;display:grid;grid-template-columns:repeat(4,1fr);margin:18px 0 14px}
+.tl::before{content:"";position:absolute;left:12.5%;right:12.5%;top:9px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--cyan),var(--violet),var(--magenta))}
+.tl .st{position:relative;display:grid;justify-items:center;gap:8px;text-align:center}
+.tl .nd{width:20px;height:20px;border-radius:50%;background:var(--surface);border:2.5px solid var(--violet)}
+.tl .st:first-child .nd{border-color:var(--cyan)}
+.tl .st:last-child .nd{border-color:var(--magenta)}
+.tl b{font:600 13px var(--display)}
+.team-line{display:flex;gap:10px;align-items:flex-start}
+.team-line p{color:var(--ink)}
+
+.rcpt{position:relative;display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font:600 12.5px var(--display);color:var(--muted)}
+.rcpt svg{width:15px;height:15px;color:var(--done);flex:none}
+.rcpt em{margin-left:auto;font:600 9.5px var(--display);letter-spacing:.09em;text-transform:uppercase;color:var(--accent-text);font-style:normal}
+
+.ph{height:150px;border:1.5px dashed var(--muted);border-radius:16px;position:relative;margin-top:14px;
+  background:linear-gradient(to top left,transparent calc(50% - .8px),var(--line) 50%,transparent calc(50% + .8px)),
+             linear-gradient(to top right,transparent calc(50% - .8px),var(--line) 50%,transparent calc(50% + .8px)),
+             var(--surface)}
+.ph span{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);font-size:12px;color:var(--muted);background:var(--surface);padding:2px 8px;border-radius:8px;white-space:nowrap}
+
+.np{position:absolute;top:-9px;right:-9px;width:20px;height:20px;border-radius:50%;background:var(--btn);color:var(--btn-ink);display:grid;place-items:center;font:600 11px var(--display);box-shadow:0 0 0 3px var(--ground);z-index:5}
+.board.off-notes .np,.board.off-notes .wl{display:none}
+.wl{position:absolute;top:10px;right:10px;font:600 9.5px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px dashed var(--muted);border-radius:8px;padding:2px 7px;background:var(--surface);z-index:4}
+
+.sk{display:inline-block;font:600 10.5px var(--display);letter-spacing:.06em;border:1px solid var(--line);color:var(--accent-text);background:var(--surface);border-radius:8px;padding:2px 7px}
+.state{display:grid;gap:8px;padding:14px;border:1px solid var(--line);border-radius:20px;background:var(--surface)}
+.state .bd{font-size:14px;line-height:1.45;color:var(--ink)}
+
+.onb-top{display:flex;align-items:center;gap:12px;padding:18px 20px 8px}
+.onb-top .back{width:40px;height:40px;border:0;background:none;display:grid;place-items:center;color:var(--muted)}
+.onb-top .back svg{width:22px;height:22px}
+.steps{display:flex;gap:6px;margin-left:auto}
+.steps i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.steps i.on{background:var(--violet)}
+.scope{display:grid;gap:8px}
+.scope .sc{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border:1px solid var(--line);border-radius:18px;background:var(--surface)}
+.sc .tt{width:38px;height:22px;border-radius:999px;background:var(--done);position:relative;flex:none;margin-top:2px}
+.tt::after{content:"";position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:var(--surface)}
+.tt.off{background:var(--line)}
+.tt.off::after{left:3px;right:auto;background:var(--muted)}
+.tt.na{background:repeating-linear-gradient(45deg,var(--line) 0 4px,transparent 4px 8px)}
+.sc b{display:block;font:600 15px var(--display)}
+.sc small{font-size:13px;line-height:1.4;color:var(--muted)}
+.pin{display:flex;gap:12px;justify-content:center;margin:18px 0 6px}
+.pin i{width:16px;height:16px;border-radius:50%;border:2px solid var(--muted)}
+.pin i.fill{background:var(--ink);border-color:var(--ink)}
+
+.lock{background:#05081C;color:#EAF4FF;align-items:center;justify-content:center;display:flex;flex-direction:column;gap:0;
+  --surface:rgba(255,255,255,.09);--line:rgba(255,255,255,.14);--muted:rgba(234,244,255,.55);--ink:#EAF4FF}
+.lock .ltime{font:600 74px/1 var(--display);letter-spacing:-.01em}
+.lock .ldate{font:600 16px var(--display);color:var(--muted);margin-top:8px}
+.notifs{display:grid;gap:10px;width:330px;margin-top:34px}
+.notif{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:13px 14px;backdrop-filter:blur(6px)}
+.notif .app{display:flex;align-items:center;gap:8px;font:600 11px var(--display);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.notif .app svg.mk{width:18px;height:18px;flex:none}
+.notif .app .mk{width:18px;height:18px;flex:none}
+.notif b{display:block;font:600 15px var(--display);margin-top:6px}
+.notif p{margin:3px 0 0;font-size:13.5px;line-height:1.4;color:var(--muted)}
+.notif .nchips{display:flex;gap:8px;margin-top:10px}
+.notif .nchips .chip{min-height:38px;font-size:12.5px;padding:4px 12px;border-color:var(--line);background:transparent;color:var(--ink)}
+
+.flow{display:grid;gap:12px;background:var(--chrome-card);border:1px solid var(--chrome-line);border-radius:24px;padding:26px;margin-top:6px}
+.fl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fl .lb{flex:none;width:132px;font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--chrome-muted)}
+.n{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid var(--chrome-line);border-radius:12px;background:var(--surface);font:600 13px var(--display);color:var(--chrome-ink)}
+.n i{font:600 10px var(--display);color:var(--chrome-muted);font-style:normal}
+.a{color:var(--chrome-muted);font-weight:600}
+
+.pats{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:6px}
+.pat{background:var(--chrome-card);border:1px solid var(--chrome-line);border-radius:20px;padding:18px;display:grid;gap:7px;align-content:start}
+.pat h3{margin:0;font:600 14.5px var(--display)}
+.pat .from{font-size:13px;line-height:1.45;color:var(--chrome-muted)}
+.pat .from b{color:var(--chrome-ink)}
+.pat .to{font-size:13.5px;line-height:1.5;color:var(--chrome-ink)}
+.pat .where{font:600 10.5px var(--display);letter-spacing:.09em;text-transform:uppercase;color:var(--accent-text)}
+
+.notebar{margin-top:40px;display:grid;gap:10px;background:var(--chrome-card);border:1px solid var(--chrome-line);border-radius:24px;padding:24px}
+.notebar h2{margin:0;font:600 13px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--chrome-muted)}
+.notebar p{margin:0;font-size:14.5px;line-height:1.55;color:var(--chrome-muted);max-width:100ch}
+.notebar b{color:var(--chrome-ink)}
+.rules{margin:0;padding:0;list-style:none;display:grid;gap:8px;font-size:14px;line-height:1.5;color:var(--chrome-muted)}
+.rules li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--violet);margin-right:10px;vertical-align:2px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="g-mark" gradientUnits="userSpaceOnUse" x1="6" y1="24" x2="27" y2="8"><stop offset="0" style="stop-color:var(--cyan)"/><stop offset=".55" style="stop-color:var(--violet)"/><stop offset="1" style="stop-color:var(--magenta)"/></linearGradient>
+    <symbol id="mark-a" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" style="fill:var(--tile)"/><path d="M6.5 22.8C9.3 22.8 10.4 8.8 13.3 8.8C16.9 8.8 18.8 17.6 24.6 19.9" style="fill:none;stroke:url(#g-mark)" stroke-width="2.7" stroke-linecap="round"/><circle cx="24.8" cy="19.9" r="2.3" style="fill:var(--magenta)"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" style="fill:none;stroke:currentColor" stroke-width="2"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" style="fill:none;stroke:currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3" style="fill:none;stroke:currentColor" stroke-width="1.9"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M5 8h14M5 16h14" style="fill:none;stroke:currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14" rx="3" style="fill:none;stroke:currentColor" stroke-width="1.9"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-team" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3" style="fill:none;stroke:currentColor" stroke-width="1.9"/><circle cx="17" cy="9.5" r="2.3" style="fill:none;stroke:currentColor" stroke-width="1.9"/><path d="M3.5 19c.7-3 2.8-4.6 5.5-4.6s4.8 1.6 5.5 4.6M14.6 14.9c2.5-.3 4.8 1 5.7 4" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7" style="fill:none;stroke:currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5.5 15.5 12 9 18.5" style="fill:none;stroke:currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3.5C9 7.6 6.5 10.9 6.5 14.2A5.5 5.5 0 0 0 17.5 14.2C17.5 10.9 15 7.6 12 3.5Z" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5.5 8.5 12 15 18.5" style="fill:none;stroke:currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2.5h-15Z" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M10 19a2 2 0 0 0 4 0" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-cam" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="3" style="fill:none;stroke:currentColor" stroke-width="1.9"/><circle cx="12" cy="13.5" r="3.5" style="fill:none;stroke:currentColor" stroke-width="1.9"/><path d="M8.5 7 10 4.5h4L15.5 7" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-batt" viewBox="0 0 24 12"><rect x=".75" y=".75" width="19.5" height="10.5" rx="3" style="fill:none;stroke:currentColor" stroke-width="1.5"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" style="fill:currentColor"/><rect x="21.5" y="4" width="1.8" height="4" rx=".9" style="fill:currentColor"/></symbol>
+  </defs>
+</svg>
+
+<div class="board play" id="board">
+  <header class="head">
+    <h1>Agentic Kinetic · patient app <span>· wireframe</span></h1>
+    <p class="lead">A mid-fi wireframe of the patient phone app, end to end: set-up, the daily check-in loop, voice, the booked-sample day and the agentic reminders. Layout and widget anatomy follow the handover contract; the grey-dashed labels and numbered callouts explain what each piece is and where it comes from. Agentic-UI patterns are borrowed from CopilotKit research (see the strip below the flow map): the app is chatless and embedded — the agent decides which widget is big, and never writes the interface itself. Screens marked <span class="tag todo">TODO · proposed</span> go beyond the handover contract; everything else uses the contract copy exactly.</p>
+    <div class="switches" role="group" aria-label="Wireframe options">
+      <span class="grp">Options</span>
+      <label><input type="checkbox" id="sw-notes" checked> Callouts</label>
+    </div>
+  </header>
+
+  <section class="flow" aria-labelledby="h-flow">
+    <h2 id="h-flow" style="margin:0;font:600 13px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--chrome-muted)">Flow map</h2>
+    <div class="fl"><span class="lb">Set up</span>
+      <span class="n">Welcome <i>1</i></span><span class="a">→</span>
+      <span class="n">Consent <i>2</i></span><span class="a">→</span>
+      <span class="n">Quick access <i>3</i></span><span class="a">→</span>
+      <span class="n">Permissions <i>4</i></span><span class="a">→</span>
+      <span class="n">Home <i>5</i></span>
+    </div>
+    <div class="fl"><span class="lb">Daily loop</span>
+      <span class="n">Morning nudge <i>15</i></span><span class="a">→</span>
+      <span class="n">Now <i>5</i></span><span class="a">→</span>
+      <span class="n">one tap <i>5</i></span><span class="a">→</span>
+      <span class="n">Thanks <i>8</i></span><span class="a">→</span>
+      <span class="n">Care team asks <i>8</i></span><span class="a">→</span>
+      <span class="n">Done row <i>8</i></span>
+    </div>
+    <div class="fl"><span class="lb">Say it instead</span>
+      <span class="n">Hold to talk <i>5</i></span><span class="a">→</span>
+      <span class="n">Listening <i>9</i></span><span class="a">→</span>
+      <span class="n">You said <i>10</i></span><span class="a">→</span>
+      <span class="n">Looks right <i>10</i></span><span class="a">→</span>
+      <span class="n">Thanks <i>8</i></span>
+    </div>
+    <div class="fl"><span class="lb">Around the team</span>
+      <span class="n">Health question <i>12</i></span><span class="a">→</span>
+      <span class="n">Handoff, never answered <i>12</i></span><span class="a">→</span>
+      <span class="n">Reply lands in app <i>7</i></span><span class="a">·</span>
+      <span class="n">Attach photo or note <i>11</i></span>
+    </div>
+    <div class="fl"><span class="lb">Booked by the team</span>
+      <span class="n">Clinician accepts</span><span class="a">→</span>
+      <span class="n">Booking appears <i>7</i></span><span class="a">→</span>
+      <span class="n">Evening before: big widget <i>13</i></span><span class="a">→</span>
+      <span class="n">Sample day walkthrough <i>13</i></span>
+    </div>
+  </section>
+
+  <section class="pats" aria-labelledby="h-pats" style="margin-top:26px">
+    <h2 id="h-pats" style="margin:0;grid-column:1/-1;font:600 13px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--chrome-muted)">Agentic-UI patterns · CopilotKit inspiration, patient-app translation</h2>
+    <div class="pat">
+      <h3>Chatless, embedded</h3>
+      <p class="from"><b>CopilotKit:</b> “a dashboard with no conversation anywhere can be deeply agentic… users experience a product feature.”</p>
+      <p class="to">The patient app has no chat box. The agent speaks only through approved widgets; she answers with one tap or holds one button.</p>
+      <p class="where">Whole board · AGENTS.md §1</p>
+    </div>
+    <div class="pat">
+      <h3>Controlled generative UI</h3>
+      <p class="from"><b>CopilotKit:</b> the agent “chooses which pre-built component fits the moment, never inventing the rendered surface itself.”</p>
+      <p class="to">The agent decides what is big: due now is one large gradient widget, next is a row, the rest are tiles, done items shrink to a done row. Components and copy are fixed by the contract.</p>
+      <p class="where">Frame 6 · AGENTS.md §1</p>
+    </div>
+    <div class="pat">
+      <h3>Human-in-the-loop card</h3>
+      <p class="from"><b>CopilotKit:</b> Human_Input / Human_Approval cards — a bordered card, the question, discrete answer buttons.</p>
+      <p class="to">Every question is a card with an eyebrow, one question and closed answers: the four check-in chips, “Yes · No · Not sure” for care-team questions. Identical thanks for every answer.</p>
+      <p class="where">Frames 5, 8, 12 · AGENTS.md §3.7, §5D, §5F</p>
+    </div>
+    <div class="pat">
+      <h3>Tool-call receipt</h3>
+      <p class="from"><b>CopilotKit:</b> “✓ tool.name · TOOL_CALL” rows — each agent action legible, with a checkmark.</p>
+      <p class="to">Quiet receipt rows under an answer or a handoff: “Sent to your care team · just now.” The thanks line must be literally true of the system.</p>
+      <p class="where">Frames 8, 12 · proposed copy, TODO</p>
+    </div>
+    <div class="pat">
+      <h3>State-delta sync</h3>
+      <p class="from"><b>CopilotKit:</b> “STATE_DELTA · synced” — the interface reflects another actor's change the moment it lands.</p>
+      <p class="to">“Booked by your care team” appears on her phone only after the clinician accepts on the Clinic Board. A proposal never renders as booked.</p>
+      <p class="where">Frames 7, 13 · AGENTS.md §5B–C</p>
+    </div>
+    <div class="pat">
+      <h3>Provenance label</h3>
+      <p class="from"><b>CopilotKit:</b> “added by agent” tags mark generated content in a native surface.</p>
+      <p class="to">Every widget carries its source as its eyebrow: “Your care team asks”, “Booked by your care team”, “You asked”. Nothing arrives unlabelled; the menu always discloses “This app uses AI”.</p>
+      <p class="where">All frames · AGENTS.md §6</p>
+    </div>
+  </section>
+
+  <section class="notebar" aria-labelledby="h-guard">
+    <h2 id="h-guard">Guardrails that shape this wireframe</h2>
+    <p><b>Patterns, not the pipe.</b> CopilotKit / AG-UI transport belongs to the Clinic Board surface (ARCHITECTURE.md). The patient app never mounts the agent: it reads a plain HTTP route, <b>GET /api/patient/view</b>, and renders the projection only. We borrow the interaction patterns, never the stream.</p>
+    <p><b>Never shown on a patient screen:</b> a drug level, a prediction, an interval, in or out of range, direction of travel, dose advice, an interaction verdict, urgency, a countdown, anything about the kidney. No digits in software-written patient text; booked times and her clinician's own words are the exemptions. A health question is never answered — it becomes the handoff.</p>
+    <p><b>Out of scope here:</b> the mood / “Hard days” module and Motion graphics are labelled future development in the handover and are not wired or built; authentication is out of scope for the demo backend (no auth by design), so frames 1–4 are proposal only.</p>
+  </section>
+
+  <div class="sh"><h2>A · Onboarding &amp; access</h2><span>proposed — beyond the handover contract, copy to be confirmed</span></div>
+  <div class="rail">
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 1, welcome and registration">
+        <div class="status"><span>09:02</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <div class="stack center">
+          <svg style="width:88px;height:88px" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <h2 style="margin:6px 0 0;font:600 26px/1.2 var(--display)">Agentic Kinetic</h2>
+          <p style="max-width:28ch">Your care, day by day. Check in with one tap, talk instead of typing, and your care team sees the full picture.</p>
+          <div style="display:grid;gap:10px;width:100%;margin-top:18px">
+            <button class="btn" type="button">Get started</button>
+            <button class="btn ghost" type="button">I have a code from my care team</button>
+          </div>
+          <p style="font:600 14px var(--display);color:var(--accent-text);margin-top:4px">Sign in</p>
+        </div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>1 · Welcome</b>First contact: what the app is for, in one breath, then two ways in — on her own or with the care-team code that ties the account to her care plan. <span class="tag todo">TODO · proposed</span></p>
+      <ul class="ann">
+        <li><i>1</i>Copy is proposed; the contract fixes patient copy only from the home screen on. No digits, per AGENTS.md §3.4.</li>
+        <li><i>2</i>The care-team code is the bridge to the clinician-authored care plan (care-plan-schema) — she never configures doses herself.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 2, consent and data scopes">
+        <div class="status"><span>09:03</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <div class="onb-top"><button class="back" type="button" aria-label="Back"><svg><use href="#i-back"/></svg></button><div class="steps"><i class="on"></i><i data-dot></i><i data-dot></i></div></div>
+        <div class="stack">
+          <article class="w">
+            <h2 style="font-size:24px">Your data, your choice</h2>
+            <p>Three separate decisions. You can change the optional ones at any time, and changing your mind is always recorded.</p>
+          </article>
+          <article class="w scope">
+            <div class="sc"><span class="tt" role="img" aria-label="Always on"></span><div><b>Care for you</b><small>The data behind your own care. Always on.</small></div></div>
+            <div class="sc"><span class="tt off" role="img" aria-label="Optional"></span><div><b>Better care for everyone</b><small>De-identified only. Yours to switch off, any time.</small></div></div>
+            <div class="sc"><span class="tt na" role="img" aria-label="Not offered"></span><div><b>Research that names you</b><small>Not offered in this app.</small></div></div>
+          </article>
+          <button class="btn" type="button" style="margin-top:2px">Continue</button>
+        </div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>2 · Consent &amp; scopes</b>Separated scopes, tested at the moment of use; revocation recorded, exclusions carried never dropped. <span class="tag">GUARDRAILS.md §5</span> <span class="tag todo">copy TODO</span></p>
+      <ul class="ann">
+        <li><i>1</i>Own care is the floor; de-identified improvement is opt-in; identified research is refused outright — shown, not hidden, so the refusal is legible.</li>
+        <li><i>2</i>De-identification runs before any training path (audit-every-access); the wireframe only promises what the backend enforces.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 3, login and quick access">
+        <div class="status"><span>09:05</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <div class="stack center">
+          <svg style="width:64px;height:64px" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <h2 style="margin:6px 0 0;font:600 24px/1.2 var(--display)">Welcome back</h2>
+          <div class="pin" aria-label="Passcode dots"><i class="fill"></i><i class="fill"></i><i data-dot></i><i data-dot></i><i data-dot></i><i data-dot></i></div>
+          <div style="display:grid;gap:10px;width:100%;margin-top:10px">
+            <button class="btn" type="button"><span style="display:inline-flex;align-items:center;gap:8px;justify-content:center;width:100%">Use Face ID</span></button>
+            <button class="btn ghost" type="button">Call your care team</button>
+          </div>
+          <p style="font-size:13px;color:var(--muted);margin-top:2px">Locked out? Your care team can help.</p>
+        </div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>3 · Quick access</b>Returning visit: biometric first, PIN behind it, and the care-team escape hatch on the same screen. <span class="tag todo">TODO · proposed</span></p>
+      <ul class="ann">
+        <li><i>1</i>The demo backend has no auth by design; this frame exists so the app shell has a front door. Design decision for the build team.</li>
+        <li><i>2</i>“Call your care team” reachable from every locked or unlocked state — the human path is never deep in a menu.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 4, permissions">
+        <div class="status"><span>09:06</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <div class="onb-top"><button class="back" type="button" aria-label="Back"><svg><use href="#i-back"/></svg></button><div class="steps"><i data-dot></i><i class="on"></i><i data-dot></i></div></div>
+        <div class="stack">
+          <article class="w">
+            <h2 style="font-size:24px">Two permissions, both earning their place</h2>
+            <p>Each one is asked for when it is needed, and says why.</p>
+          </article>
+          <article class="w row">
+            <span class="ic"><svg><use href="#i-mic"/></svg></span>
+            <div><div class="t1">Microphone</div><div class="t2" style="font-size:14px">Only while using the app. You talk, it types.</div></div>
+            <button class="chip" type="button" style="min-height:40px;width:auto;padding:4px 12px;font-size:13px">Allow</button>
+          </article>
+          <article class="w row">
+            <span class="ic"><svg><use href="#i-bell"/></svg></span>
+            <div><div class="t1">Notifications</div><div class="t2" style="font-size:14px">Your check-in nudge and booking reminders.</div></div>
+            <button class="chip" type="button" style="min-height:40px;width:auto;padding:4px 12px;font-size:13px">Allow</button>
+          </article>
+          <button class="btn ghost" type="button" style="margin-top:2px">Not now</button>
+        </div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>4 · Permissions</b>Just-in-time, with the reason in the row. Voice is transcript-only; notifications carry the reminders in section D. <span class="tag todo">TODO · proposed</span></p>
+      <ul class="ann">
+        <li><i>1</i>Mic powers hold-to-talk (AGENTS.md §5E); the voice itself is never analysed, only the transcript is kept.</li>
+        <li><i>2</i>“Not now” is a real answer — everything in the app still works; reminders are the only thing she misses.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="sh"><h2>B · Main page &amp; the agentic widget hierarchy</h2><span>grounded — contract copy, exact</span></div>
+  <div class="rail">
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 5, main page, check-in due now">
+        <div class="status"><span>11:14</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2"><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <article class="w now">
+            <i class="np">1</i><i class="wl">Big · due now</i>
+            <div class="eyebrow"><span class="pip"></span>Now · morning dose</div>
+            <h2>How did this morning's dose go?</h2>
+            <p>Every answer counts the same.</p>
+            <div class="answers"><button class="chip" type="button">Took it</button><button class="chip" type="button">Took it late</button><button class="chip" type="button">Missed it</button><button class="chip" type="button">Not sure</button></div>
+          </article>
+          <article class="w row">
+            <i class="np">2</i><i class="wl">Row · next</i>
+            <span class="ic"><svg><use href="#i-cal"/></svg></span>
+            <div><div class="t1">Booked by your care team</div><div class="t2">Sun 11 Oct · Fingerstick samples</div></div>
+            <svg class="chev"><use href="#i-chev"/></svg>
+          </article>
+          <div class="grid2">
+            <article class="w tile">
+              <i class="wl">Tile · rest</i>
+              <div style="display:flex;gap:6px"><span class="bdg mini tick"></span><span class="bdg mini"><i>7</i></span><span class="bdg mini lock"><i>30</i></span></div>
+              <b>Badges</b><small>1 more check-in to First month</small>
+            </article>
+            <article class="w tile">
+              <i class="wl">Tile · rest</i>
+              <span class="ic"><svg><use href="#i-team"/></svg></span>
+              <b>Your care team</b><small>Call or message</small>
+            </article>
+          </div>
+        </div>
+        <div class="fab-wrap"><i class="np" style="top:-8px;right:-8px">3</i><span class="hint">Hold to talk</span><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>5 · Now · the main page</b>The whole day on one screen: one question with four equal answers, tomorrow as a row, everything else as tiles. No chat box. <span class="tag">AGENTS.md §6.1</span></p>
+      <ul class="ann">
+        <li><i>1</i>Menu (always): “Call your care team”, “This app uses AI” — the human path and the disclosure never leave the screen.</li>
+        <li><i>2</i>The booking row renders only while a sample is truly booked; after “Not now” it never appears.</li>
+        <li><i>3</i>Hold to talk is the only input beyond taps; “Type instead” hides one layer behind it.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 6, widget hierarchy anatomy">
+        <div class="status"><span>19:20</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Good evening, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2"><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <div class="done"><i class="wl" style="top:6px;right:8px">Done · shrinks</i><span class="ok"><svg><use href="#i-check"/></svg></span><b>Morning dose</b><span>Logged · late</span></div>
+          <article class="w now">
+            <i class="wl" style="top:12px;right:12px">Big · due now</i>
+            <div class="eyebrow"><svg><use href="#i-drop"/></svg>Tomorrow · booked by your care team</div>
+            <h2 style="font-size:20px">Fingerstick samples · Sun 11 Oct</h2>
+            <div class="tl">
+              <div class="st"><span class="nd"></span><b>Before dose</b></div>
+              <div class="st"><span class="nd"></span><b>1 h</b></div>
+              <div class="st"><span class="nd"></span><b>3 h</b></div>
+              <div class="st"><span class="nd"></span><b>6 h</b></div>
+            </div>
+            <p>Fasting. I'll walk you through each one.</p>
+          </article>
+          <article class="w row">
+            <i class="wl" style="top:6px;right:8px">Row · next</i>
+            <span class="ic"><svg><use href="#i-team"/></svg></span>
+            <div><div class="t1">Your care team asks</div><div class="t2">1 question waiting</div></div>
+            <svg class="chev"><use href="#i-chev"/></svg>
+          </article>
+          <div class="grid2">
+            <article class="w tile"><i class="wl">Tile</i><span class="ic"><svg><use href="#i-team"/></svg></span><b>Your care team</b><small>Call or message</small></article>
+            <article class="w tile"><i class="wl">Tile</i><span class="ic"><svg><use href="#i-bell"/></svg></span><b>Reminders</b><small>Check-ins and bookings</small></article>
+          </div>
+        </div>
+        <div class="fab-wrap"><span class="hint">Hold to talk</span><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>6 · The hierarchy, annotated</b>One evening screen carrying all four sizes at once: done shrinks, the booked samples take over as the big widget, the waiting question folds to a row. <span class="tag">AGENTS.md §1</span> <span class="tag">CopilotKit · Controlled generative UI</span></p>
+      <ul class="ann">
+        <li><i>1</i>The agent chooses which fixed component is big and when — it never writes the components, the copy or the numbers.</li>
+        <li><i>2</i>Promotion is state-driven: the timeline widget becomes big only the evening before a truly booked sample day.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 7, patient view message states">
+        <div class="status"><span>11:14</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2"><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack" style="gap:10px">
+          <p style="margin:0;font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">State map · one of four is ever true</p>
+          <div class="state"><span class="sk">nothing_to_do</span><p class="bd">Nothing for you to do right now. Your next check is on schedule.</p></div>
+          <div class="state"><span class="sk">sample_scheduled</span><p class="bd">A blood sample has been scheduled. The details are below, and I will walk you through it when the time comes.</p></div>
+          <div class="state" style="border:1.5px solid transparent;border-radius:20px;background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(125deg,var(--cyan),var(--violet) 55%,var(--magenta)) border-box"><span class="sk">contact_your_team</span><p class="bd">Please contact your transplant team using the number they gave you.</p><button class="btn ghost" type="button" style="min-height:42px;font-size:14px">Call your care team</button></div>
+          <div class="state"><span class="sk">evaluation_may_be_helpful</span><p class="bd">Based on what you have told me, it may be helpful to have this looked at by your clinician.</p></div>
+        </div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>7 · Message states</b>The patient view speaks a closed vocabulary of four messages, each only when true of the system. Bodies verbatim. <span class="tag">AGENTS.md §4</span> <span class="tag">build-reference §6</span></p>
+      <ul class="ann">
+        <li><i>1</i>contact_your_team promotes the care-team widget to the big gradient widget; the call button rides with it.</li>
+        <li><i>2</i>clinician_notified is never served — this build sends no notification, so the route substitutes contact_your_team.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="sh"><h2>C · Interactions</h2><span>the daily loop, voice, handoffs — contract copy</span></div>
+  <div class="rail">
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 8, thanks and the next question">
+        <div class="status"><span>11:15</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2"><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <div class="done"><span class="ok"><svg><use href="#i-check"/></svg></span><b>Morning dose</b><span>Logged · late</span></div>
+          <article class="w" style="display:grid;justify-items:center;text-align:center;gap:6px">
+            <h3>Thanks for telling us!</h3>
+            <p>Your care team now has the full picture.</p>
+            <span class="plus">+1 check-in</span>
+          </article>
+          <div class="rcpt"><svg><use href="#i-check"/></svg>Sent to your care team · just now<em>To care team</em></div>
+          <article class="w now">
+            <i class="np">1</i>
+            <div class="eyebrow"><svg><use href="#i-team"/></svg>Your care team asks</div>
+            <h2>Did you start any new medicine this week?</h2>
+            <div class="answers three"><button class="chip" type="button">Yes</button><button class="chip" type="button">No</button><button class="chip" type="button">Not sure</button></div>
+          </article>
+        </div>
+        <div class="fab-wrap"><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>8 · Thanks</b>Her answer shrinks to a done row; the same thanks for every answer; the next thing moves up and becomes the big widget. <span class="tag">AGENTS.md §6.2</span></p>
+      <ul class="ann">
+        <li><i>1</i>This question reached the phone only after a clinician pressed Send on the Clinic Board — an approved question, verbatim.</li>
+        <li><i>2</i>The receipt row is the CopilotKit tool-call pattern: the “full picture” line is literally true, and the receipt shows the sending.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 9, hold to talk, listening">
+        <div class="status"><span>11:16</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2"><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack" style="justify-content:center;gap:16px">
+          <article class="w" style="display:grid;justify-items:center;gap:8px;padding:22px">
+            <div class="eyebrow"><svg><use href="#i-mic"/></svg>Listening</div>
+            <div class="wave" style="width:100%" aria-hidden="true"><i style="height:30%"></i><i style="height:55%"></i><i style="height:80%"></i><i style="height:45%"></i><i style="height:95%"></i><i style="height:60%"></i><i style="height:25%"></i><i style="height:75%"></i><i style="height:90%"></i><i style="height:40%"></i><i style="height:65%"></i><i style="height:30%"></i><i style="height:85%"></i><i style="height:50%"></i><i style="height:70%"></i><i style="height:35%"></i><i style="height:95%"></i><i style="height:55%"></i><i style="height:25%"></i><i style="height:80%"></i><i style="height:45%"></i><i style="height:60%"></i><i style="height:30%"></i><i style="height:75%"></i></div>
+            <p style="font:600 15px var(--display);color:var(--ink)">Release to send</p>
+          </article>
+          <p style="text-align:center;font-size:13px;color:var(--muted)">Only the words are kept. The voice itself is never analysed.</p>
+        </div>
+        <div class="fab-wrap"><span class="hint"><svg><use href="#i-key"/></svg>Type instead</span><button class="fab" type="button" aria-label="Hold to talk, pressed" style="transform:scale(.9)"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>9 · Voice · listening</b>She holds the button and speaks. Live bars, one instruction, and typing one tap away at all times. <span class="tag">AGENTS.md §5E</span> <span class="tag todo">state copy TODO</span></p>
+      <ul class="ann">
+        <li><i>1</i>A transcript-only design: the model extracts only the typed fields (dose time, food, typical day) — annotations for the clinician, never model inputs.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 10, voice transcript and confirmation">
+        <div class="status"><span>11:16</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2"><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <article class="w">
+            <i class="np">1</i>
+            <div class="eyebrow"><svg><use href="#i-mic"/></svg>You said</div>
+            <div class="wave" style="height:30px" aria-hidden="true"><i style="height:35%"></i><i style="height:70%"></i><i style="height:50%"></i><i style="height:85%"></i><i style="height:30%"></i><i style="height:60%"></i><i style="height:95%"></i><i style="height:45%"></i><i style="height:70%"></i><i style="height:25%"></i><i style="height:80%"></i><i style="height:55%"></i><i style="height:40%"></i><i style="height:65%"></i><i style="height:30%"></i></div>
+            <p class="say">“I took it late, around eleven, after breakfast.”</p>
+          </article>
+          <article class="w now">
+            <div class="eyebrow"><span class="pip"></span>Here's what I noted</div>
+            <div class="rows">
+              <div class="r"><span>Dose</span><b>Late · about 11:00</b><button type="button">Change</button></div>
+              <div class="r"><span>Food</span><b>After breakfast</b><button type="button">Change</button></div>
+              <div class="r"><span>Typical day?</span><b>Yes</b><button type="button">Change</button></div>
+            </div>
+            <div class="pair"><button class="btn" type="button">Looks right</button><button class="btn ghost" type="button">Say it again</button></div>
+          </article>
+        </div>
+        <div class="fab-wrap"><span class="hint"><svg><use href="#i-key"/></svg>Type instead</span><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>10 · Voice · you said</b>The agent shows only what it noted, and she confirms or changes each line — her words, her sign-off. <span class="tag">AGENTS.md §6.4</span></p>
+      <ul class="ann">
+        <li><i>1</i>The waveform is a record of amplitude, nothing more; the caption under it is her transcript shown back.</li>
+        <li><i>2</i>“Change” offers only the allowed values; “Looks right” logs it like any check-in, with the same thanks and the same plus-one.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 11, attach a photo or voice note">
+        <div class="status"><span>11:18</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2"><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <article class="w now">
+            <i class="np">1</i>
+            <div class="eyebrow"><svg><use href="#i-cam"/></svg>Send to your care team</div>
+            <h2 style="font-size:20px">Add a photo or a voice note</h2>
+            <div class="ph"><span>Photo of a new medicine or label</span></div>
+            <div class="pair"><button class="btn ghost" type="button" style="min-height:44px;font-size:14px">Add photo</button><button class="btn ghost" type="button" style="min-height:44px;font-size:14px">Add voice note</button></div>
+            <div style="margin-top:10px"><button class="btn" type="button">Send</button></div>
+            <p class="fine" style="font-size:13px;margin-top:10px">Nothing is sent until you tap send.</p>
+          </article>
+          <article class="w row">
+            <span class="ic"><svg><use href="#i-team"/></svg></span>
+            <div><div class="t1">Your care team asks</div><div class="t2">Did you start any new medicine this week?</div></div>
+            <svg class="chev"><use href="#i-chev"/></svg>
+          </article>
+        </div>
+        <div class="fab-wrap"><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>11 · Attach photo or voice note</b>A picture is faster than a spelling: the new-medicine answer with the label beside it, straight to the team. <span class="tag todo">TODO · proposed</span></p>
+      <ul class="ann">
+        <li><i>1</i>Not in the contract — flagged as a proposal. Candidate home: alongside the new-medicine question; the photo goes to the care team, never into any model.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 12, health question handoff">
+        <div class="status"><span>19:40</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Good evening, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2"><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <article class="w">
+            <i class="np">1</i>
+            <div class="eyebrow">You asked</div>
+            <p class="say" style="margin:8px 0 12px">“Can I take ibuprofen for my back?”</p>
+            <div class="team-line"><span class="ic"><svg><use href="#i-team"/></svg></span><p>That's one for your care team. I've sent your question to them and they'll reply here.</p></div>
+            <div style="margin-top:14px"><button class="btn ghost" type="button">Call your care team</button></div>
+          </article>
+          <div class="rcpt"><svg><use href="#i-check"/></svg>Question sent to your care team · just now<em>To care team</em></div>
+          <div class="done"><span class="ok"><svg><use href="#i-check"/></svg></span><b>Morning dose</b><span>Logged · late</span></div>
+        </div>
+        <div class="fab-wrap"><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>12 · Health question → handoff</b>A health or medicine question is never answered. It becomes the handoff widget and goes to the care team. <span class="tag">AGENTS.md §5G</span></p>
+      <ul class="ann">
+        <li><i>1</i>No interpretation, no verdict, no “usually fine” — the app refuses to practise medicine and says so in one sentence.</li>
+        <li><i>2</i>The receipt makes the promise checkable: the question is with the team, and the reply will land in this same app.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 13, evening before the sample day">
+        <div class="status"><span>19:40</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Good evening, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2"><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <article class="w now">
+            <div class="eyebrow"><svg><use href="#i-drop"/></svg>Tomorrow · booked by your care team</div>
+            <h2>Fingerstick samples · Sun 11 Oct</h2>
+            <div class="tl">
+              <div class="st"><span class="nd"></span><b>Before dose</b></div>
+              <div class="st"><span class="nd"></span><b>1 h</b></div>
+              <div class="st"><span class="nd"></span><b>3 h</b></div>
+              <div class="st"><span class="nd"></span><b>6 h</b></div>
+            </div>
+            <p>Fasting. I'll walk you through each one.</p>
+          </article>
+          <article class="w row">
+            <span class="ic"><svg><use href="#i-team"/></svg></span>
+            <div><div class="t1">Your care team</div><div class="t2">Call or message</div></div>
+            <svg class="chev"><use href="#i-chev"/></svg>
+          </article>
+          <div class="done"><span class="ok"><svg><use href="#i-check"/></svg></span><b>Morning dose</b><span>Logged · late</span></div>
+        </div>
+        <div class="fab-wrap"><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>13 · Timing</b>The evening before, the booked samples become the big widget: the offsets she will follow, and fasting, in her clinician's own instruction. <span class="tag">AGENTS.md §6.5</span></p>
+      <ul class="ann">
+        <li><i>1</i>“I'll walk you through each one” — on the day itself the widget steps through the samples one at a time.</li>
+        <li><i>2</i>This renders only because a clinician accepted the offer on the Clinic Board; declined offers leave no trace here.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <section class="screen" aria-label="Frame 14, milestone badge">
+        <div class="status"><span>11:15</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2"><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <div class="done"><span class="ok"><svg><use href="#i-check"/></svg></span><b>Morning dose</b><span>Logged · late</span></div>
+          <article class="w now badge-w">
+            <span class="bdg big"><i>30</i></span>
+            <div class="eyebrow" style="justify-content:center"><span class="pip"></span>Badge unlocked</div>
+            <h2>First month · 30 check-ins</h2>
+            <p>Thirty honest check-ins. That's a clear picture for your care team.</p>
+            <div class="shelf">
+              <div><span class="bdg sm"><i>7</i></span><span>First week</span><small>7</small></div>
+              <div><span class="bdg sm"><i>30</i></span><span>First month</span><small>30</small></div>
+              <div><span class="bdg sm lock"><i>100</i></span><span>Hundred club</span><small>100</small></div>
+            </div>
+          </article>
+          <article class="w row">
+            <span class="ic"><svg><use href="#i-team"/></svg></span>
+            <div><div class="t1">Your care team asks</div><div class="t2">1 question waiting</div></div>
+            <svg class="chev"><use href="#i-chev"/></svg>
+          </article>
+        </div>
+        <div class="fab-wrap"><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>14 · Milestone</b>Badges pay for reporting, not for complying: every answer counts, “Missed it” included. Nothing to lose. <span class="tag">AGENTS.md §6.3</span></p>
+      <ul class="ann">
+        <li><i>1</i>Badges at 1, 7, 30, 100, 365 and a level every 25; no streaks, leaderboards or on-time bonuses anywhere.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="sh"><h2>D · Agentic reminders</h2><span>nudges that follow her rhythm — proposed</span></div>
+  <div class="rail">
+
+    <div class="col">
+      <section class="screen lock" aria-label="Frame 15, lock screen reminders">
+        <div class="ltime">09:40</div>
+        <div class="ldate">Saturday 10 October</div>
+        <div class="notifs">
+          <div class="notif">
+            <div class="app"><svg class="mk" viewBox="0 0 32 32"><use href="#mark-a"/></svg>Agentic Kinetic</div>
+            <b>Morning dose</b>
+            <p>How did this morning's dose go?</p>
+            <div class="nchips"><button class="chip" type="button">Took it</button><button class="chip" type="button">Took it late</button></div>
+          </div>
+          <div class="notif">
+            <div class="app"><svg class="mk" viewBox="0 0 32 32"><use href="#mark-a"/></svg>Agentic Kinetic</div>
+            <b>Samples tomorrow</b>
+            <p>Booked by your care team · Fingerstick samples. Fasting.</p>
+          </div>
+        </div>
+        <div class="homebar" style="background:#EAF4FF"></div>
+      </section>
+      <p class="cap"><b>15 · Lock-screen reminders</b>The check-in lands where she is: answerable without unlocking, in seconds. The evening nudge previews tomorrow's booking. <span class="tag">TODO · proposed</span></p>
+      <ul class="ann">
+        <li><i>1</i>Micro check-in under ten seconds, anchored to her dose routine — never a generic nine a.m. alarm.</li>
+        <li><i>2</i>Reminder chips use the same four honest answers; an unanswered check-in is a state the care team can see, never read as “normal”.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <section class="notebar" aria-labelledby="h-foot" style="margin-top:48px">
+    <h2 id="h-foot">Wireframe notes</h2>
+    <ul class="rules">
+      <li>Mid-fi by design: real layout, type and widget anatomy with simplified internals; motion is a build concern (Feedback level only, AGENTS.md §8) and is deliberately absent here.</li>
+      <li>Grounded frames carry their contract reference in the caption; proposal frames are tagged TODO and add nothing to the wire (no fields, no numbers) until the contract is extended.</li>
+      <li>Visual target for the build: handover/deck-v2/ux/screens/patient-widget-final.html — screenshot each finished screen against it and list the differences.</li>
+      <li>Tests that guard this design: AGENTS.md §10 — no clinician field on the patient wire, no digits in software-written patient strings, identical thanks for all four answers, a null next_sample never renders a booking, an unapproved question never renders.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+  var cb=document.getElementById('sw-notes');
+  var board=document.getElementById('board');
+  cb.addEventListener('change',function(){board.classList.toggle('off-notes',!cb.checked);});
+})();
+</script>
+</body>
+</html>
