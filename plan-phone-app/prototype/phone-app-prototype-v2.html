@@ -206,10 +206,33 @@ button{font:inherit;color:inherit;cursor:pointer}
 .listen-pop .rows .r span{width:84px}
 .listen-pop.res .lp-listen{display:none}
 .listen-pop:not(.res) .lp-result{display:none}
+.say-or{display:flex;align-items:center;gap:8px;font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.say-or::before,.say-or::after{content:"";flex:1;height:1px;background:var(--line)}
+.say-in{display:flex;gap:8px;align-items:center}
+.say-in input{flex:1;min-width:0;min-height:42px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--ink);font:500 13.5px var(--sans);padding:8px 12px}
+.say-in input::placeholder{color:var(--muted)}
+.say-in button{flex:none;min-height:42px;border-radius:12px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);font:600 13px var(--display);padding:0 14px}
 @media (prefers-reduced-motion:reduce){.listen-pop{transition:none}}
+
+.field{display:grid;gap:6px;margin-top:14px}
+.field label{font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.field .frow{display:flex;gap:8px;align-items:center}
+.field input{flex:1;min-width:0;min-height:46px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--ink);font:500 13.5px var(--sans);padding:8px 12px}
+.field input::placeholder{color:var(--muted)}
+.tok-state{display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font:600 13px var(--display);color:var(--muted)}
+.tok-state svg{width:16px;height:16px;flex:none}
+.tok-state.ok{color:var(--done);background:var(--done-tint);border-color:rgba(30,122,84,.35)}
 
 .toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(8px);background:var(--tile);color:var(--fab-ink);font:600 13px var(--display);padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .16s,transform .16s;pointer-events:none;white-space:nowrap;z-index:12}
 .toast.on{opacity:1;transform:translateX(-50%)}
+
+.tour-layer{position:absolute;inset:0;z-index:7}
+.tour-spot{position:absolute;border-radius:20px;pointer-events:none;
+  box-shadow:0 0 0 200vmax rgba(31,50,41,.62),0 0 0 2px rgba(255,253,248,.4),0 0 34px rgba(95,180,214,.35);
+  transition:top .3s ease,left .3s ease,width .3s ease,height .3s ease,border-radius .3s ease}
+.tour-tip{position:absolute;left:16px;right:16px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 18px 40px rgba(31,50,41,.35)}
+.tour-tip h3{margin:8px 0 4px;font:600 18px/1.3 var(--display)}
+.tour-tip p{margin:0;font-size:14.5px;line-height:1.5;color:var(--muted)}
 
 .agent-in{animation:enter .22s ease-out both}
 @keyframes pop{0%{transform:scale(.55);opacity:0}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
@@ -222,6 +245,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 @media (prefers-reduced-motion:reduce){
   .agent-in,.done .ok,.badge-hero,.celebrate::before,.celebrate::after{animation:none}
   .lvl{transition:none}
+  .tour-spot{transition:none}
 }
 
 .demo{width:330px;flex:none;align-self:center;display:grid;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:20px;max-height:844px;overflow:auto;font-family:var(--sans)}
@@ -363,6 +387,32 @@ button{font:inherit;color:inherit;cursor:pointer}
       <div class="homebar"></div>
     </section>
 
+    <section class="screen" id="scr-settings" aria-label="Settings">
+      <div class="status"><span>09:45</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+      <div class="onb-top"><button class="back" type="button" data-back data-fallback="#/now" aria-label="Back"><svg><use href="#i-back"/></svg></button><div class="hello"><b>Settings</b><span>Technical · for the app build</span></div></div>
+      <div class="stack">
+        <article class="w">
+          <div class="eyebrow"><svg><use href="#i-spark"/></svg>AI connection</div>
+          <h2>OpenRouter token</h2>
+          <p>The assistant talks to OpenRouter. Paste your API key here — it is stored on this device only.</p>
+          <div class="field">
+            <label for="tok-input">API token</label>
+            <div class="frow">
+              <input id="tok-input" type="password" placeholder="sk-or-v1-&hellip;" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="OpenRouter API token">
+              <button class="chip" type="button" data-tok-show style="min-height:46px;width:auto;padding:4px 14px;font-size:13px">Show</button>
+            </div>
+          </div>
+          <div class="tok-state" id="tok-state" role="status">No token set</div>
+          <div class="pair">
+            <button class="btn" type="button" data-tok-save>Save token</button>
+            <button class="btn ghost" type="button" data-tok-clear>Remove</button>
+          </div>
+        </article>
+        <p style="margin:0 4px;font-size:13px;line-height:1.5;color:var(--muted)">Demo only — this prototype never sends the token anywhere. In the app build, this key powers the assistant behind check-ins and health answers.</p>
+      </div>
+      <div class="homebar"></div>
+    </section>
+
     <section class="screen lock-scr" id="scr-lock" aria-label="Lock screen reminders">
       <div class="ltime">09:40</div>
       <div class="ldate">Saturday 10 October</div>
@@ -390,6 +440,7 @@ button{font:inherit;color:inherit;cursor:pointer}
       <div class="rows" style="margin-top:6px">
         <div class="r" style="border-top:0"><span style="width:auto">Always available</span></div>
         <div class="r"><span style="width:auto">Call</span><button type="button" data-toast="Demo — no call placed">Call your care team</button></div>
+        <div class="r"><span style="width:auto">Settings</span><button type="button" data-go="#/settings">Open</button></div>
         <div class="r"><span style="width:auto">About</span><button type="button" data-toast="Demo — info only">This app uses AI</button></div>
       </div>
     </div>
@@ -400,8 +451,18 @@ button{font:inherit;color:inherit;cursor:pointer}
         <div class="wave" aria-hidden="true"><i style="height:30%"></i><i style="height:55%"></i><i style="height:80%"></i><i style="height:45%"></i><i style="height:95%"></i><i style="height:60%"></i><i style="height:25%"></i><i style="height:75%"></i><i style="height:90%"></i><i style="height:40%"></i><i style="height:65%"></i><i style="height:30%"></i><i style="height:85%"></i><i style="height:50%"></i><i style="height:70%"></i><i style="height:35%"></i><i style="height:95%"></i><i style="height:55%"></i><i style="height:25%"></i><i style="height:80%"></i><i style="height:45%"></i><i style="height:60%"></i><i style="height:30%"></i><i style="height:75%"></i></div>
         <button class="btn" type="button" data-step="result" style="margin-top:2px">Release to send</button>
         <p style="margin:0;text-align:center;font-size:12.5px;color:var(--muted)">Only the words are kept. The voice itself is never analysed.</p>
+        <div class="say-or">or type a request</div>
+        <div class="say-in">
+          <input id="say-input" type="text" placeholder="e.g. show me around" aria-label="Type a request for the agent">
+          <button type="button" data-say>Send</button>
+        </div>
       </div>
       <div class="lp-state lp-result" id="vp-result"></div>
+    </div>
+
+    <div class="tour-layer" id="tour-layer" hidden>
+      <div class="tour-spot" id="tour-spot"></div>
+      <div class="tour-tip" id="tour-tip" role="dialog" aria-label="Guided tour"></div>
     </div>
 
     <div class="toast" id="toast" role="status"></div>
@@ -422,7 +483,9 @@ button{font:inherit;color:inherit;cursor:pointer}
     <button class="sc-btn" type="button" data-sc="badge">Badge day</button>
     <button class="sc-btn" type="button" data-sc="health">Voice · health question</button>
     <button class="sc-btn" type="button" data-sc="sick">Sick day · voice</button>
+    <button class="sc-btn" type="button" data-sc="diary">Diary entry</button>
     <button class="sc-btn" type="button" data-sc="clear">All clear today</button>
+    <button class="sc-btn" type="button" data-sc="firsttime">First-time tour</button>
   </div>
   <div class="demo-grp">Agent knowledge</div>
   <div class="insp" id="inspector"></div>
@@ -436,7 +499,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 (function(){
   var phone=document.getElementById('phone');
   var toastEl=document.getElementById('toast');
-  var ids=['welcome','consent','access','permissions','now','milestone','lock'];
+  var ids=['welcome','consent','access','permissions','now','milestone','settings','lock'];
 
   var BADGES=[
     {n:1,label:'First check-in',copy:'Your first honest check-in. That is a clear picture for your care team.'},
@@ -456,11 +519,13 @@ button{font:inherit;color:inherit;cursor:pointer}
       temp:{due:false,status:'none'},
       newMed:null,
       handoff:null,
+      diary:null,
       symptoms:[],
       vomit:null,
       reminders:[],
       flash:null,
       unlock:null,
+      tour:null,
       voice:{type:'dose'}
     };
   }
@@ -487,6 +552,54 @@ button{font:inherit;color:inherit;cursor:pointer}
       }
     });
     return out;
+  }
+
+  var DIARY_MED_RE=/supplement|started taking|been taking|herbal|new (medicine|medication|pill|tablet|antibiotic)/;
+  var DIARY_Q_RE=/should i|can i|\bdo you think\b|wondering (if|whether)/;
+  function extractDiary(text){
+    var t=' '+text.toLowerCase()+' ';
+    var m=t.match(DIARY_MED_RE);
+    return {
+      symptoms:parseSymptoms(text),
+      medicine:m?m[0]:null,
+      question:DIARY_Q_RE.test(t)
+    };
+  }
+
+  var TOUR_STEPS=[
+    {t:'This is your day at a glance',p:'Each morning I build this screen from what\u2019s due for you \u2014 every card sized and shaded by importance. Nothing to set up.'},
+    {t:'Check-ins live on cards like this',p:'Tap an answer and it\u2019s logged for your care team. Every answer counts the same \u2014 no judgment, ever.'},
+    {t:'Hold to talk',p:'Press and hold the mic, say it in your own words, and I\u2019ll type out what I heard for you to confirm. You can also type a request for me.'},
+    {t:'Progress adds up',p:'Every honest check-in earns badges and levels. This ring shows how close you are to your next one.'},
+    {t:'Your care team, one tap away',p:'This menu calls or messages your care team \u2014 and anything I can\u2019t answer goes straight to them.'}
+  ];
+  var TOUR_TARGETS=[
+    {sel:'#agent-stack',pad:4,radius:'24px'},
+    {sel:'#agent-stack .now',pad:8,radius:'20px'},
+    {sel:'#scr-now .fab-wrap',pad:12,radius:'999px'},
+    {sel:'#scr-now .lvl',pad:8,radius:'999px'},
+    {sel:'#scr-now .menu',pad:8,radius:'14px'}
+  ];
+
+  var COMMAND_RULES=[
+    {id:'tour',label:'Show me around · first-time tour',re:/tour|show me (a)?round|show me the app|guide me|how (do|does|to) (i |you |this |the )?app|how (do|to) (i )?use|onboard|first time|get started/},
+    {id:'dose',label:'Log your dose',re:/dose|medication|medicine|took my (pill|meds?)|log (my )?(dose|meds?)/},
+    {id:'temperature',label:'Log your temperature',re:/temperature|fever check|\btemp\b/},
+    {id:'samples',label:'Samples · booked by your care team',re:/sample|blood|fingerstick|fasting|appointment/},
+    {id:'badges',label:'Show your badges and level',re:/badge|level|progress|milestone|reward/},
+    {id:'diary',label:'Write a diary entry',re:/\bdiary\b|\bjournal\b|write (it|this|that|one) down|note (it|this|that) down|something to (share|tell)|share something/},
+    {id:'call',label:'Call your care team',re:/\bcall\b|phone|speak (to|with)|talk to (someone|my team)/},
+    {id:'message',label:'Send a question to your care team',re:/message|question|ask (my |the )?(team|doctor|nurse)|contact/}
+  ];
+  function matchCommand(text){
+    var t=' '+text.toLowerCase()+' ';
+    for(var i=0;i<COMMAND_RULES.length;i++){
+      if(COMMAND_RULES[i].re.test(t))return COMMAND_RULES[i];
+    }
+    return null;
+  }
+  function esc(t){
+    return String(t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c];});
   }
 
   var SCENARIOS={
@@ -541,9 +654,21 @@ button{font:inherit;color:inherit;cursor:pointer}
       s.voice={type:'sick',said:'I feel nauseous, I\u2019ve been sleeping most of the morning, and I think I have a fever.'};
       return s;
     },
+    diary:function(){
+      var s=base();
+      s.dose={status:'done',answer:'taken'};
+      s.voice={type:'diary',said:'It\u2019s been a rough couple of days. I felt dizzy after my morning pill on Tuesday, I started taking a herbal supplement my friend gave me, and I haven\u2019t been sleeping well.'};
+      return s;
+    },
     clear:function(){
       var s=base();
       s.dose={status:'done',answer:'taken'};
+      return s;
+    },
+    firsttime:function(){
+      var s=base();
+      s.checkins=0;
+      s.tour={active:true,step:0,done:false,skipped:false};
       return s;
     }
   };
@@ -661,6 +786,7 @@ button{font:inherit;color:inherit;cursor:pointer}
       });
       AK.header();
       AK.inspector();
+      renderTour();
     },
     header:function(){
       var st=this.st;
@@ -678,7 +804,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     inspector:function(){
       var st=this.st;
       var rows=[
-        ['Scenario',({morning:'Morning dose',evening:'Evening before samples',question:'Care-team question',newmed:'New medicine',temp:'Temperature due',badge:'Badge day',health:'Health question',sick:'Sick day',clear:'All clear'})[AK.scenario]],
+        ['Scenario',({morning:'Morning dose',evening:'Evening before samples',question:'Care-team question',newmed:'New medicine',temp:'Temperature due',badge:'Badge day',health:'Health question',sick:'Sick day',diary:'Diary entry',clear:'All clear',firsttime:'First-time tour'})[AK.scenario]],
         ['Dose today',st.dose.status==='due'?'due':doseWord(st.dose.answer)],
         ['Next sample',st.nextSample.booked?(st.nextSample.tomorrow?'tomorrow · timeline':st.nextSample.when+' · row'):'none booked'],
         ['Care-team question',st.teamQuestion?(st.teamQuestion.status==='waiting'?'waiting · approved':'answered'):'none'],
@@ -686,9 +812,12 @@ button{font:inherit;color:inherit;cursor:pointer}
         ['New-medicine watch',st.newMed?(st.newMed.status==='done'?'answered':(st.newMed.status==='timing'?'follow-up':'waiting')):'none'],
         ['Symptoms',st.symptoms.length?st.symptoms.join(' · '):'none'],
         ['Vomit check',st.vomit?(st.vomit.status==='waiting'?'waiting':'answered'):'none'],
+        ['First-run tour',st.tour?(st.tour.active?'step '+(st.tour.step+1)+'/'+TOUR_STEPS.length:(st.tour.done?'done':(st.tour.skipped?'skipped':'none'))):'none'],
+        ['Voice request',st.voice.type==='command'?(st.voice.intent?st.voice.intent.id:'no workflow \u2192 care team'):(st.voice.type!=='dose'?st.voice.type:'none')],
         ['Check-ins',st.checkins+' · Level '+levelOf(st.checkins)],
         ['Reminders',st.reminders.length?st.reminders.length+' active':'none'],
-        ['Handoff',st.handoff?'sent to care team':'none']
+        ['Handoff',st.handoff?'sent to care team':'none'],
+        ['Diary',st.diary?(st.diary.status==='shared'?'shared':'none'):'none']
       ];
       document.getElementById('inspector').innerHTML=rows.map(function(r){
         return '<div class="insp-r"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';
@@ -713,6 +842,65 @@ button{font:inherit;color:inherit;cursor:pointer}
     AK.plan();
   }
   function clearFlash(){AK.st.flash=null;}
+  function endTour(skipped){
+    var s=AK.st;
+    if(!s.tour)return;
+    s.tour.active=false;
+    s.tour.skipped=!!skipped;
+    s.tour.done=!skipped;
+    AK.plan();
+  }
+
+  function tourTipHTML(s){
+    var i=s.tour.step, st=TOUR_STEPS[i], last=i===TOUR_STEPS.length-1;
+    var dots='<div class="steps" style="margin:12px 0 0">';
+    TOUR_STEPS.forEach(function(_,j){dots+='<i class="'+(j===i?'on':'')+'"></i>';});
+    dots+='</div>';
+    return '<div class="eyebrow"><span class="pip"></span>Welcome · first time here</div>'
+      +'<h3>'+st.t+'</h3>'
+      +'<p>'+st.p+'</p>'
+      +dots
+      +'<div style="display:flex;gap:10px;margin-top:14px;align-items:center">'
+      +(i>0?'<button class="chip" type="button" data-tour="back" style="min-height:44px;width:auto;padding:0 16px">Back</button>':'')
+      +'<button class="btn" type="button" data-tour="next" style="flex:1;min-height:44px">'+(last?'Start my first check-in':'Next')+'</button>'
+      +'</div>'
+      +'<button class="lnk" type="button" data-tour="skip" style="display:block;margin:2px auto 0;padding:8px 10px">Skip tour</button>';
+  }
+
+  function tourNext(){
+    var s=AK.st;
+    if(!s.tour||!s.tour.active)return;
+    if(s.tour.step>=TOUR_STEPS.length-1){endTour(false);}
+    else{s.tour.step+=1;AK.plan();}
+  }
+
+  function renderTour(){
+    var layer=document.getElementById('tour-layer');
+    var s=AK.st;
+    if(!(s.tour&&s.tour.active)||currentId()!=='now'){layer.hidden=true;return;}
+    var cfg=TOUR_TARGETS[s.tour.step]||TOUR_TARGETS[0];
+    var el=document.querySelector(cfg.sel);
+    if(!el){layer.hidden=true;return;}
+    if(el.scrollIntoView)el.scrollIntoView({block:'nearest'});
+    var pr=phone.getBoundingClientRect();
+    var r=el.getBoundingClientRect();
+    var pad=cfg.pad||8;
+    var top=r.top-pr.top-pad, left=r.left-pr.left-pad;
+    var spot=document.getElementById('tour-spot');
+    spot.style.top=top+'px';
+    spot.style.left=left+'px';
+    spot.style.width=(r.width+pad*2)+'px';
+    spot.style.height=(r.height+pad*2)+'px';
+    spot.style.borderRadius=cfg.radius||'20px';
+    var tip=document.getElementById('tour-tip');
+    tip.innerHTML=tourTipHTML(s);
+    layer.hidden=false;
+    var tipH=tip.offsetHeight||210;
+    var phoneH=phone.offsetHeight||844;
+    var below=top+(r.height+pad*2)+12;
+    var above=top-tipH-12;
+    tip.style.top=((below+tipH<phoneH-16)?below:(above>8?above:Math.max(8,phoneH-16-tipH)))+'px';
+  }
 
   AK.reg({group:'main',weight:99,when:function(s){return !!s.unlock;},
     layout:function(){return {cols:2,rows:5,tone:'hot'};},
@@ -791,7 +979,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   }});
 
   AK.reg({group:'main',weight:72,when:function(s){return s.newMed&&s.newMed.status!=='done';},
-    layout:function(){return {cols:2,rows:2,tone:'hot'};},
+    layout:function(s){return {cols:2,rows:(s.newMed&&s.newMed.step===2)?3:2,tone:'hot'};},
     render:function(s){
     var card=h('article','w compact');
     if(s.newMed.step===2){
@@ -831,15 +1019,25 @@ button{font:inherit;color:inherit;cursor:pointer}
     render:function(s){
     var card=h('article','w compact');
     card.innerHTML='<div class="eyebrow">You asked</div>'
-      +'<p class="say" style="margin:8px 0 12px">\u201C'+s.handoff.q+'\u201D</p>'
+      +'<p class="say" style="margin:8px 0 12px">\u201C'+esc(s.handoff.q)+'\u201D</p>'
       +'<div class="team-line"><span class="ic" style="width:40px;height:40px;border-radius:12px;background:var(--raised);display:grid;place-items:center;flex:none">'+icon('i-team')+'</span><p>That\u2019s one for your care team. I\u2019ve sent your question to them and they\u2019ll reply here.</p></div>'
       +'<div style="margin-top:14px"><button class="btn ghost" type="button" data-toast="Demo — no call placed">Call your care team</button></div>'
       +'<div class="rcpt" style="margin-top:12px">'+icon('i-check')+'Question sent to your care team · just now<em>To care team</em></div>';
     return card;
   }});
 
+  AK.reg({group:'main',weight:69,when:function(s){return !!(s.diary&&s.diary.status==='shared');},
+    layout:function(){return {cols:2,rows:3,tone:'high'};},
+    render:function(s){
+    var card=h('article','w compact');
+    card.innerHTML='<div class="eyebrow">Your diary</div>'
+      +'<p class="say" style="margin:8px 0 12px">\u201C'+esc(s.diary.text)+'\u201D</p>'
+      +'<div class="rcpt">'+icon('i-check')+'Shared with your care team · just now<em>Diary</em></div>';
+    return card;
+  }});
+
   AK.reg({group:'main',weight:-1,when:function(s){
-      return !s.flash&&!s.unlock&&!s.handoff
+      return !s.flash&&!s.unlock&&!s.handoff&&!s.diary
         &&s.dose.status!=='due'
         &&!(s.nextSample.booked&&s.nextSample.tomorrow)
         &&!s.temp.due
@@ -873,6 +1071,9 @@ button{font:inherit;color:inherit;cursor:pointer}
   AK.reg({group:'done',weight:44,when:function(s){return s.newMed&&s.newMed.status==='done';},render:function(){
     return doneRow('New-medicine watch','Answered');
   }});
+  AK.reg({group:'done',weight:43,when:function(s){return !!(s.diary&&s.diary.status==='shared');},render:function(){
+    return doneRow('Diary entry','Shared');
+  }});
 
   AK.reg({group:'sub',weight:50,when:function(s){return s.nextSample.booked&&!s.nextSample.tomorrow;},
     layout:function(){return {cols:2,rows:1,tone:'high'};},
@@ -898,7 +1099,27 @@ button{font:inherit;color:inherit;cursor:pointer}
   function updateVoicePop(){
     var v=AK.st.voice;
     var el=document.getElementById('vp-result');
-    if(v.type==='health'){
+    if(v.type==='command'){
+      if(v.intent){
+        el.innerHTML='<div class="eyebrow">'+icon('i-mic')+'You said</div>'
+          +'<p class="say" style="margin:0;font-size:15.5px">\u201C'+esc(v.said)+'\u201D</p>'
+          +'<div class="eyebrow" style="margin-top:4px"><span class="pip"></span>Here\u2019s what I\u2019ll do</div>'
+          +'<div class="rows"><div class="r" style="border-top:0"><span>Workflow</span><b>'+v.intent.label+'</b></div></div>'
+          +'<div class="pair" style="margin-top:4px">'
+          +'<button class="btn" type="button" data-voice-submit>Looks right</button>'
+          +'<button class="btn ghost" type="button" data-step="listen">Say it again</button>'
+          +'</div>';
+      }else{
+        el.innerHTML='<div class="eyebrow">'+icon('i-mic')+'You said</div>'
+          +'<p class="say" style="margin:0;font-size:15.5px">\u201C'+esc(v.said)+'\u201D</p>'
+          +'<div class="eyebrow" style="margin-top:4px"><span class="pip"></span>No workflow for that yet</div>'
+          +'<p style="margin:0">I don\u2019t have a workflow for that. I can ask your care team to add one for you.</p>'
+          +'<div class="pair" style="margin-top:12px">'
+          +'<button class="btn" type="button" data-voice-submit>Ask my care team</button>'
+          +'<button class="btn ghost" type="button" data-step="listen">Say it again</button>'
+          +'</div>';
+      }
+    }else if(v.type==='health'){
       el.innerHTML='<div class="eyebrow">'+icon('i-mic')+'You said</div>'
         +'<p class="say" style="margin:0;font-size:15.5px">\u201C'+v.said+'\u201D</p>'
         +'<div class="pair" style="margin-top:12px">'
@@ -913,6 +1134,28 @@ button{font:inherit;color:inherit;cursor:pointer}
         +'<div class="r" style="border-top:0"><span>Feeling</span><b>'+v.noted.symptoms.join(' · ')+'</b><button type="button" data-toast="Demo — nothing changes here">Change</button></div>'
         +'</div>'
         +'<div class="pair" style="margin-top:4px">'
+        +'<button class="btn" type="button" data-voice-submit>Looks right</button>'
+        +'<button class="btn ghost" type="button" data-step="listen">Say it again</button>'
+        +'</div>';
+    }else if(v.type==='diary'){
+      var d=v.noted||extractDiary(v.said);
+      var drows='';
+      var first=true;
+      if(d.symptoms.length){
+        drows+='<div class="r" style="border-top:0"><span>Feeling</span><b>'+d.symptoms.join(' · ')+'</b><button type="button" data-toast="Demo — nothing changes here">Change</button></div>';
+        first=false;
+      }
+      if(d.medicine){
+        drows+='<div class="r'+(first?'" style="border-top:0':'')+'"><span>Medicine</span><b>New medicine or supplement</b><button type="button" data-toast="Demo — nothing changes here">Change</button></div>';
+        first=false;
+      }
+      if(d.question){
+        drows+='<div class="r'+(first?'" style="border-top:0':'')+'"><span>Question</span><b>Yes \u2014 I\u2019ll pass it on</b><button type="button" data-toast="Demo — nothing changes here">Change</button></div>';
+      }
+      el.innerHTML='<div class="eyebrow">'+icon('i-mic')+'You said</div>'
+        +'<p class="say" style="margin:0;font-size:15.5px">\u201C'+esc(v.said)+'\u201D</p>'
+        +(drows?'<div class="eyebrow" style="margin-top:4px"><span class="pip"></span>Here\u2019s what I noted</div><div class="rows">'+drows+'</div>':'')
+        +'<div class="pair" style="margin-top:'+(drows?'4px':'12px')+'">'
         +'<button class="btn" type="button" data-voice-submit>Looks right</button>'
         +'<button class="btn ghost" type="button" data-step="listen">Say it again</button>'
         +'</div>';
@@ -932,9 +1175,68 @@ button{font:inherit;color:inherit;cursor:pointer}
     }
   }
 
+  function submitSay(){
+    var input=document.getElementById('say-input');
+    var text=(input.value||'').trim();
+    if(!text){input.focus();return;}
+    input.value='';
+    AK.st.flash=null;
+    AK.st.voice={type:'command',said:text,intent:matchCommand(text)};
+    openSheet('listening');
+    document.querySelectorAll('.listen-pop').forEach(function(p){p.classList.add('res');});
+    updateVoicePop();
+  }
+
+  function runCommand(){
+    var s=AK.st;
+    var v=s.voice;
+    if(!v.intent){
+      if(s.tour&&s.tour.active){endTour(true);}
+      s.handoff={q:'Please add a workflow for: \u201C'+v.said+'\u201D'};
+      toast('Asked your care team to add that workflow');
+      goHash('#/now');
+      return;
+    }
+    if(s.tour&&s.tour.active&&v.intent.id!=='tour'){endTour(true);}
+    switch(v.intent.id){
+      case 'tour':
+        if(s.tour&&s.tour.active){toast('I\u2019m already showing you around');return;}
+        s.tour={active:true,step:0,done:false,skipped:false};
+        goHash('#/now');
+        return;
+      case 'dose':
+        goHash('#/now');
+        toast(s.dose.status==='due'?'Here\u2019s your dose check-in':'Your dose is already logged today');
+        return;
+      case 'temperature':
+        goHash('#/now');
+        toast(s.temp.due?'Here\u2019s your temperature check-in':'No temperature check-in is due today');
+        return;
+      case 'samples':
+        goHash('#/now');
+        toast(s.nextSample.booked?'Booked by your care team \u2014 I\u2019ll walk you through it the evening before':'No samples are booked for you');
+        return;
+      case 'badges':
+        goHash('#/milestone');
+        return;
+      case 'diary':
+        goHash('#/now');
+        toast('Hold to talk or type \u2014 I\u2019ll save it as a diary entry');
+        return;
+      case 'call':
+        toast('Demo \u2014 no call placed');
+        return;
+      case 'message':
+        s.handoff={q:v.said};
+        goHash('#/now');
+        return;
+    }
+  }
+
   function voiceSubmit(){
     var s=AK.st;
     closeSheets();
+    if(s.voice&&s.voice.type==='command'){runCommand();return;}
     if(s.voice&&s.voice.type==='health'){
       s.flash=null;
       s.handoff={q:s.voice.said};
@@ -943,6 +1245,13 @@ button{font:inherit;color:inherit;cursor:pointer}
       s.symptoms=(s.voice.noted&&s.voice.noted.symptoms||[]).slice();
       if(s.symptoms.indexOf('Vomiting')>=0||s.symptoms.indexOf('Nausea')>=0)s.vomit={status:'waiting'};
       if(s.symptoms.indexOf('Fever')>=0||s.symptoms.indexOf('Flu-like')>=0)s.temp.due=true;
+      s.flash={plus:false};
+    }else if(s.voice&&s.voice.type==='diary'){
+      s.flash=null;
+      var dnote=s.voice.noted||extractDiary(s.voice.said);
+      s.diary={status:'shared',text:s.voice.said,noted:dnote};
+      dnote.symptoms.forEach(function(l){if(s.symptoms.indexOf(l)<0)s.symptoms.push(l);});
+      if(dnote.medicine)s.newMed={status:'waiting',step:2};
       s.flash={plus:false};
     }else{
       logDose('late');
@@ -982,6 +1291,44 @@ button{font:inherit;color:inherit;cursor:pointer}
     phone.classList.add('open');
   }
 
+  var TOK_KEY='ak.openrouter.token';
+  function tokStored(){
+    try{return localStorage.getItem(TOK_KEY)||'';}catch(e){return '';}
+  }
+  function tokMask(t){
+    return t.length>14?t.slice(0,7)+'\u2026'+t.slice(-4):'\u2026';
+  }
+  function renderTokState(t){
+    var el=document.getElementById('tok-state');
+    if(!el)return;
+    if(t){el.className='tok-state ok';el.innerHTML=icon('i-check')+'Saved on this device \u00B7 '+esc(tokMask(t));}
+    else{el.className='tok-state';el.textContent='No token set';}
+  }
+  function initSettings(){
+    var input=document.getElementById('tok-input');
+    if(!input)return;
+    renderTokState(tokStored());
+    document.querySelector('[data-tok-show]').addEventListener('click',function(){
+      var show=input.type==='password';
+      input.type=show?'text':'password';
+      this.textContent=show?'Hide':'Show';
+    });
+    document.querySelector('[data-tok-save]').addEventListener('click',function(){
+      var t=(input.value||'').trim();
+      if(!t){input.focus();toast('Paste your OpenRouter token first');return;}
+      try{localStorage.setItem(TOK_KEY,t);}catch(e){}
+      input.value='';
+      renderTokState(t);
+      toast('Token saved on this device');
+    });
+    document.querySelector('[data-tok-clear]').addEventListener('click',function(){
+      try{localStorage.removeItem(TOK_KEY);}catch(e){}
+      input.value='';
+      renderTokState('');
+      toast('Token removed');
+    });
+  }
+
   function currentId(){
     var hsh=location.hash.replace(/^#\//,'');
     return ids.indexOf(hsh)>=0?hsh:'lock';
@@ -997,6 +1344,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     });
     if(id==='now')AK.plan();
     if(id==='milestone'){AK.header();renderMilestone();}
+    if(id!=='now')renderTour();
   }
 
   function loadScenario(key){
@@ -1004,6 +1352,9 @@ button{font:inherit;color:inherit;cursor:pointer}
     AK.st=SCENARIOS[key]();
     if(AK.st.voice.type==='sick'){
       AK.st.voice.noted={symptoms:parseSymptoms(AK.st.voice.said)};
+    }
+    if(AK.st.voice.type==='diary'){
+      AK.st.voice.noted=extractDiary(AK.st.voice.said);
     }
     closeSheets();
     document.querySelectorAll('.sc-btn').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-sc')===key);});
@@ -1020,9 +1371,19 @@ button{font:inherit;color:inherit;cursor:pointer}
       goHash('#/lock');
       return;
     }
-    var el=e.target.closest('[data-go],[data-back],[data-step],[data-toast],[data-open],[data-close],[data-voice-submit],[data-sc]');
+    var el=e.target.closest('[data-go],[data-back],[data-step],[data-toast],[data-open],[data-close],[data-voice-submit],[data-sc],[data-say],[data-tour]');
     if(!el)return;
     if(el.hasAttribute('data-sc')){loadScenario(el.getAttribute('data-sc'));return;}
+    if(el.hasAttribute('data-say')){submitSay();return;}
+    if(el.hasAttribute('data-tour')){
+      var s=AK.st;
+      if(!s.tour||!s.tour.active)return;
+      var act=el.getAttribute('data-tour');
+      if(act==='next'){tourNext();}
+      else if(act==='back'){if(s.tour.step>0){s.tour.step-=1;AK.plan();}}
+      else if(act==='skip'){endTour(true);}
+      return;
+    }
     if(el.hasAttribute('data-voice-submit')){voiceSubmit();return;}
     if(el.hasAttribute('data-go')){
       clearFlash();
@@ -1045,8 +1406,25 @@ button{font:inherit;color:inherit;cursor:pointer}
     if(el.hasAttribute('data-close')){closeSheets();return;}
   });
 
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&e.target&&e.target.id==='say-input'){
+      e.preventDefault();
+      submitSay();
+    }
+  });
+
+  document.getElementById('tour-layer').addEventListener('click',function(e){
+    var s=AK.st;
+    if(!s.tour||!s.tour.active)return;
+    if(e.target.closest&&e.target.closest('#tour-tip'))return;
+    if(s.tour.step>=TOUR_STEPS.length-1)return;
+    s.tour.step+=1;
+    AK.plan();
+  });
+
   window.addEventListener('hashchange',render);
   if(!location.hash)location.hash='#/welcome';
+  initSettings();
   loadScenario('morning');
   render();
 })();
