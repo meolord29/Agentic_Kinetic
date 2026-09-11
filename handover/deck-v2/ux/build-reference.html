@@ -1,0 +1,754 @@
+<title>Agentic Kinetic Build Reference</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Poppins:wght@300;500;600;700&display=swap">
+<style>
+/* Agentic Kinetic · build reference for the frontend and agent build (s16).
+   The human-readable half of the handover; handover/AGENTS.md is the same contract condensed for a
+   coding assistant. Every backend shape below is quoted from
+   agent-pk/src (api/app.py, agent/graph.py, channel/views.py) or from data/backend-capture.json. */
+:root{
+  --bg:#F3F1FF; --surface:#FFFFFF; --raised:#ECE9FF; --line:#DEDAF5;
+  --ink:#12143A; --muted:#545A86; --accent:#4B35D6; --accent-ink:#FFFFFF;
+  --built:#15795A; --built-tint:#E3F5EE; --new:#5B21B6; --new-tint:#EDE7FE;
+  --gap:#B4174F; --gap-tint:#FDE8EF; --future:#545A86;
+  --code-bg:#12143A; --code-ink:#E6ECFF; --code-muted:#A7B4E0;
+  --grad:linear-gradient(125deg,#22D3EE,#8B5CF6 55%,#E554D6);
+  --display:"Poppins",ui-sans-serif,system-ui,sans-serif;
+  --sans:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B0F2E; --surface:#161C4A; --raised:#1E2560; --line:#2C3778;
+    --ink:#EAF4FF; --muted:#A7B4E0; --accent:#58E5FC; --accent-ink:#0B0F2E;
+    --built:#6EE7B7; --built-tint:rgba(110,231,183,.14); --new:#C4B5FD; --new-tint:rgba(196,181,253,.14);
+    --gap:#FDA4C0; --gap-tint:rgba(253,164,192,.13); --future:#A7B4E0;
+    --code-bg:#05081C; --code-ink:#E6ECFF; --code-muted:#A7B4E0;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B0F2E; --surface:#161C4A; --raised:#1E2560; --line:#2C3778;
+  --ink:#EAF4FF; --muted:#A7B4E0; --accent:#58E5FC; --accent-ink:#0B0F2E;
+  --built:#6EE7B7; --built-tint:rgba(110,231,183,.14); --new:#C4B5FD; --new-tint:rgba(196,181,253,.14);
+  --gap:#FDA4C0; --gap-tint:rgba(253,164,192,.13); --future:#A7B4E0;
+  --code-bg:#05081C; --code-ink:#E6ECFF; --code-muted:#A7B4E0;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.6 var(--sans)}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+h1,h2,h3,h4,p,ul,ol{margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:32px;padding-block:48px 96px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:56px}
+@media (max-width:1000px){.wrap{grid-template-columns:1fr;gap:28px;padding-inline:16px;padding-block:28px 64px}}
+
+/* contents */
+nav.toc{position:sticky;top:24px;align-self:start;display:grid;gap:14px}
+@media (max-width:1000px){nav.toc{position:static}}
+.brand{display:flex;align-items:center;gap:10px;font:600 15px var(--display)}
+.brand svg{width:28px;height:28px}
+nav.toc ol{list-style:none;padding:0;display:grid;gap:2px;counter-reset:s}
+nav.toc li a{display:block;padding:5px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font:500 14px/1.4 var(--sans)}
+nav.toc li a:hover{background:var(--raised);color:var(--ink)}
+nav.toc .grp{font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+
+main{display:grid;gap:64px;min-width:0}
+section{display:grid;gap:18px;scroll-margin-top:24px}
+.eyebrow{font:600 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font:700 40px/1.12 var(--display);letter-spacing:-.015em;text-wrap:balance}
+h1 span{font-weight:300;color:var(--muted)}
+h2{font:700 26px/1.2 var(--display);text-wrap:balance;padding-top:6px}
+h3{font:600 19px/1.3 var(--display);margin-top:10px;text-wrap:balance}
+h4{font:600 15px/1.35 var(--display)}
+p,li{max-width:74ch}
+.lead{font-size:18px;line-height:1.6;color:var(--muted)}
+ul.plain,ol.plain{padding-left:20px;display:grid;gap:8px}
+b,strong{font-weight:700}
+.muted{color:var(--muted)}
+code{font:500 .88em var(--mono);background:var(--raised);border-radius:5px;padding:.08em .35em;overflow-wrap:anywhere}
+pre{margin:0;background:var(--code-bg);color:var(--code-ink);border-radius:14px;padding:18px 20px;overflow-x:auto;font:400 13px/1.6 var(--mono)}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+pre .c{color:var(--code-muted)}
+
+.hero{display:grid;gap:18px;padding-bottom:8px}
+.gradbar{height:4px;width:120px;border-radius:4px;background:var(--grad)}
+.meta{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:14px;color:var(--muted)}
+.callout{border-radius:16px;padding:18px 20px;background:var(--surface);border:1px solid var(--line);display:grid;gap:8px}
+.callout.gap{border-color:var(--gap);background:var(--gap-tint)}
+.callout.gap h4{color:var(--gap)}
+.callout.review{border:1.5px solid transparent;background:linear-gradient(var(--surface),var(--surface)) padding-box,var(--grad) border-box}
+
+/* status pills */
+.pill{display:inline-block;font:600 11px/1.6 var(--display);letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:1px 9px;white-space:nowrap;vertical-align:1px}
+.pill.built{background:var(--built-tint);color:var(--built)}
+.pill.new{background:var(--new-tint);color:var(--new)}
+.pill.gap{background:var(--gap-tint);color:var(--gap)}
+.pill.future{box-shadow:inset 0 0 0 1px var(--line);color:var(--future)}
+
+/* tables */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px;line-height:1.5}
+th{text-align:left;font:600 11px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:12px 14px;border-bottom:1px solid var(--line);background:var(--raised)}
+td{padding:11px 14px;border-top:1px solid var(--line);vertical-align:top}
+tr:first-child td{border-top:0}
+td:first-child{font-weight:600}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* flow steps */
+.flow{display:grid;gap:0;counter-reset:step;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden}
+.step{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;padding:16px 18px;border-top:1px solid var(--line)}
+.step:first-child{border-top:0}
+.step::before{counter-increment:step;content:counter(step);width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:600 13px var(--display);background:var(--raised);color:var(--ink)}
+.step div{display:grid;gap:6px;min-width:0}
+.cols2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.cols2{grid-template-columns:1fr}}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.sw{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);font-size:13px}
+.sw i{display:block;height:40px}
+.sw span{display:block;padding:8px 10px;line-height:1.35}
+.sw code{font-size:12px}
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;overflow-x:auto}
+.diagram svg{display:block;min-width:720px;width:100%;height:auto}
+.dg-box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.dg-hot{fill:var(--new-tint);stroke:var(--new);stroke-width:1.5}
+.dg-t{fill:var(--ink);font:600 13px var(--display)}
+.dg-s{fill:var(--muted);font:500 12px var(--sans)}
+.dg-l{stroke:var(--muted);stroke-width:1.5;fill:none}
+.dg-a{fill:var(--muted)}
+</style>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Contents">
+    <span class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="gm" gradientUnits="userSpaceOnUse" x1="6" y1="24" x2="27" y2="8"><stop offset="0" stop-color="#22D3EE"/><stop offset=".55" stop-color="#8B5CF6"/><stop offset="1" stop-color="#E554D6"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="#12143A"/><path d="M6.5 22.8C9.3 22.8 10.4 8.8 13.3 8.8C16.9 8.8 18.8 17.6 24.6 19.9" fill="none" stroke="url(#gm)" stroke-width="2.7" stroke-linecap="round"/><circle cx="24.8" cy="19.9" r="2.3" fill="#E554D6"/></svg>Build reference</span>
+    <ol>
+      <li class="grp">Start here</li>
+      <li><a href="#scope">1 · What to build</a></li>
+      <li><a href="#rules">2 · Rules that never change</a></li>
+      <li><a href="#gaps">3 · What the backend serves the board</a></li>
+      <li class="grp">The agent</li>
+      <li><a href="#graph">4 · How the agent runs</a></li>
+      <li><a href="#actions">5 · Every action, end to end</a></li>
+      <li><a href="#api">6 · API contract</a></li>
+      <li><a href="#mapping">7 · Data → screen mapping</a></li>
+      <li class="grp">The screens</li>
+      <li><a href="#patient">8 · Patient app</a></li>
+      <li><a href="#clinic">9 · Clinic Board</a></li>
+      <li><a href="#badges">10 · Brand ring badges</a></li>
+      <li class="grp">The system</li>
+      <li><a href="#tokens">11 · Tokens and type</a></li>
+      <li><a href="#toggles">12 · Switches</a></li>
+      <li><a href="#motion">13 · Motion</a></li>
+      <li><a href="#a11y">14 · Accessibility</a></li>
+      <li><a href="#tests">15 · Tests to write</a></li>
+      <li><a href="#run">16 · Files and running it</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div class="gradbar" aria-hidden="true"></div>
+      <p class="eyebrow">Agents, Everywhere hackathon · Team Signal &amp; Noise</p>
+      <h1>Agentic Kinetic <span>· build reference</span></h1>
+      <p class="lead">Everything needed to build the patient app and the Clinic Board against the backend that already exists. It covers what the agent does at each step, which route it calls, what comes back, which widget shows it, and the rules the build must keep. The two HTML boards are the visual reference; this page is the behaviour.</p>
+      <div class="meta"><span><b>Visual references:</b> <code>deck-v2/ux/screens/patient-widget-final.html</code> · <code>deck-v2/ux/screens/clinic-board-final.html</code></span><span><b>Real backend output:</b> <code>deck-v2/ux/data/backend-capture.json</code></span></div>
+      <div class="callout review">
+        <h4>How to read the labels</h4>
+        <p><span class="pill built">Built</span> exists in <code>agent-pk/src</code> and is tested. <span class="pill new">New</span> is part of this build and has no backend route yet; its route is specified here. <span class="pill future">Future development</span> is shown on the boards for direction and is not part of the first build.</p>
+        <p class="muted">Pairs with <code>AGENTS.md</code> in the same folder: the same contract, condensed for a coding assistant.</p>
+      </div>
+    </header>
+
+    <!-- 1 -->
+    <section id="scope" aria-labelledby="h-scope">
+      <p class="eyebrow">Section 1</p>
+      <h2 id="h-scope">What to build</h2>
+      <p>Two surfaces over one agent. Only Elena Cruz, a synthetic patient, is real backend output; every other patient on the Clinic Board is a placeholder.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Feature</th><th>Surface</th><th>Backend</th><th>First build</th></tr></thead>
+        <tbody>
+          <tr><td>Sampling decision (the pause)</td><td>Clinic Board</td><td><span class="pill built">Built</span> evaluate + decision routes</td><td>Yes. This is the demo's core moment.</td></tr>
+          <tr><td>Review-required card</td><td>Clinic Board</td><td><span class="pill built">Built</span> <code>status: review_required</code></td><td>Yes. Never shown as fine.</td></tr>
+          <tr><td>After-decision done line</td><td>Clinic Board</td><td><span class="pill built">Built</span> <code>status: complete</code></td><td>Yes</td></tr>
+          <tr><td>Why-she-is-here number lines</td><td>Clinic Board</td><td><span class="pill built">Built</span> <code>prediction</code> + <code>clinician_context</code></td><td>Yes</td></tr>
+          <tr><td>Question approval (Send / Edit)</td><td>Clinic Board → patient app</td><td><span class="pill new">New</span></td><td>Yes, for the demo story</td></tr>
+          <tr><td>"Ask about a patient" search</td><td>Clinic Board</td><td><span class="pill new">New</span>, not specified</td><td>Shown as a placeholder only</td></tr>
+          <tr><td>Booked samples widget and timeline</td><td>Patient app</td><td><span class="pill built">Built</span> <code>next_sample</code></td><td>Yes</td></tr>
+          <tr><td>Morning check-in, Thanks, level ring, badges</td><td>Patient app</td><td><span class="pill new">New</span> check-in log and counts</td><td>Yes</td></tr>
+          <tr><td>Hold to talk and "Here's what I noted"</td><td>Patient app</td><td><span class="pill new">New</span> transcript → typed fields</td><td>Yes</td></tr>
+          <tr><td>Health question handoff</td><td>Patient app</td><td><span class="pill new">New</span> send to care team</td><td>Yes</td></tr>
+          <tr><td>Feedback motion</td><td>Both</td><td>Frontend only</td><td>Yes</td></tr>
+          <tr><td>Motion graphics</td><td>Patient app</td><td>Frontend only</td><td><span class="pill future">Future development</span> Only if there is time.</td></tr>
+          <tr><td>Mood module ("Hard days", "How she says she's been")</td><td>Both</td><td><span class="pill new">New</span></td><td><span class="pill future">Future development</span></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 2 -->
+    <section id="rules" aria-labelledby="h-rules">
+      <p class="eyebrow">Section 2</p>
+      <h2 id="h-rules">Rules that never change</h2>
+      <p>These are the regulatory design, not style. Each is already enforced in Python; the frontend must not undo it.</p>
+      <div class="cols2">
+        <div class="callout">
+          <h4>Two channels, two payloads</h4>
+          <ul class="plain">
+            <li><b>The patient app never mounts the agent.</b> It reads <code>GET /api/patient/view</code> only: no stream, no shared state, no agent thread. Agent shared state is replicated to every client on a thread, so a mounted patient session would hold the prediction in the browser even if nothing displays it.</li>
+            <li><b>Never send the clinician payload to the patient app and hide fields.</b> A hidden field is still on the wire.</li>
+            <li>The Clinic Board mounts the agent and renders the clinician view.</li>
+          </ul>
+        </div>
+        <div class="callout">
+          <h4>The patient app interprets nothing</h4>
+          <ul class="plain">
+            <li><b>Never on the patient app:</b> a drug level, a prediction, an interval, in or out of range, which way a level is moving, dose advice, an interaction verdict, urgency, a countdown, anything about the kidney.</li>
+            <li><b>Software-written patient text contains no digits.</b> Exempt: the clinician's own plan text, her own doses and times, booked times and phone numbers.</li>
+            <li>A health question is never answered. It goes to the care team.</li>
+            <li>Instructions reach her only in her clinician's own words.</li>
+          </ul>
+        </div>
+        <div class="callout">
+          <h4>The gate and the pause</h4>
+          <ul class="plain">
+            <li><b>No language model decides whether to escalate.</b> The gate is deterministic Python reading <code>Prediction.crosses_boundary</code>.</li>
+            <li><b>The pause is a LangGraph <code>interrupt()</code></b> the frontend renders and answers. The frontend cannot create, suppress or skip it.</li>
+            <li>The only answers are <code>"accepted"</code> and <code>"declined"</code>. Anything else is rejected, never defaulted.</li>
+          </ul>
+        </div>
+        <div class="callout">
+          <h4>The Clinic Board shows its basis</h4>
+          <ul class="plain">
+            <li><b>Never a dose amount written by the software</b>, and no "change dose" button.</li>
+            <li><b>Never a line joining measured troughs.</b> Troughs are dots; the prediction is a range bar.</li>
+            <li>Never a number without its range, and never a claim without its source behind "Sources".</li>
+            <li><code>review_required</code> is never shown as steady. <code>magnitude_ng_per_ml: null</code> is never shown as 0. <code>variability: null</code> always shows its reason.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section id="gaps" aria-labelledby="h-gaps">
+      <p class="eyebrow">Section 3</p>
+      <h2 id="h-gaps">What the backend serves the Clinic Board</h2>
+      <p>Every number on the Clinic Board arrives in the clinician response itself. <b>The board never reads the patient route, never parses evidence prose, and never computes a clinical figure of its own.</b> Two blocks make that true:</p>
+      <div class="tw"><table>
+        <thead><tr><th>Block</th><th>Sent with</th><th>What it carries</th></tr></thead>
+        <tbody>
+          <tr><td><code>prediction</code>, <code>variability</code>, <code>variability_unavailable_reason</code></td><td><code>awaiting_decision</code> (inside <code>clinician_view</code> once <code>complete</code>)</td><td>The prediction that raised the offer, so the decision card can show "57 in 100", the predicted range and time in range <b>before</b> the doctor answers.</td></tr>
+          <tr><td><code>clinician_context.plan</code></td><td>all three outcomes</td><td><code>lower_bound_ng_per_ml</code>, <code>upper_bound_ng_per_ml</code>, <code>band_citation</code>: the target band as her clinician wrote it.</td></tr>
+          <tr><td><code>clinician_context.own_troughs</code>, <code>own_curve_samples</code>, <code>own_doses</code></td><td>all three outcomes</td><td>Her measured troughs, any post-dose samples, and her dose log, for the charts and "3 of 4 below range".</td></tr>
+          <tr><td><code>clinician_context.population_reference</code></td><td>all three outcomes</td><td>Clearance for patients like her, from the same prior the fit used: <code>typical</code>, <code>lower</code> and <code>upper</code> enclosing the central 90%, with <code>genotype_known</code>, <code>source</code> and <code>population_limit</code> (a de novo cohort; show it in Sources). When <code>genotype_known</code> is false the range is built around a mixed-genotype prior and is approximate: label it "approximate".</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout">
+        <h4>Settled design details</h4>
+        <ul class="plain">
+          <li><b>Variability mark, 30%.</b> From the backend constant <code>HIGH_IPV_THRESHOLD_PERCENT</code> (Gavcovich et al., Front Transplant 2025, a convention across many studies). Draw the mark at 30%, and flag the value only when <code>ipv_is_high</code> is true.</li>
+          <li><b>Time in range has no mark.</b> No threshold is sourced, so the bar runs 0–100% with no line; the value is bold warm when most of the time was outside her range.</li>
+          <li><b>"Not now" done line:</b> "Not now · flagged for review", tier 3, with "Open".</li>
+          <li><b>New routes this build adds</b> (patient check-in log, voice fields, question approval, handoff) are specified in section 5.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="graph" aria-labelledby="h-graph">
+      <p class="eyebrow">Section 4</p>
+      <h2 id="h-graph">How the agent runs</h2>
+      <p>The agent is a small LangGraph state machine in <code>agent-pk/src/agent_pk/agent/graph.py</code>. The clinical decisions live in <code>evaluate.py</code> as plain functions; the graph only sequences them and owns the pause. <b>Do not move logic into the graph.</b></p>
+      <div class="diagram" role="img" aria-label="Graph: start, fit, predict. If the prediction is degenerate, end with review required. Otherwise gate. No crossing goes to view then end. A crossing goes to offer, which suspends at interrupt until the clinician answers accepted or declined, then view, then end.">
+        <svg viewBox="0 0 900 250">
+          <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" class="dg-a"/></marker></defs>
+          <rect class="dg-box" x="10" y="95" width="90" height="50" rx="12"/><text class="dg-t" x="55" y="125" text-anchor="middle">fit</text>
+          <rect class="dg-box" x="140" y="95" width="100" height="50" rx="12"/><text class="dg-t" x="190" y="125" text-anchor="middle">predict</text>
+          <rect class="dg-box" x="290" y="95" width="90" height="50" rx="12"/><text class="dg-t" x="335" y="125" text-anchor="middle">gate</text>
+          <rect class="dg-hot" x="430" y="165" width="170" height="62" rx="12"/><text class="dg-t" x="515" y="192" text-anchor="middle">offer · interrupt()</text><text class="dg-s" x="515" y="212" text-anchor="middle">waits for a person</text>
+          <rect class="dg-box" x="650" y="95" width="90" height="50" rx="12"/><text class="dg-t" x="695" y="125" text-anchor="middle">view</text>
+          <rect class="dg-box" x="790" y="95" width="100" height="50" rx="12"/><text class="dg-t" x="840" y="125" text-anchor="middle">end</text>
+          <path class="dg-l" d="M100 120H136" marker-end="url(#ar)"/>
+          <path class="dg-l" d="M240 120H286" marker-end="url(#ar)"/>
+          <path class="dg-l" d="M190 95V40H836V91" marker-end="url(#ar)"/><text class="dg-s" x="470" y="32" text-anchor="middle">degenerate prediction → review_required (not an absent escalation)</text>
+          <path class="dg-l" d="M380 110H646" marker-end="url(#ar)"/><text class="dg-s" x="513" y="100" text-anchor="middle">no crossing → no_action</text>
+          <path class="dg-l" d="M335 145V196H426" marker-end="url(#ar)"/><text class="dg-s" x="345" y="238">crossing</text>
+          <path class="dg-l" d="M600 196H695V149" marker-end="url(#ar)"/><text class="dg-s" x="605" y="240">accepted → schedule_additional_pk_sample</text><text class="dg-s" x="605" y="224">declined → flag_for_review</text>
+          <path class="dg-l" d="M740 120H786" marker-end="url(#ar)"/>
+        </svg>
+      </div>
+      <ul class="plain">
+        <li><b>The model never decides whether the offer exists.</b> The <code>offer</code> node is reachable only after the gate fired.</li>
+        <li><b>A resume must be <code>"accepted"</code> or <code>"declined"</code>.</b> Anything else raises, because a default would be "declined", which silently drops the escalation.</li>
+        <li><b>Each run clears the previous run's outcomes</b> and sets <code>run_complete</code> only when the view is built. The patient route projects a booking only from a complete run, so a re-evaluated thread never shows a stale booking.</li>
+        <li><b>Where a language model belongs:</b> turning her free text or voice into typed fields, and phrasing clinician summaries. Everything numerical is Python.</li>
+        <li><b>Demo limits:</b> one thread (<code>demo-patient-a</code>), an in-memory checkpointer (a restart loses a pending offer), per-process locking, and no authentication by design.</li>
+      </ul>
+    </section>
+
+    <!-- 5 -->
+    <section id="actions" aria-labelledby="h-actions">
+      <p class="eyebrow">Section 5</p>
+      <h2 id="h-actions">Every action, end to end</h2>
+      <p>What the user does, what the agent calls, what comes back, and what the screen does next.</p>
+
+      <h3>A · The doctor opens the Clinic Board</h3>
+      <div class="flow">
+        <div class="step"><div><h4>Evaluate each patient on the list</h4><p><code>POST /api/clinician/evaluate</code> with <code>{"thread_id": "demo-patient-a"}</code>. Branch on <code>status</code>, never on which fields happen to be present.</p></div></div>
+        <div class="step"><div><h4><code>awaiting_decision</code> → the tier-1 decision card</h4><p>Render from <code>offer</code>: title "Request extra samples?", the burden (<code>burden.extra_draws</code>), the estimate width (<code>expected_gain</code>), and "Decide by" from <code>next_dose_time_h</code>. The chance and predicted range come from <code>prediction</code>, and the band, troughs and population from <code>clinician_context</code>, all in the same response. This card gets the full gradient frame, and there is at most one per board.</p></div></div>
+        <div class="step"><div><h4><code>review_required</code> → the review card</h4><p>"Open [name]'s record" with <code>reason</code> as the focus text and <code>stage</code> in Sources. Soft frame; the full frame if nothing else needs a decision. <b>Never count it as steady.</b></p></div></div>
+        <div class="step"><div><h4><code>complete</code> → steady, or a flag</h4><p><code>clinician_view.action == "no_action"</code> → the flat Steady row. Any other action → a soft-frame card naming the action in plain words. The software never shows a dose amount.</p></div></div>
+      </div>
+
+      <h3>B · The doctor decides on extra samples</h3>
+      <div class="flow">
+        <div class="step"><div><h4>"Request extra samples"</h4><p><code>POST /api/clinician/decision</code> with <code>{"thread_id": "demo-patient-a", "decision": "accepted"}</code>. Disable both buttons while the request runs.</p></div></div>
+        <div class="step"><div><h4>200 → <code>complete</code></h4><p><code>clinician_view.action</code> is <code>schedule_additional_pk_sample</code> and <code>proposed_sampling</code> is set. Collapse the card into the quiet done line: "You requested extra samples. She now sees the booking in her app." with the chip "Booked · Sun 11 Oct 09:40". The next item takes the full frame.</p></div></div>
+        <div class="step"><div><h4>"Not now"</h4><p>Same route with <code>"decision": "declined"</code>. Completes with <code>action: flag_for_review</code> and no appointment. The card collapses to the tier-3 done line "Not now · flagged for review" with "Open".</p></div></div>
+        <div class="step"><div><h4>409 or 422</h4><p><b>409</b>: the thread is not waiting on a decision, so re-run evaluate and redraw; never retry the answer. <b>422</b>: invalid answer or malformed case; show the detail in the review style. <b>500</b>: the run finished with no result; show "Could not be evaluated", never steady.</p></div></div>
+      </div>
+
+      <h3>C · Elena opens the patient app</h3>
+      <div class="flow">
+        <div class="step"><div><h4>Load her view</h4><p><code>GET /api/patient/view?thread_id=demo-patient-a</code>. No agent mount.</p></div></div>
+        <div class="step"><div><h4>Map <code>message</code> to widgets</h4><p><code>sample_scheduled</code> → the "Booked by your care team" row, and the evening before, the big timeline widget. <code>contact_your_team</code> → the care team widget becomes the big widget, showing <code>body</code> verbatim. <code>nothing_to_do</code> → no booking widget. Show <code>body</code> only where the message needs it, and never write new software prose around it.</p></div></div>
+        <div class="step"><div><h4>Build the booking widget from <code>next_sample</code></h4><p><code>offsets_post_dose_h [0, 1, 3, 6]</code> → "Before dose · 1 h · 3 h · 6 h". <code>fasted_required: true</code> → "Fasting." Dates come from <code>start_time_h</code> plus <code>reference_instant_utc</code>, rendered in her local time. <b><code>next_sample</code> stays null until a clinician accepts</b>, and null means no booking widget.</p></div></div>
+        <div class="step"><div><h4>Do not show <code>own_results</code></h4><p>The route carries her returned lab values, but the patient app design shows no levels. Don't add them.</p></div></div>
+      </div>
+
+      <h3>D · Elena answers the morning check-in <span class="pill new">New</span></h3>
+      <div class="flow">
+        <div class="step"><div><h4>Tap one of four equal answers</h4><p>"Took it" · "Took it late" · "Missed it" · "Not sure". Proposed route: <code>POST /api/patient/log</code> with <code>{thread_id, answer: "taken" | "late" | "missed" | "not_sure", dose_taken_at?}</code>.</p></div></div>
+        <div class="step"><div><h4>The same Thanks for every answer</h4><p>The answer shrinks to a done row ("Morning dose · Logged · late"), the Thanks widget shows "+1 check-in", the level ring advances, and the next item moves up. <b>Identical for all four answers.</b></p></div></div>
+        <div class="step"><div><h4>Counts drive levels and badges</h4><p>Every answer counts. A level every 25 check-ins; badges at 1, 7, 30, 100 and 365 (section 10). No streaks.</p></div></div>
+      </div>
+
+      <h3>E · Elena holds to talk <span class="pill new">New</span></h3>
+      <div class="flow">
+        <div class="step"><div><h4>Hold the talk button, then release</h4><p>Show her words as "You said" with the waveform. Only the transcript is used: analysing the voice itself is out of scope and a regulatory risk.</p></div></div>
+        <div class="step"><div><h4>The language model extracts typed fields only</h4><p>From <code>PATIENT-REPORTED-DATA.md</code>: <code>dose_taken_at</code>, <code>food_within_window</code>, <code>minutes_dose_to_nearest_meal</code>, <code>meal_size_vs_usual</code> (lighter · usual · heavier · much heavier), <code>typical_day</code>. They are sample-validity notes for the clinician, never model inputs.</p></div></div>
+        <div class="step"><div><h4>"Here's what I noted" → confirm</h4><p>Rows "Dose", "Food", "Typical day?", each with "Change", a picker of allowed values only. "Looks right" logs it (flow D); "Say it again" restarts.</p></div></div>
+      </div>
+
+      <h3>F · The doctor approves a question <span class="pill new">New</span></h3>
+      <div class="flow">
+        <div class="step"><div><h4>The agent drafts an information-gathering question</h4><p>It appears on the Clinic Board as "Needs approval": "Send Elena this question?" with the draft as focus text. It never drafts instructions.</p></div></div>
+        <div class="step"><div><h4>Send, or Edit then send</h4><p>Proposed: <code>POST /api/clinician/question</code> with <code>{thread_id, text, answers, approved_by_clinician: true}</code>. Unapproved drafts must never render in the patient app.</p></div></div>
+        <div class="step"><div><h4>Elena sees "Your care team asks"</h4><p>Big widget with the approved text verbatim and its answers ("Yes" · "No" · "Not sure"). Answering follows flow D's Thanks.</p></div></div>
+      </div>
+
+      <h3>G · Elena asks a health question <span class="pill new">New</span></h3>
+      <div class="flow">
+        <div class="step"><div><h4>"Can I take ibuprofen for my back?"</h4><p>Any health or medicine question becomes the handoff widget: "That's one for your care team. I've sent your question to them and they'll reply here." plus "Call your care team". <b>It is never answered by the app.</b></p></div></div>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section id="api" aria-labelledby="h-api">
+      <p class="eyebrow">Section 6</p>
+      <h2 id="h-api">API contract</h2>
+      <p>From <code>agent-pk/src/agent_pk/api/app.py</code>. Values below are the captured demo run; exact decimals move with the random seed, but their ordering does not.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Route</th><th>Channel</th><th>Body</th><th>Returns</th></tr></thead>
+        <tbody>
+          <tr><td><code>POST /api/clinician/evaluate</code></td><td>clinician</td><td><code>{"thread_id": "demo-patient-a"}</code></td><td>one of three outcomes · 422 malformed case</td></tr>
+          <tr><td><code>POST /api/clinician/decision</code></td><td>clinician</td><td><code>{"thread_id": "…", "decision": "accepted" | "declined"}</code></td><td><code>complete</code> · 409 not waiting · 422 bad answer</td></tr>
+          <tr><td><code>GET /api/patient/view</code></td><td>patient</td><td><code>?thread_id=demo-patient-a</code></td><td>the patient projection only</td></tr>
+          <tr><td><code>GET /api/health</code></td><td>none</td><td>none</td><td>status, data class, where the gate lives, the action list</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Evaluate: three outcomes</h3>
+<pre><code><span class="c">// 1 · the gate fired and the run is suspended</span>
+{ "status": "awaiting_decision", "offer": { <span class="c">/* below */</span> },
+  "prediction": { <span class="c">/* same shape as clinician_view.prediction */</span> },
+  "variability": { <span class="c">/* or null */</span> }, "variability_unavailable_reason": "",
+  "clinician_context": { <span class="c">/* below */</span> } }
+<span class="c">// 2 · the record could not be evaluated. Never render as fine</span>
+{ "status": "review_required", "stage": "prediction", "reason": "&lt;plain English for a clinician&gt;", "clinician_context": { … } }
+<span class="c">// 3 · no crossing, or a decision was given</span>
+{ "status": "complete", "clinician_view": { <span class="c">/* below */</span> }, "clinician_context": { … } }</code></pre>
+
+      <h3>clinician_context (demo values)</h3>
+<pre><code>{
+  "plan": { "lower_bound_ng_per_ml": 5.0, "upper_bound_ng_per_ml": 10.0, "band_citation": "Fernandez-Alarcon B, et al. … 2024" },
+  "own_troughs": [ { "time_h": 143.75, "concentration_ng_per_ml": 4.035 }, <span class="c">/* 4.524, 4.493, 5.97 */</span> ],
+  "own_curve_samples": [],
+  "own_doses": [ { "time_h": 0.0, "amount_mg": 12.0, "status": "taken" }, <span class="c">/* one per day */</span> ],
+  "target_time_h": 719.75, "next_dose_time_h": 696.0,
+  "population_reference": {
+    "label": "Apparent clearance (CL/F)", "unit": "L/h",
+    "typical": 26.5, "lower": 15.83, "upper": 44.36, "interval_mass": 0.9,  <span class="c">// "average 26.5" · shaded 15.8–44.4</span>
+    "genotype_known": true, "source": "Fernandez-Alarcon B, et al. … 2024", "source_url": "https://doi.org/10.3389/fphar.2024.1456565",
+    "population_limit": "Derived in 138 DE NOVO adult renal transplant recipients … an extrapolation."
+  }
+}</code></pre>
+
+      <h3>The offer (captured)</h3>
+<pre><code>{
+  "kind": "sampling_offer",
+  "question": "This patient's predicted trough interval reaches a boundary of their care plan, and the current estimate cannot be independently checked. Take extra samples?",
+  "next_dose_time_h": 696.0,                 <span class="c">// hours since reference_instant_utc → Sun 11 Oct 09:40</span>
+  "offsets_post_dose_h": [0.0, 1.0, 3.0, 6.0],
+  "fasted_required": true,
+  "burden": { "extra_draws": 3, "note": "Draws beyond the trough already scheduled. …" },
+  "expected_gain": {
+    "exposure_width_now": 0.3642,            <span class="c">// "36%"</span>
+    "expected_exposure_width": 0.2582,       <span class="c">// "→ 26%"</span>
+    "exposure_width_gain": 0.1060,
+    "independently_checkable_now": false,
+    "expected_independently_checkable": true <span class="c">// "and it becomes checkable"</span>
+  },
+  "secondary_parameter_precision": { "note": "Parameter precision, NOT accuracy. …", "calibration_now": 0.7960, "expected_calibration": 0.8041 },
+  "evidence": [ { "claim": "…", "source_url": "https://doi.org/10.3389/fphar.2024.1456565", "population_limit": "…" } ],
+  "answers": ["accepted", "declined"]
+}</code></pre>
+      <p><b>Lead the card with <code>expected_gain</code> and put <code>burden</code> beside it. Never lead with <code>secondary_parameter_precision</code>:</b> calibration can fall once real samples land, so a card built on it can promise an improvement and show a drop.</p>
+
+      <h3>clinician_view after "accepted" (captured)</h3>
+<pre><code>{
+  "action": "schedule_additional_pk_sample",
+  "prediction": {
+    "time_h": 719.75,                        <span class="c">// 12 Oct</span>
+    "median_ng_per_ml": 4.7373, "lower_ng_per_ml": 2.4705, "upper_ng_per_ml": 7.2926,
+    "interval_mass": 0.9,                    <span class="c">// a PREDICTION interval, what the lab will report</span>
+    "crosses_below": true, "crosses_above": false, "crosses_boundary": true,
+    "probability_below": 0.5675,             <span class="c">// "57 in 100"</span>
+    "probability_above": 0.0, "usable_fraction": 1.0, "haematocrit_known": true,
+    "interval_note": "A PREDICTION interval for a future measured trough …"
+  },
+  "parameters": [
+    { "label": "Apparent clearance (CL/F)", "value": 40.50, "lower": 33.66, "upper": 48.74, "unit": "L/h" },
+    { "label": "Apparent central volume (Vc/F)", "value": 267.10, "lower": 134.86, "upper": 528.99, "unit": "L" }
+  ],
+  "attributions": [ { "factor": "Individual clearance relative to the population", "direction": "lowers", "magnitude_ng_per_ml": null, "source": "Fernandez-Alarcon B, et al. … 2024" } ],
+  "evidence": [ <span class="c">/* 3 notes, each with claim, source_url, population_limit */</span> ],
+  "n_observations": 4,
+  "calibration_note": "This profile rests on 4 measured concentrations. …",
+  "proposed_sampling": { "start_time_h": 696.0, "offsets_post_dose_h": [0.0, 1.0, 3.0, 6.0], "fasted_required": true, "concurrent_observations": [], "total_patient_burden": 3 },
+  "variability": { "ipv_percent": 17.69, "ipv_is_high": false, "time_in_range_percent": 21.91, "n_samples": 4, "span_h": 504.0 },
+  "variability_unavailable_reason": ""
+}</code></pre>
+
+      <h3>Patient view after "accepted" (captured)</h3>
+<pre><code>{
+  "reference_instant_utc": "2026-09-12T09:40:00Z",   <span class="c">// time_h 0 · render local times from this</span>
+  "patient_view": {
+    "message": "sample_scheduled",
+    "body": "A blood sample has been scheduled. The details are below, and I will walk you through it when the time comes.",
+    "plan_text_from_clinician": "Take your tablet at the same time every morning, on an empty stomach, …",
+    "own_doses":   [ { "time_h": 0.0, "amount_mg": 12.0, "status": "taken" }, <span class="c">/* 30 in all */</span> ],
+    "own_results": [ { "time_h": 143.75, "concentration_ng_per_ml": 4.035 }, <span class="c">/* 4 in all · not displayed */</span> ],
+    "next_sample": { "start_time_h": 696.0, "offsets_post_dose_h": [0.0, 1.0, 3.0, 6.0], "fasted_required": true, "concurrent_observations": [], "total_patient_burden": 3 }
+  }
+}</code></pre>
+
+      <h3>The closed vocabularies</h3>
+      <div class="cols2">
+        <div class="tw"><table>
+          <thead><tr><th>ClinicalAction</th><th>Patient message it maps to</th></tr></thead>
+          <tbody>
+            <tr><td><code>no_action</code></td><td><code>nothing_to_do</code></td></tr>
+            <tr><td><code>flag_for_review</code></td><td><code>clinician_notified</code> → served as <code>contact_your_team</code></td></tr>
+            <tr><td><code>urgent_review</code></td><td>same as flag (urgency never reaches her)</td></tr>
+            <tr><td><code>consider_dose_reduction</code> / <code>_increase</code></td><td>same as flag (direction never reaches her)</td></tr>
+            <tr><td><code>schedule_additional_pk_sample</code></td><td><code>sample_scheduled</code></td></tr>
+            <tr><td><code>escalate_to_transplant_team</code></td><td><code>contact_your_team</code></td></tr>
+          </tbody>
+        </table></div>
+        <div class="tw"><table>
+          <thead><tr><th>PatientMessage</th><th>Body, shown verbatim</th></tr></thead>
+          <tbody>
+            <tr><td><code>nothing_to_do</code></td><td>Nothing for you to do right now. Your next check is on schedule.</td></tr>
+            <tr><td><code>sample_scheduled</code></td><td>A blood sample has been scheduled. The details are below, and I will walk you through it when the time comes.</td></tr>
+            <tr><td><code>contact_your_team</code></td><td>Please contact your transplant team using the number they gave you.</td></tr>
+            <tr><td><code>evaluation_may_be_helpful</code></td><td>Based on what you have told me, it may be helpful to have this looked at by your clinician.</td></tr>
+            <tr><td><code>clinician_notified</code></td><td>Never served: this build sends no notification, so the route substitutes <code>contact_your_team</code>.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section id="mapping" aria-labelledby="h-mapping">
+      <p class="eyebrow">Section 7</p>
+      <h2 id="h-mapping">Data → screen mapping</h2>
+      <p>Every number on the Clinic Board and where it comes from. Times are hours since <code>reference_instant_utc</code> (Sat 12 Sep 2026 09:40 UTC).</p>
+      <div class="tw"><table>
+        <thead><tr><th>On screen</th><th>Source</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td>"57 in 100" and the 10×10 grid</td><td><code>prediction.probability_below</code> 0.5675</td><td class="n">round(p × 100) filled cells</td></tr>
+          <tr><td>"Decide by Sun 09:40"</td><td><code>offer.next_dose_time_h</code> 696</td><td>local day and time · rose red <code>#C81E54</code></td></tr>
+          <tr><td>"Estimate width 36% → 26%"</td><td><code>expected_gain.exposure_width_now</code> → <code>expected_exposure_width</code></td><td class="n">whole percent</td></tr>
+          <tr><td>"and it becomes checkable"</td><td><code>independently_checkable_now</code> false → <code>expected_independently_checkable</code> true</td><td>show only when it flips</td></tr>
+          <tr><td>"3 samples · fingerstick, fasted, Sun"</td><td><code>burden.extra_draws</code>, <code>fasted_required</code>, <code>next_dose_time_h</code></td><td>fingerstick is the demo's method</td></tr>
+          <tr><td>"before the dose, then 1, 3 and 6 hours after"</td><td><code>offsets_post_dose_h</code></td><td>0 → "before the dose"</td></tr>
+          <tr><td>Trough dots 4.0 · 4.5 · 4.5 · 6.0</td><td><code>clinician_context.own_troughs[].concentration_ng_per_ml</code> at 143.75 · 311.75 · 479.75 · 647.75 h</td><td>below <code>plan.lower_bound_ng_per_ml</code> → bold, <code>#A21CAF</code>, "↓"</td></tr>
+          <tr><td>"3 of 4 below range"</td><td>count of <code>own_troughs</code> under <code>plan.lower_bound_ng_per_ml</code></td><td>display count only; never a verdict on the patient app</td></tr>
+          <tr><td>12 Oct predicted 2.5–7.3, median 4.7</td><td><code>prediction.lower/median/upper_ng_per_ml</code> at <code>time_h</code> 719.75</td><td>capsule; the part below the lower bound tinted</td></tr>
+          <tr><td>Target band 5–10</td><td><code>clinician_context.plan</code></td><td>label "target 5–10 · her care plan"; <code>band_citation</code> in Sources</td></tr>
+          <tr><td>Clearance "her 40.5 (33.7–48.7)"</td><td><code>clinician_view.parameters[0]</code></td><td>whisker + dot · before the decision, not yet served: draw the population line alone</td></tr>
+          <tr><td>"average 26.5", shaded 15.8–44.4, "1.5× the average"</td><td><code>clinician_context.population_reference</code></td><td>ratio = her value ÷ <code>typical</code>, one decimal · <code>population_limit</code> in Sources</td></tr>
+          <tr><td>Time in range 22%</td><td><code>variability.time_in_range_percent</code> 21.91</td><td>bullet bar 0–100, no mark</td></tr>
+          <tr><td>Variability 18%</td><td><code>variability.ipv_percent</code> 17.69</td><td>bullet bar with the 30% mark · flagged only when <code>ipv_is_high</code></td></tr>
+          <tr><td>"She reported today's dose as late"</td><td>check-in log</td><td><span class="pill new">New</span></td></tr>
+          <tr><td>Dose row on the timeline</td><td><code>own_doses[]</code>, 24 h apart</td><td>today hollow when reported late (log, <span class="pill new">New</span>)</td></tr>
+          <tr><td>"Booked · Sun 11 Oct 09:40"</td><td><code>proposed_sampling.start_time_h</code> 696</td><td>only after <code>accepted</code></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 8 -->
+    <section id="patient" aria-labelledby="h-patient">
+      <p class="eyebrow">Section 8</p>
+      <h2 id="h-patient">Patient app · widgets, not a chat</h2>
+      <p><b>The agent decides what is big.</b> What is due now is one large widget with a gradient edge, what comes next is a row, everything else is a small tile, and done items shrink to a done row. There is no chat box: she talks by holding one button, with "Type instead" behind it. Phone frame 390 × 844. Reference: <code>patient-widget-final.html</code>.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Screen</th><th>Big widget (exact copy)</th><th>Rows and tiles</th><th>Data</th></tr></thead>
+        <tbody>
+          <tr><td>1 · Now</td><td>Eyebrow "Now · morning dose" · "How did this morning's dose go?" · "Every answer counts the same." · chips "Took it" · "Took it late" · "Missed it" · "Not sure"</td><td>Row "Booked by your care team · Sun 11 Oct · Fingerstick samples" · tiles "Badges · 1 more check-in to First month" and "Your care team · Call or message" · "Hold to talk"</td><td>next dose; <code>next_sample</code>; counts <span class="pill new">New</span></td></tr>
+          <tr><td>2 · Thanks</td><td>"Thanks for telling us!" · "Your care team now has the full picture." · "+1 check-in"; then "Your care team asks" · "Did you start any new medicine this week?" · "Yes" · "No" · "Not sure"</td><td>Done row "Morning dose · Logged · late"</td><td>log; approved question <span class="pill new">New</span></td></tr>
+          <tr><td>3 · Milestone</td><td>Brand ring badge (112) · "Badge unlocked" · "First month · 30 check-ins" · "Thirty honest check-ins. That's a clear picture for your care team." · shelf of three badges</td><td>Row "Your care team asks · 1 question waiting"</td><td>counts <span class="pill new">New</span></td></tr>
+          <tr><td>4 · Voice</td><td>"Here's what I noted" · rows "Dose · Late · about 11:00", "Food · After breakfast", "Typical day? · Yes", each "Change" · "Looks right" · "Say it again"</td><td>"You said" card with waveform and her words · "Type instead"</td><td>transcript → fields <span class="pill new">New</span></td></tr>
+          <tr><td>5 · Timing</td><td>"Tomorrow · booked by your care team" · "Fingerstick samples · Sun 11 Oct" · timeline "Before dose · 1 h · 3 h · 6 h" · "Fasting. I'll walk you through each one."</td><td>"You asked" · her question · handoff text · "Call your care team"</td><td><code>next_sample</code> <span class="pill built">Built</span></td></tr>
+          <tr><td>6 · Hard days</td><td>"Only if you want" · "How are you today?" · "Okay" · "Tired" · "Rough day" · "Want to name it?" · care-team line verbatim · "Breathe 1 min" · "Talk to team" · "Feeling unsafe? Call 999 or 18111, any time."</td><td>Done row, booking row</td><td><span class="pill future">Future development</span></td></tr>
+        </tbody>
+      </table></div>
+      <h3>Header on every screen</h3>
+      <p>Logo mark (38px) · "Hi, Elena" or "Good evening, Elena" · the date · level ring (48px, gradient arc, "L2") · menu. The menu always holds "Call your care team" and "This app uses AI".</p>
+      <h3>Never</h3>
+      <p>Streaks, leaderboards, on-time bonuses, random rewards, a sad reaction to "Missed it", or different thanks for different answers.</p>
+    </section>
+
+    <!-- 9 -->
+    <section id="clinic" aria-labelledby="h-clinic">
+      <p class="eyebrow">Section 9</p>
+      <h2 id="h-clinic">Clinic Board · cutting through the noise</h2>
+      <p><b>The board sorts before the doctor reads.</b> Brightness is the attention scale: the one action to take now gets the full gradient frame, what can wait until later today gets a soft frame, and steady patients fade back. Inside a frame, the words to act on are bold with a gradient underline. Web, 1440 wide. Reference: <code>clinic-board-final.html</code>.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Tier</th><th>When</th><th>Card style</th><th>Chip (word + dot shape)</th></tr></thead>
+        <tbody>
+          <tr><td>1 · act now</td><td><code>awaiting_decision</code>; otherwise the top remaining item</td><td>2.5px gradient border (cyan → violet → magenta), soft gradient wash, glow, 32px padding, 26px bold title</td><td>"Needs your decision" · gradient circle · bold</td></tr>
+          <tr><td>2 · today</td><td><code>review_required</code>; question approvals; flags</td><td>1.5px pastel gradient border, white, light shadow</td><td>"Needs review" · violet diamond · "Needs approval" · cyan square</td></tr>
+          <tr><td>3 · quiet</td><td>steady (<code>no_action</code>), done</td><td>flat <code>#F8F7FF</code>, 1px line, no shadow, muted 16px title</td><td>"Steady · 9" · grey dot · "Booked · …" green</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Card anatomy</h3>
+      <ol class="plain">
+        <li><b>Chip and deadline row.</b> "Decide by Sun 09:40" in bold rose red <code>#C81E54</code> with a clock icon.</li>
+        <li><b>Action title:</b> the action in bold, with thin 300-weight context beside it. For example "<b>Request 3 extra samples?</b> so this estimate can be checked", or "<b>Review: her troughs are running low</b> why she is on your list".</li>
+        <li><b>Focus sentence:</b> the exact problem or action in bold with the gradient underline (violet only in tier 2).</li>
+        <li><b>Deciding data:</b> the big number, pairs, number lines.</li>
+        <li><b>Buttons:</b> primary "Request extra samples", ghost "Not now".</li>
+        <li><b>Context under the buttons</b> (13px, hidden by "Supporting detail"): sampling times, "If not now: the estimate still rests on 4 troughs, and nothing can check it until post-dose samples exist.", and "Nothing reaches Elena unless you accept. The software never suggests a dose."</li>
+        <li><b>"Sources"</b> disclosure: prediction type, trough dates, clearance source with its de novo population limit, and her own words for a late dose.</li>
+      </ol>
+      <h3>Three frames</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Frame</th><th>Layout (12 columns, 24px gap)</th></tr></thead>
+        <tbody>
+          <tr><td>1 · Clinic triage</td><td>Header "Kidney clinic · 12 patients · updated 11:18" with count chips. Tier-1 Elena card, 8 columns and 2 rows (chip, deadline, name, action title, focus sentence, 57-in-100 grid beside the mini trough chart, buttons, context). Right column: tier-2 "Open Patient B's record" and tier-2 "Send Elena this question?". Full-width tier-3 steady row with nine placeholder patients.</td></tr>
+          <tr><td>2 · One patient</td><td>Header "Elena Cruz · Kidney transplant 12 years · Advagraf 12 mg daily · target 5–10 ng/mL". Left 5 columns: tier-1 decision card. Right 7 columns: tier-2 "Review: her troughs are running low" with the trough number line, the clearance number line, and time-in-range and variability bullet bars. Row below: tier-3 "Troughs and doses" timeline, and the mood card <span class="pill future">Future development</span>.</td></tr>
+          <tr><td>3 · After you decide</td><td>"No decisions waiting". Patient B's review takes tier 1; the approval stays tier 2; Elena becomes a tier-3 done line ("Booked · Sun 11 Oct 09:40", "Open"); steady row.</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Number lines (values on their range)</h3>
+      <ul class="plain">
+        <li><b>Trough line</b>, 0–12 ng/mL: tinted below-range zone labelled "below range", band "target 5–10 · her care plan". Track "Measured": dots, close values stacked vertically, out-of-range dots <code>#A21CAF</code>. Track "12 Oct": prediction capsule with its median tick. Under it, one line of values: "18 Sep <b>4.0 ↓</b> · 25 Sep <b>4.5 ↓</b> · 2 Oct <b>4.5 ↓</b> · 9 Oct 6.0 · 12 Oct predicted 4.7 (2.5–7.3)".</li>
+        <li><b>Clearance line</b>, 0–60 L/h: shaded population 90% range, black average tick labelled "average 26.5", her whisker and dot in <code>#A21CAF</code> with "her 40.5". Legend line: "Shaded: 90% of patients like her, 15.8–44.4 · average 26.5 · her 40.5 (33.7–48.7). Faster clearance means lower troughs."</li>
+        <li>Basis: number lines beat tables for judging whether a result is out of range (Zikmund-Fisher et al., JAMIA 2017;24(3):520–528).</li>
+      </ul>
+    </section>
+
+    <!-- 10 -->
+    <section id="badges" aria-labelledby="h-badges">
+      <p class="eyebrow">Section 10</p>
+      <h2 id="h-badges">Brand ring badges</h2>
+      <p>One style only. The other four explored styles are not built. Drawn in a 120 × 120 view box; the generator is the <code>AKB</code> block in <code>patient-widget-final.html</code> and can be copied as-is.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Badge</th><th>Earned at</th><th>Centre</th><th>Unlock ring colour</th></tr></thead>
+        <tbody>
+          <tr><td>First check-in</td><td class="n">1</td><td>tick</td><td><code>#22D3EE</code></td></tr>
+          <tr><td>First week</td><td class="n">7</td><td>7</td><td><code>#60A5FA</code></td></tr>
+          <tr><td>First month</td><td class="n">30</td><td>30</td><td><code>#A78BFA</code></td></tr>
+          <tr><td>Hundred club</td><td class="n">100</td><td>100</td><td><code>#E879F9</code></td></tr>
+          <tr><td>One year</td><td class="n">365</td><td>365</td><td><code>#A78BFA</code></td></tr>
+          <tr><td>Level up</td><td class="n">every 25</td><td>L3 (current level)</td><td><code>#FB8B74</code></td></tr>
+        </tbody>
+      </table></div>
+      <ul class="plain">
+        <li><b>Ring:</b> circle r 55, stroke 4.7, gradient cyan → violet → magenta, fill = surface token.</li>
+        <li><b>Inner disc:</b> r 41, fill = raised token.</li>
+        <li><b>Centre:</b> the tick path <code>M40 61 53 74 81 45</code> (stroke 5), or monoline digits drawn as strokes, not a font, in a deeper gradient: light <code>#0891B2 → #7C3AED → #C026D3</code> (3.10, 4.79, 3.96:1 on the disc), dark <code>#58E5FC → #C164F3 → #E554D6</code>.</li>
+        <li><b>Locked:</b> greyscale at 35% opacity (62% in dark).</li>
+        <li><b>Count every answer</b>, "Missed it" and "Not sure" included.</li>
+      </ul>
+    </section>
+
+    <!-- 11 -->
+    <section id="tokens" aria-labelledby="h-tokens">
+      <p class="eyebrow">Section 11</p>
+      <h2 id="h-tokens">Tokens and type</h2>
+      <h3>Patient app · light (default) and dark (follows the device)</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Token</th><th>Light</th><th>Dark</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>ground</td><td><code>#F3F1FF</code></td><td><code>#0B0F2E</code></td><td>screen, with cyan and magenta glows at the top</td></tr>
+          <tr><td>surface</td><td><code>#FFFFFF</code></td><td><code>#161C4A</code></td><td>widgets</td></tr>
+          <tr><td>raised</td><td><code>#ECE9FF</code></td><td><code>#1E2560</code></td><td>chips, icon wells, ring track</td></tr>
+          <tr><td>line</td><td><code>#DEDAF5</code></td><td><code>#2C3778</code></td><td>borders</td></tr>
+          <tr><td>ink / muted</td><td><code>#12143A</code> / <code>#545A86</code></td><td><code>#EAF4FF</code> / <code>#A7B4E0</code></td><td>text</td></tr>
+          <tr><td>btn / btn-ink</td><td><code>#4B35D6</code> / <code>#FFFFFF</code></td><td><code>#58E5FC</code> / <code>#0B0F2E</code></td><td>primary buttons, selected chips</td></tr>
+          <tr><td>cyan · violet · magenta</td><td><code>#22D3EE</code> · <code>#8B5CF6</code> · <code>#E554D6</code></td><td><code>#58E5FC</code> · <code>#C164F3</code> · <code>#E554D6</code></td><td>gradient edges, rings, mark. Never behind text</td></tr>
+          <tr><td>accent-text</td><td><code>#0E7490</code></td><td><code>#58E5FC</code></td><td>"Change" links</td></tr>
+          <tr><td>done / done-tint</td><td><code>#15795A</code> / <code>#E3F5EE</code></td><td><code>#6EE7B7</code> / 13% mint</td><td>logged states</td></tr>
+          <tr><td>tile / fab</td><td><code>#12143A</code></td><td><code>#1E2560</code> / <code>#0B0F2E</code></td><td>logo tile, talk button</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Clinic Board · light only</h3>
+      <div class="swatches">
+        <div class="sw"><i style="background:#F3F1FF"></i><span>ground<br><code>#F3F1FF</code></span></div>
+        <div class="sw"><i style="background:#F8F7FF"></i><span>tier 3 quiet<br><code>#F8F7FF</code></span></div>
+        <div class="sw"><i style="background:#12143A"></i><span>ink<br><code>#12143A</code></span></div>
+        <div class="sw"><i style="background:#545A86"></i><span>muted<br><code>#545A86</code></span></div>
+        <div class="sw"><i style="background:#4B35D6"></i><span>primary<br><code>#4B35D6</code></span></div>
+        <div class="sw"><i style="background:linear-gradient(125deg,#22D3EE,#8B5CF6 55%,#E554D6)"></i><span>tier-1 frame<br><code>125°</code></span></div>
+        <div class="sw"><i style="background:#C81E54"></i><span>deadline red<br><code>#C81E54</code> · 5.57:1</span></div>
+        <div class="sw"><i style="background:#A21CAF"></i><span>out of range<br><code>#A21CAF</code> · 6.32:1</span></div>
+        <div class="sw"><i style="background:#E9E5FB"></i><span>range band<br><code>#E9E5FB</code></span></div>
+        <div class="sw"><i style="background:#15795A"></i><span>done<br><code>#15795A</code></span></div>
+      </div>
+      <h3>Type</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Role</th><th>Face</th><th>Size · weight</th></tr></thead>
+        <tbody>
+          <tr><td>Page and patient titles</td><td>Poppins</td><td class="n">32 · 700</td></tr>
+          <tr><td>Tier-1 action title</td><td>Poppins</td><td class="n">26 · 700, with thin context 18 · 300</td></tr>
+          <tr><td>Card action title</td><td>Poppins</td><td class="n">20 · 700, with thin context 16 · 300</td></tr>
+          <tr><td>Big numbers</td><td>Poppins, tabular figures</td><td class="n">32 · 700</td></tr>
+          <tr><td>Body and focus text</td><td>Manrope</td><td class="n">16 · 500; focus 700 with gradient underline</td></tr>
+          <tr><td>Context, chart labels</td><td>Manrope</td><td class="n">13 · 500 (never smaller)</td></tr>
+          <tr><td>Patient widget title</td><td>Poppins</td><td class="n">22 · 600</td></tr>
+          <tr><td>Chips, buttons, eyebrows</td><td>Poppins</td><td class="n">15 · 600 / 11 · 600, 0.12em tracking, uppercase</td></tr>
+        </tbody>
+      </table></div>
+      <p class="muted">Radii: patient widgets 22 (big 26), chips 16, phone 46; clinic cards 24, pairs 16, buttons 16. Minimum touch target 48px.</p>
+    </section>
+
+    <!-- 12 -->
+    <section id="toggles" aria-labelledby="h-toggles">
+      <p class="eyebrow">Section 12</p>
+      <h2 id="h-toggles">Switches</h2>
+      <p>On the boards these are design switches. In the product, the patient switches are feature flags and the Clinic Board switches are the doctor's own view preferences.</p>
+      <div class="cols2">
+        <div class="tw"><table>
+          <thead><tr><th>Patient app</th><th>Turns off</th></tr></thead>
+          <tbody>
+            <tr><td>Theme</td><td>Match device (default) · Light · Dark</td></tr>
+            <tr><td>Progress ring &amp; levels</td><td>the header level ring</td></tr>
+            <tr><td>Milestone badges</td><td>the badge widget, tile and shelf</td></tr>
+            <tr><td>Celebration</td><td>the Thanks burst and "+1 check-in"</td></tr>
+            <tr><td>Mood module</td><td>screen 6 content · <span class="pill future">Future development</span></td></tr>
+            <tr><td>Motion</td><td>Off · Feedback (default) · Motion graphics <span class="pill future">Future development</span></td></tr>
+          </tbody>
+        </table></div>
+        <div class="tw"><table>
+          <thead><tr><th>Clinic Board</th><th>Turns off</th></tr></thead>
+          <tbody>
+            <tr><td>View: Everything</td><td>nothing; every switch on</td></tr>
+            <tr><td>View: Actions and key numbers</td><td>detail, charts, sources, steady and mood; keeps frames, actions, deciding numbers</td></tr>
+            <tr><td>Supporting detail</td><td>context lines, value ranges in brackets, placeholder list</td></tr>
+            <tr><td>Trend charts</td><td>the mini chart and the timeline card</td></tr>
+            <tr><td>Sources</td><td>every "Sources" disclosure</td></tr>
+            <tr><td>Steady patients</td><td>the tier-3 steady row</td></tr>
+            <tr><td>Mood module</td><td>the mood card · <span class="pill future">Future development</span></td></tr>
+            <tr><td>Highlight key text</td><td>the gradient underline (bold stays)</td></tr>
+            <tr><td>Colour</td><td>all colour: the board renders in greyscale. Tiers still read from frame weight, words and dot shapes; out-of-range values from bold, arrow and word.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- 13 -->
+    <section id="motion" aria-labelledby="h-motion">
+      <p class="eyebrow">Section 13</p>
+      <h2 id="h-motion">Motion</h2>
+      <p><b>Build Feedback first. Motion graphics is future development</b>, to add only if there is time. Everything plays once and finishes within five seconds (WCAG 2.2.2), and reduce-motion turns all of it off.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Moment</th><th>What moves</th><th>Timing</th><th>Level</th></tr></thead>
+        <tbody>
+          <tr><td>Answer logged</td><td>done tick pops (scale 0.86 → 1.05 → 1)</td><td class="n">0.5 s</td><td>Feedback</td></tr>
+          <tr><td>Level ring</td><td>arc draws on to her count</td><td class="n">0.9 s</td><td>Feedback</td></tr>
+          <tr><td>Something new</td><td>status dot pulses twice (two rings to 3×)</td><td class="n">2 × 1.2 s</td><td>Feedback</td></tr>
+          <tr><td>Thanks</td><td>two circles behind the mark breathe</td><td class="n">2 × 2.2 s</td><td>Feedback</td></tr>
+          <tr><td>Badge unlocked</td><td>badge pops, two rings pulse outward</td><td class="n">0.52 s + 2 × 1.2 s</td><td>Feedback</td></tr>
+          <tr><td>Hold to talk</td><td>one ring pulse around the button</td><td class="n">2 × 1.4 s</td><td>Feedback</td></tr>
+          <tr><td>Clinic tier-1 card</td><td>gradient frame turns once; decision dot pulses twice; number-line dots land</td><td class="n">1.8 s</td><td>Feedback</td></tr>
+          <tr><td>Screen arrives</td><td>logo traces its dose curve, dot lands last; widgets rise in priority order</td><td class="n">1.1 s · 0.55 s, 90 ms apart</td><td><span class="pill future">Future development</span></td></tr>
+          <tr><td>Answer · badge · voice · sample day</td><td>tick writes itself; ring traces then number writes; waveform grows; timeline draws</td><td class="n">0.45–1.2 s</td><td><span class="pill future">Future development</span></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 14 -->
+    <section id="a11y" aria-labelledby="h-a11y">
+      <p class="eyebrow">Section 14</p>
+      <h2 id="h-a11y">Accessibility</h2>
+      <ul class="plain">
+        <li><b>Colour is never the only signal.</b> Every state has a word, and tiers have dot shapes. Out-of-range values have bold type, an arrow and the word.</li>
+        <li><b>Contrast, computed:</b> body text pairs are at least 4.5:1 in both patient themes. The deadline red is 5.57:1 on white, out-of-range magenta 6.32:1, and badge numbers at least 3:1 on the disc.</li>
+        <li>No text on the gradient.</li>
+        <li><b>Touch targets:</b> 48px minimum; the talk button 66px.</li>
+        <li>Text scales to 200% without clipping.</li>
+        <li><b>Charts carry an accessible label with every value</b>, and each dot has a tooltip with its date and whether it was measured or predicted.</li>
+        <li>The patient theme follows the device, with a manual switch in the menu.</li>
+      </ul>
+    </section>
+
+    <!-- 15 -->
+    <section id="tests" aria-labelledby="h-tests">
+      <p class="eyebrow">Section 15</p>
+      <h2 id="h-tests">Tests to write in the frontend</h2>
+      <p>The backend already has these assertions for its routes; the frontend owes the equivalents.</p>
+      <ol class="plain">
+        <li><b>The patient app bundle and network log contain no clinician field.</b> Search responses recursively for <code>prediction</code>, <code>parameters</code>, <code>attributions</code>, <code>probability_below</code>. A top-level check misses nested leaks.</li>
+        <li><b>No software-written patient string contains a digit.</b> Exempt only plan text, her own doses and times, booked times and phone numbers.</li>
+        <li><b>The four check-in answers produce identical Thanks</b> and an identical +1.</li>
+        <li><b><code>next_sample: null</code> never renders a booking widget</b>, including after "Not now".</li>
+        <li><b><code>review_required</code> always renders a card</b> and never increments the steady count.</li>
+        <li><b>A 409 from the decision route re-runs evaluate</b> instead of retrying the answer.</li>
+        <li><b>No path joins measured troughs</b> on any chart.</li>
+        <li><b>An unapproved question never renders</b> in the patient app.</li>
+        <li><b>Reduce-motion and the Motion Off switch</b> leave no running animation.</li>
+      </ol>
+    </section>
+
+    <!-- 16 -->
+    <section id="run" aria-labelledby="h-run">
+      <p class="eyebrow">Section 16</p>
+      <h2 id="h-run">Files and running it</h2>
+<pre><code><span class="c"># the backend (Python 3.11; pins in pyproject.toml)</span>
+cd agent-pk
+python3.11 -m venv .venv &amp;&amp; . .venv/bin/activate
+pip install -e ".[api]"
+python -m uvicorn agent_pk.api.app:app --reload
+<span class="c"># tests (about 12 minutes; -m "not slow" while iterating)</span>
+python -m pytest tests/ -q</code></pre>
+      <p>Paths are relative to the <code>handover/</code> folder.</p>
+      <div class="tw"><table>
+        <thead><tr><th>File</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td><code>AGENTS.md</code></td><td>this contract, condensed for a coding assistant</td></tr>
+          <tr><td><code>README.md</code></td><td>start order and folder map</td></tr>
+          <tr><td><code>deck-v2/ux/build-reference.html</code></td><td>this page</td></tr>
+          <tr><td><code>deck-v2/ux/screens/patient-widget-final.html</code></td><td>patient app visual reference, with switches and the badge generator</td></tr>
+          <tr><td><code>deck-v2/ux/screens/clinic-board-final.html</code></td><td>Clinic Board visual reference, with switches and chart code</td></tr>
+          <tr><td><code>deck-v2/ux/data/backend-capture.json</code></td><td>real responses from the running backend for Elena</td></tr>
+          <tr><td><code>agent-pk/handover/ARCHITECTURE.md</code></td><td>stack (Next.js, CopilotKit, AG-UI, FastAPI, LangGraph), pins, and the HITL reasoning</td></tr>
+          <tr><td><code>agent-pk/handover/PATIENT-REPORTED-DATA.md</code></td><td>the check-in fields, and why they are not a food diary</td></tr>
+          <tr><td><code>agent-pk/docs/GUARDRAILS.md</code></td><td>the regulatory mapping behind section 2</td></tr>
+        </tbody>
+      </table></div>
+      <p class="muted">Known backend limits for the demo: in-memory checkpointer, per-process locking, no authentication, and no real server has been started. Run <code>uvicorn</code> once by hand before the demo.</p>
+    </section>
+  </main>
+</div>

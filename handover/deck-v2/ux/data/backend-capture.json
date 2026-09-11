@@ -1,0 +1,928 @@
+{
+ "health": {
+  "status": "ok",
+  "data_class": "synthetic only — no PHI, by design and by review",
+  "gate": "the escalation decision is deterministic Python reading Prediction.crosses_boundary; no language model chooses whether to escalate",
+  "actions": [
+   "no_action",
+   "flag_for_review",
+   "urgent_review",
+   "consider_dose_reduction",
+   "consider_dose_increase",
+   "schedule_additional_pk_sample",
+   "escalate_to_transplant_team"
+  ]
+ },
+ "evaluate": {
+  "status": "awaiting_decision",
+  "offer": {
+   "kind": "sampling_offer",
+   "question": "This patient's predicted trough interval reaches a boundary of their care plan, and the current estimate cannot be independently checked. Take extra samples?",
+   "next_dose_time_h": 696.0,
+   "offsets_post_dose_h": [
+    0.0,
+    1.0,
+    3.0,
+    6.0
+   ],
+   "fasted_required": true,
+   "burden": {
+    "extra_draws": 3,
+    "note": "Draws beyond the trough already scheduled. This is what the patient actually experiences as extra."
+   },
+   "expected_gain": {
+    "exposure_width_now": 0.364164147209265,
+    "expected_exposure_width": 0.2581940453747606,
+    "exposure_width_gain": 0.1059701018345044,
+    "independently_checkable_now": false,
+    "expected_independently_checkable": true
+   },
+   "secondary_parameter_precision": {
+    "note": "Parameter precision, NOT accuracy. It scores a trough-only fit higher than a curve fit because the trough-only fit assumes absorption away. Do not lead a clinician-facing card with these.",
+    "calibration_now": 0.796014710714845,
+    "expected_calibration": 0.8040864115893935
+   },
+   "evidence": [
+    {
+     "claim": "Population pharmacokinetic parameters, between-patient variability and residual error are taken unchanged from the published model: Fernandez-Alarcon B, et al. Guiding the starting dose of the once-daily formulation of tacrolimus in de novo adult renal transplant patients: a population approach. Front Pharmacol 2024;15:1456565. doi:10.3389/fphar.2024.1456565",
+     "source_url": "https://doi.org/10.3389/fphar.2024.1456565",
+     "population_limit": "Derived in 138 DE NOVO adult renal transplant recipients on extended-release tacrolimus, sampled on days 5 to 15 after transplantation. A maintenance patient months post-transplant is an extrapolation."
+    },
+    {
+     "claim": "Therapeutic range 5-10 ng/mL, as written in this patient's own care plan: Fernandez-Alarcon B, et al. Front Pharmacol 2024;15:1456565 — the SAME study this project's population prior is taken from: 'a predefined therapeutic target of 5-10 ng/mL' in de novo adult renal transplant recipients on ADVAGRAF (Astellas), the once-daily prolonged-release formulation.",
+     "source_url": "https://doi.org/10.3389/fphar.2024.1456565",
+     "population_limit": "The range is the clinician's, not the software's. It is applied as written and is never adjusted, widened or inferred."
+    },
+    {
+     "claim": "Absorption was held at the population value, not estimated: this fit has no post-dose samples able to identify it.",
+     "source_url": "https://doi.org/10.3389/fphar.2024.1456565",
+     "population_limit": "Three of the model's six parameters are individualised at most. Absorption is not one of them here."
+    }
+   ],
+   "answers": [
+    "accepted",
+    "declined"
+   ]
+  },
+  "prediction": {
+   "time_h": 719.75,
+   "median_ng_per_ml": 4.737251585366844,
+   "lower_ng_per_ml": 2.470543428619611,
+   "upper_ng_per_ml": 7.292592831025552,
+   "interval_mass": 0.9,
+   "crosses_below": true,
+   "crosses_above": false,
+   "crosses_boundary": true,
+   "probability_below": 0.5675,
+   "probability_above": 0.0,
+   "usable_fraction": 1.0,
+   "haematocrit_known": true,
+   "interval_note": "A PREDICTION interval for a future measured trough — what the laboratory will report — not a credible interval on the typical value. It is the wider of the two, and it is the one a therapeutic range is written against."
+  },
+  "variability": {
+   "ipv_percent": 17.687934976588565,
+   "ipv_is_high": false,
+   "time_in_range_percent": 21.914352008289974,
+   "n_samples": 4,
+   "span_h": 504.0
+  },
+  "variability_unavailable_reason": "",
+  "clinician_context": {
+   "plan": {
+    "lower_bound_ng_per_ml": 5.0,
+    "upper_bound_ng_per_ml": 10.0,
+    "band_citation": "Fernandez-Alarcon B, et al. Front Pharmacol 2024;15:1456565 — the SAME study this project's population prior is taken from: 'a predefined therapeutic target of 5-10 ng/mL' in de novo adult renal transplant recipients on ADVAGRAF (Astellas), the once-daily prolonged-release formulation."
+   },
+   "own_troughs": [
+    {
+     "time_h": 143.75,
+     "concentration_ng_per_ml": 4.035
+    },
+    {
+     "time_h": 311.75,
+     "concentration_ng_per_ml": 4.5242
+    },
+    {
+     "time_h": 479.75,
+     "concentration_ng_per_ml": 4.4931
+    },
+    {
+     "time_h": 647.75,
+     "concentration_ng_per_ml": 5.9728
+    }
+   ],
+   "own_curve_samples": [],
+   "own_doses": [
+    {
+     "time_h": 0.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 24.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 48.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 72.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 96.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 120.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 144.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 168.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 192.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 216.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 240.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 264.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 288.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 312.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 336.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 360.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 384.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 408.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 432.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 456.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 480.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 504.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 528.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 552.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 576.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 600.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 624.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 648.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 672.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 696.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    }
+   ],
+   "target_time_h": 719.75,
+   "next_dose_time_h": 696.0,
+   "population_reference": {
+    "label": "Apparent clearance (CL/F)",
+    "unit": "L/h",
+    "typical": 26.5,
+    "lower": 15.832073330783873,
+    "upper": 44.35616140272327,
+    "interval_mass": 0.9,
+    "genotype_known": true,
+    "source": "Fernandez-Alarcon B, et al. Guiding the starting dose of the once-daily formulation of tacrolimus in de novo adult renal transplant patients: a population approach. Front Pharmacol 2024;15:1456565. doi:10.3389/fphar.2024.1456565",
+    "source_url": "https://doi.org/10.3389/fphar.2024.1456565",
+    "population_limit": "Derived in 138 DE NOVO adult renal transplant recipients on extended-release tacrolimus, sampled on days 5 to 15 after transplantation. A maintenance patient months post-transplant is an extrapolation."
+   }
+  }
+ },
+ "patient_before": {
+  "reference_instant_utc": "2026-09-12T09:40:00Z",
+  "patient_view": {
+   "message": "nothing_to_do",
+   "body": "Nothing for you to do right now. Your next check is on schedule.",
+   "plan_text_from_clinician": "Take your tablet at the same time every morning, on an empty stomach, and wait an hour before eating. If you are sick within an hour of taking it, or you start any new medicine from anyone, tell us the same day. We will let you know if we need a blood test sooner than planned.",
+   "own_doses": [
+    {
+     "time_h": 0.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 24.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 48.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 72.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 96.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 120.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 144.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 168.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 192.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 216.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 240.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 264.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 288.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 312.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 336.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 360.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 384.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 408.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 432.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 456.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 480.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 504.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 528.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 552.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 576.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 600.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 624.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 648.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 672.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 696.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    }
+   ],
+   "own_results": [
+    {
+     "time_h": 143.75,
+     "concentration_ng_per_ml": 4.035
+    },
+    {
+     "time_h": 311.75,
+     "concentration_ng_per_ml": 4.5242
+    },
+    {
+     "time_h": 479.75,
+     "concentration_ng_per_ml": 4.4931
+    },
+    {
+     "time_h": 647.75,
+     "concentration_ng_per_ml": 5.9728
+    }
+   ],
+   "next_sample": null
+  }
+ },
+ "decision": {
+  "status": "complete",
+  "clinician_view": {
+   "action": "schedule_additional_pk_sample",
+   "prediction": {
+    "time_h": 719.75,
+    "median_ng_per_ml": 4.737251585366844,
+    "lower_ng_per_ml": 2.470543428619611,
+    "upper_ng_per_ml": 7.292592831025552,
+    "interval_mass": 0.9,
+    "crosses_below": true,
+    "crosses_above": false,
+    "crosses_boundary": true,
+    "probability_below": 0.5675,
+    "probability_above": 0.0,
+    "usable_fraction": 1.0,
+    "haematocrit_known": true,
+    "interval_note": "A PREDICTION interval for a future measured trough — what the laboratory will report — not a credible interval on the typical value. It is the wider of the two, and it is the one a therapeutic range is written against."
+   },
+   "parameters": [
+    {
+     "label": "Apparent clearance (CL/F)",
+     "value": 40.50188212226721,
+     "lower": 33.65535756750506,
+     "upper": 48.74119825218767,
+     "unit": "L/h"
+    },
+    {
+     "label": "Apparent central volume (Vc/F)",
+     "value": 267.1002520809016,
+     "lower": 134.86441171988875,
+     "upper": 528.9945935467284,
+     "unit": "L"
+    }
+   ],
+   "attributions": [
+    {
+     "factor": "Individual clearance relative to the population",
+     "direction": "lowers",
+     "magnitude_ng_per_ml": null,
+     "source": "Fernandez-Alarcon B, et al. Guiding the starting dose of the once-daily formulation of tacrolimus in de novo adult renal transplant patients: a population approach. Front Pharmacol 2024;15:1456565. doi:10.3389/fphar.2024.1456565"
+    }
+   ],
+   "evidence": [
+    {
+     "claim": "Population pharmacokinetic parameters, between-patient variability and residual error are taken unchanged from the published model: Fernandez-Alarcon B, et al. Guiding the starting dose of the once-daily formulation of tacrolimus in de novo adult renal transplant patients: a population approach. Front Pharmacol 2024;15:1456565. doi:10.3389/fphar.2024.1456565",
+     "source_url": "https://doi.org/10.3389/fphar.2024.1456565",
+     "population_limit": "Derived in 138 DE NOVO adult renal transplant recipients on extended-release tacrolimus, sampled on days 5 to 15 after transplantation. A maintenance patient months post-transplant is an extrapolation."
+    },
+    {
+     "claim": "Therapeutic range 5-10 ng/mL, as written in this patient's own care plan: Fernandez-Alarcon B, et al. Front Pharmacol 2024;15:1456565 — the SAME study this project's population prior is taken from: 'a predefined therapeutic target of 5-10 ng/mL' in de novo adult renal transplant recipients on ADVAGRAF (Astellas), the once-daily prolonged-release formulation.",
+     "source_url": "https://doi.org/10.3389/fphar.2024.1456565",
+     "population_limit": "The range is the clinician's, not the software's. It is applied as written and is never adjusted, widened or inferred."
+    },
+    {
+     "claim": "Absorption was held at the population value, not estimated: this fit has no post-dose samples able to identify it.",
+     "source_url": "https://doi.org/10.3389/fphar.2024.1456565",
+     "population_limit": "Three of the model's six parameters are individualised at most. Absorption is not one of them here."
+    }
+   ],
+   "n_observations": 4,
+   "calibration_note": "This profile rests on 4 measured concentrations. The 24-hour exposure interval is 37% wide relative to its own median. Nothing can currently check this estimate but itself: the published limited-sampling equation needs post-dose samples this patient has not given, so a four-point occasion timed from the next dose would make it runnable.",
+   "proposed_sampling": {
+    "start_time_h": 696.0,
+    "offsets_post_dose_h": [
+     0.0,
+     1.0,
+     3.0,
+     6.0
+    ],
+    "fasted_required": true,
+    "concurrent_observations": [],
+    "total_patient_burden": 3
+   },
+   "variability": {
+    "ipv_percent": 17.687934976588565,
+    "ipv_is_high": false,
+    "time_in_range_percent": 21.914352008289974,
+    "n_samples": 4,
+    "span_h": 504.0
+   },
+   "variability_unavailable_reason": ""
+  },
+  "clinician_context": {
+   "plan": {
+    "lower_bound_ng_per_ml": 5.0,
+    "upper_bound_ng_per_ml": 10.0,
+    "band_citation": "Fernandez-Alarcon B, et al. Front Pharmacol 2024;15:1456565 — the SAME study this project's population prior is taken from: 'a predefined therapeutic target of 5-10 ng/mL' in de novo adult renal transplant recipients on ADVAGRAF (Astellas), the once-daily prolonged-release formulation."
+   },
+   "own_troughs": [
+    {
+     "time_h": 143.75,
+     "concentration_ng_per_ml": 4.035
+    },
+    {
+     "time_h": 311.75,
+     "concentration_ng_per_ml": 4.5242
+    },
+    {
+     "time_h": 479.75,
+     "concentration_ng_per_ml": 4.4931
+    },
+    {
+     "time_h": 647.75,
+     "concentration_ng_per_ml": 5.9728
+    }
+   ],
+   "own_curve_samples": [],
+   "own_doses": [
+    {
+     "time_h": 0.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 24.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 48.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 72.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 96.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 120.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 144.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 168.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 192.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 216.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 240.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 264.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 288.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 312.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 336.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 360.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 384.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 408.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 432.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 456.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 480.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 504.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 528.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 552.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 576.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 600.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 624.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 648.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 672.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 696.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    }
+   ],
+   "target_time_h": 719.75,
+   "next_dose_time_h": 696.0,
+   "population_reference": {
+    "label": "Apparent clearance (CL/F)",
+    "unit": "L/h",
+    "typical": 26.5,
+    "lower": 15.832073330783873,
+    "upper": 44.35616140272327,
+    "interval_mass": 0.9,
+    "genotype_known": true,
+    "source": "Fernandez-Alarcon B, et al. Guiding the starting dose of the once-daily formulation of tacrolimus in de novo adult renal transplant patients: a population approach. Front Pharmacol 2024;15:1456565. doi:10.3389/fphar.2024.1456565",
+    "source_url": "https://doi.org/10.3389/fphar.2024.1456565",
+    "population_limit": "Derived in 138 DE NOVO adult renal transplant recipients on extended-release tacrolimus, sampled on days 5 to 15 after transplantation. A maintenance patient months post-transplant is an extrapolation."
+   }
+  }
+ },
+ "patient_after": {
+  "reference_instant_utc": "2026-09-12T09:40:00Z",
+  "patient_view": {
+   "message": "sample_scheduled",
+   "body": "A blood sample has been scheduled. The details are below, and I will walk you through it when the time comes.",
+   "plan_text_from_clinician": "Take your tablet at the same time every morning, on an empty stomach, and wait an hour before eating. If you are sick within an hour of taking it, or you start any new medicine from anyone, tell us the same day. We will let you know if we need a blood test sooner than planned.",
+   "own_doses": [
+    {
+     "time_h": 0.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 24.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 48.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 72.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 96.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 120.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 144.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 168.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 192.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 216.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 240.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 264.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 288.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 312.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 336.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 360.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 384.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 408.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 432.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 456.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 480.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 504.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 528.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 552.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 576.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 600.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 624.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 648.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 672.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    },
+    {
+     "time_h": 696.0,
+     "amount_mg": 12.0,
+     "status": "taken"
+    }
+   ],
+   "own_results": [
+    {
+     "time_h": 143.75,
+     "concentration_ng_per_ml": 4.035
+    },
+    {
+     "time_h": 311.75,
+     "concentration_ng_per_ml": 4.5242
+    },
+    {
+     "time_h": 479.75,
+     "concentration_ng_per_ml": 4.4931
+    },
+    {
+     "time_h": 647.75,
+     "concentration_ng_per_ml": 5.9728
+    }
+   ],
+   "next_sample": {
+    "start_time_h": 696.0,
+    "offsets_post_dose_h": [
+     0.0,
+     1.0,
+     3.0,
+     6.0
+    ],
+    "fasted_required": true,
+    "concurrent_observations": [],
+    "total_patient_burden": 3
+   }
+  }
+ }
+}

@@ -1,0 +1,40 @@
+[project]
+name = "agent-pk"
+version = "0.1.0"
+description = "Tacrolimus pharmacokinetic core for Agent PK — directional, not diagnostic."
+requires-python = ">=3.11"
+# numpy re-pinned 2.3.3 -> 2.4.6 (s9): the venv has run 2.4.6 since s2 while this file
+# declared 2.3.3, so every green suite from s2 to s8 was measured OFF-PIN and the declared
+# contract was false. Re-pinned to the version actually measured rather than downgrading the
+# venv, because the suite's evidence was produced against 2.4.6.
+dependencies = ["numpy==2.4.6", "scipy==1.16.2"]
+
+[project.optional-dependencies]
+dev = ["pytest==8.4.2", "scipy-stubs==1.16.2.2"]
+# The agent stack. Kept OPTIONAL so the numeric core and its suite stay installable without it:
+# agent_pk.pk and agent_pk.channel import nothing from here, and agent_pk.interactions.tool is
+# deliberately framework-free. Only agent_pk.interactions.langgraph_tool needs these.
+agent = ["langgraph==0.6.8", "langchain-core==0.3.79"]
+# The HTTP surface. Separate from `agent` because the graph is runnable and testable headless:
+# `agent_pk.agent.graph` needs no web framework, and keeping the split honest is what lets the
+# decision layer be exercised without a server standing in the way.
+api = [
+  "langgraph==0.6.8",
+  "langchain-core==0.3.79",
+  "fastapi==0.141.1",
+  "uvicorn[standard]==0.52.4",
+  "httpx==0.28.1",
+]
+
+[tool.ruff]
+line-length = 88
+src = ["src"]
+
+[tool.ruff.lint.per-file-ignores]
+# S101: bandit flags `assert`, which is exactly how pytest expresses an assertion.
+# Suppressed for the test tree only — never for library code.
+"tests/*" = ["S101"]
+
+[tool.mypy]
+strict = true
+files = ["src/agent_pk"]

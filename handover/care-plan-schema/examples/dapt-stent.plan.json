@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "plan_id": "dapt-des-12mo-demo",
+  "revision": 1,
+  "subject_ref": "subject-b",
+  "condition": {
+    "label": "Dual antiplatelet therapy after drug-eluting stent — fixed 12-month course",
+    "plain_english": "He has a small metal tube holding a heart artery open, and two blood-thinning tablets stop it clotting shut while it heals over.",
+    "coding": ["Z95.5"]
+  },
+  "authored": {
+    "clinician_role": "interventional cardiologist",
+    "organisation_ref": "cardiology-unit-demo",
+    "approved_utc": "2026-09-01T00:00:00Z"
+  },
+  "languages": ["en", "zh-Hant"],
+  "roles": [
+    { "id": "spouse", "kind": "observer", "language": "zh-Hant", "channel": "group_chat", "may_receive": ["observations", "escalations"] },
+    { "id": "family_on_call", "kind": "decision_maker", "language": "en", "channel": "group_chat", "on_call_rota": true, "may_receive": ["observations", "trends", "escalations"] },
+    { "id": "cardiology", "kind": "clinician", "language": "en", "channel": "portal", "may_receive": ["observations", "trends", "escalations", "clinical_detail"] },
+    { "id": "emergency", "kind": "emergency_service", "language": "en", "channel": "voice", "may_receive": ["escalations"] }
+  ],
+  "observations": [
+    {
+      "id": "dose_taken",
+      "type": "boolean",
+      "collected_by": "spouse",
+      "schedule": { "kind": "daily", "at_local": ["09:00"], "conditions": "Same time each day." },
+      "prompts": { "en": "Did he take both blood-thinning tablets today?", "zh-Hant": "佢今日有冇食晒兩種薄血藥？" },
+      "missing_after_hours": 20
+    },
+    {
+      "id": "advised_to_stop",
+      "type": "boolean",
+      "collected_by": "spouse",
+      "schedule": { "kind": "on_event", "event": "Any clinician, dentist, pharmacist or surgeon says to stop or pause the blood thinners." },
+      "prompts": { "en": "Has any doctor, dentist or pharmacist told him to stop or pause the blood thinners?", "zh-Hant": "有冇任何醫生、牙醫或者藥劑師叫佢停薄血藥？" },
+      "missing_after_hours": 168
+    },
+    {
+      "id": "who_advised",
+      "type": "text",
+      "collected_by": "spouse",
+      "schedule": { "kind": "on_event", "event": "Recorded alongside advised_to_stop." },
+      "prompts": { "en": "Who told him to stop, and for what procedure?", "zh-Hant": "邊個叫佢停？做咩手術或者程序？" },
+      "missing_after_hours": 168,
+      "normalisation_hint": "Free text. Never used to decide an escalation; carried as evidence only."
+    },
+    {
+      "id": "procedure_planned",
+      "type": "boolean",
+      "collected_by": "spouse",
+      "schedule": { "kind": "on_event", "event": "Any booked dental work, endoscopy, surgery or biopsy." },
+      "prompts": { "en": "Has he booked any dental work, scope, biopsy or operation?", "zh-Hant": "佢有冇約咗脷科、內窺鏡、抽組織或者做手術？" },
+      "missing_after_hours": 336
+    },
+    {
+      "id": "bleeding",
+      "type": "enum",
+      "enum_values": ["none", "minor_bruising", "nosebleed_stopped", "bleeding_that_will_not_stop", "black_stool_or_vomiting_blood"],
+      "collected_by": "spouse",
+      "schedule": { "kind": "daily", "at_local": ["09:00"] },
+      "prompts": { "en": "Any bleeding or bruising today?", "zh-Hant": "今日有冇流血或者瘀？" },
+      "missing_after_hours": 36
+    }
+  ],
+  "derivations": [
+    { "id": "consecutive_missed", "fn": "streak_false", "from": ["dose_taken"], "unit": "days" },
+    { "id": "days_remaining", "fn": "days_until", "from": ["dose_taken"], "threshold": 365, "unit": "days" },
+    { "id": "stop_advice_latched", "fn": "latch_true", "from": ["advised_to_stop"], "window_hours": 720 }
+  ],
+  "rules": [
+    {
+      "id": "told_to_stop_mid_course",
+      "when": {
+        "all": [
+          { "test": { "metric": "stop_advice_latched", "op": "is_true" } },
+          { "test": { "metric": "days_remaining", "op": "gt", "value": 0 } }
+        ]
+      },
+      "escalate_to": "cardiology_now",
+      "agent_authority": "inform",
+      "cites": ["aha_acc_advisory", "early_discontinuation_outcomes"],
+      "why": "Premature discontinuation is the leading independent predictor of stent thrombosis, and it usually arrives as instruction from a clinician who does not know a stent is in place.",
+      "cooldown_hours": 0
+    },
+    {
+      "id": "procedure_booked_mid_course",
+      "when": {
+        "all": [
+          { "test": { "metric": "procedure_planned", "op": "is_true" } },
+          { "test": { "metric": "days_remaining", "op": "gt", "value": 0 } }
+        ]
+      },
+      "escalate_to": "cardiology_today",
+      "agent_authority": "inform",
+      "cites": ["aha_acc_advisory"],
+      "why": "The decision to pause blood thinners for a procedure belongs to the cardiologist who placed the stent, and it needs to be made before the appointment rather than in the chair."
+    },
+    {
+      "id": "missed_a_day",
+      "when": { "test": { "metric": "consecutive_missed", "op": "gte", "value": 1 } },
+      "escalate_to": "cardiology_today",
+      "agent_authority": "inform",
+      "cites": ["early_discontinuation_outcomes"],
+      "why": "Early discontinuation raised all-cause mortality from 4.7 percent to 13.4 percent and stent thrombosis from 3.4 percent to 7.6 percent in a long-term follow-up cohort."
+    },
+    {
+      "id": "major_bleeding",
+      "when": {
+        "any": [
+          { "test": { "metric": "bleeding", "op": "eq", "value": "bleeding_that_will_not_stop" } },
+          { "test": { "metric": "bleeding", "op": "eq", "value": "black_stool_or_vomiting_blood" } }
+        ]
+      },
+      "escalate_to": "emergency_now",
+      "agent_authority": "inform",
+      "cites": ["aha_acc_advisory"],
+      "why": "Serious bleeding on dual antiplatelet therapy is itself an emergency, and the decision to stop the tablets in that situation is a clinical one made in hospital."
+    }
+  ],
+  "escalations": [
+    {
+      "id": "cardiology_today",
+      "rung": "act_today",
+      "route_to": ["cardiology", "family_on_call"],
+      "message": {
+        "ask": "Please contact his cardiology team today, before anything is stopped or booked.",
+        "because": "A procedure has been arranged, or a tablet was missed, while the stent is still healing over.",
+        "if_ignored": "The pause gets decided by whoever is nearest, rather than by the doctor who placed the stent."
+      },
+      "requires_ack": true,
+      "ack_timeout_minutes": 480,
+      "on_timeout_escalate_to": "cardiology_now"
+    },
+    {
+      "id": "cardiology_now",
+      "rung": "urgent",
+      "route_to": ["cardiology", "family_on_call"],
+      "message": {
+        "ask": "Do not stop the blood thinners. Telephone his cardiology team now and let them decide.",
+        "because": "Someone has advised stopping while he is still inside the course that keeps the stent open.",
+        "if_ignored": "Clotting of a stent kills between nine and forty-five percent of the people it happens to."
+      },
+      "requires_ack": true,
+      "ack_timeout_minutes": 60,
+      "on_timeout_escalate_to": "emergency_now"
+    },
+    {
+      "id": "emergency_now",
+      "rung": "emergency",
+      "route_to": ["family_on_call", "emergency"],
+      "message": {
+        "ask": "Call an ambulance or go to the emergency department now.",
+        "because": "There is bleeding that will not stop, or an urgent cardiology contact has gone unanswered.",
+        "if_ignored": "Both bleeding and stent clotting are time-critical, and neither is safe to manage at home."
+      },
+      "requires_ack": false
+    }
+  ],
+  "prohibitions": [
+    "Never agree that the blood thinners may be stopped, however senior the person advising it. Route the question to cardiology.",
+    "Never weigh bleeding risk against clotting risk. That trade-off is a clinical judgement and the agent has no authority over it.",
+    "Never tell the patient to take a double dose to catch up.",
+    "Never delay the stop-advice escalation for a cooldown period. This rule has no cooldown by design."
+  ],
+  "sources": [
+    {
+      "id": "aha_acc_advisory",
+      "citation": "Prevention of Premature Discontinuation of Dual Antiplatelet Therapy in Patients With Coronary Artery Stents — AHA/ACC/SCAI/ACS/ADA science advisory.",
+      "url": "https://www.ahajournals.org/doi/10.1161/circulationaha.106.180944",
+      "retrieved_utc": "2026-09-07T00:00:00Z",
+      "kind": "guideline"
+    },
+    {
+      "id": "early_discontinuation_outcomes",
+      "citation": "Prevalence, Predictors, and Long-Term Prognosis of Premature Discontinuation of Oral Antiplatelet Therapy After Drug Eluting Stent Implantation.",
+      "url": "https://www.sciencedirect.com/science/article/abs/pii/S0002914910018564",
+      "retrieved_utc": "2026-09-07T00:00:00Z",
+      "kind": "trial"
+    }
+  ],
+  "review": {
+    "cadences": [
+      { "period": "daily", "produces": "capture", "for_role": "spouse" },
+      { "period": "weekly", "produces": "household_review", "for_role": "family_on_call" },
+      { "period": "monthly", "produces": "clinician_pack", "for_role": "cardiology" }
+    ],
+    "review_by_utc": "2027-09-01T00:00:00Z",
+    "outcome_metrics": ["days of uninterrupted therapy", "stop-advice events caught before the dose was skipped"]
+  },
+  "activation": {
+    "state": "active",
+    "open_questions": [
+      {
+        "id": "q_course_end",
+        "question": "On what date does the mandated course end, and does anything shorten it?",
+        "ask_role": "cardiology",
+        "required": false,
+        "blocks": []
+      }
+    ]
+  }
+}

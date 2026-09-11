@@ -1,0 +1,665 @@
+<title>Agentic Kinetic Clinic Board</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap">
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Agentic Kinetic · Clinic Board · v5   (s16)
+   The patient app's light brand, with brightness as the attention scale:
+     tier 1 — full gradient frame + wash: the one thing to act on now
+     tier 2 — soft gradient frame: reviews and approvals for today
+     tier 3 — flat and quiet: nothing needs you
+   Inside a frame, the words to act on are bold with an underline in the frame's gradient.
+   Out-of-range numbers are bold, deep magenta, with an arrow and a word (never colour alone).
+   Elena's numbers: deck-v2/ux/data/backend-capture.json. Population clearance: agent_pk.pk.priors.prior_for
+   for the demo covariates (70 kg, CYP3A5 expresser) — typical 26.5 L/h, 90% range 15.8–44.4.
+   Deliberately single-theme (light), as chosen for the clinic. Hash flags: still · key (actions and key numbers).
+   ───────────────────────────────────────────────────────────────────────────── */
+@property --sweep{syntax:'<angle>';inherits:false;initial-value:125deg}
+:root{
+  --chrome:#E7E4F4; --ground:#F3F1FF; --surface:#FFFFFF; --raised:#ECE9FF; --quiet:#F8F7FF;
+  --line:#E4E0F5; --line-strong:#D3CDEB;
+  --ink:#12143A; --muted:#545A86;
+  --btn:#4B35D6; --btn-ink:#FFFFFF;
+  --cyan:#22D3EE; --violet:#8B5CF6; --magenta:#E554D6;
+  --hot:#A21CAF; --hot-tint:#FBE8F8;
+  --urgent:#C81E54;
+  --done:#15795A; --done-tint:#E3F5EE;
+  --band:#E9E5FB;
+  --grad:linear-gradient(var(--sweep,125deg),#22D3EE,#8B5CF6 55%,#E554D6);
+  --grad-soft:linear-gradient(125deg,#A5EEF8,#CDBDFC 55%,#F2B8EB);
+  --wash:linear-gradient(125deg,rgba(34,211,238,.09),rgba(139,92,246,.045) 55%,rgba(229,84,214,.09));
+  --display:"Poppins",ui-sans-serif,system-ui,sans-serif;
+  --sans:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--chrome);color:var(--ink);font-family:var(--sans)}
+h1,h2,h3,p,ul{margin:0}
+ul{padding:0;list-style:none}
+button{font:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible,.switches input:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+
+/* type: sizes 32 / 26 / 20 / 16 / 13 · weights 300 context, 500 body, 600 labels, 700 action */
+.t-xl{font:700 32px/1.2 var(--display);letter-spacing:-.01em}
+.t-l{font:600 20px/1.3 var(--display)}
+.t-m{font:500 16px/1.5 var(--sans)}
+.t-s{font:500 13px/1.45 var(--sans)}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+.ttl{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:12px;row-gap:2px;margin:0;text-wrap:balance}
+.ttl b{font:700 20px/1.3 var(--display);color:var(--ink)}
+.ttl .thin{font:300 16px/1.4 var(--display);color:var(--muted)}
+.t1 .ttl b{font-size:26px;line-height:1.2}
+.t1 .ttl .thin{font-size:18px}
+.big{font:700 32px/1.1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.focus{font-weight:700;color:var(--ink);padding:0 .06em;border-radius:2px;
+  background:linear-gradient(90deg,rgba(34,211,238,.34),rgba(139,92,246,.26) 55%,rgba(229,84,214,.34)) no-repeat 0 92%/100% .42em}
+.t2 .focus{background-image:linear-gradient(90deg,rgba(139,92,246,.24),rgba(139,92,246,.24))}
+.low,.hi{color:var(--hot);font-weight:700}
+
+/* board chrome */
+.board{padding-inline:40px;padding-block:0 56px}
+@media (max-width:700px){.board{padding-inline:16px}}
+.head{display:grid;gap:14px;padding-block:32px 20px}
+.head h1{font:700 32px/1.2 var(--display);text-wrap:balance}
+.head h1 span{font-weight:300;color:var(--muted)}
+.head p{max-width:96ch;color:var(--muted)}
+.switches{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;font-size:14px}
+.switches label{display:inline-flex;gap:8px;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);color:var(--ink)}
+.switches input{accent-color:#8B5CF6;width:15px;height:15px;margin:0}
+.switches .sep{width:1px;height:22px;background:var(--line-strong)}
+.switches .grp{font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.switches .replay{min-height:34px;border-radius:999px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);font:600 13px var(--display);padding:0 16px}
+.flabel{display:flex;align-items:baseline;gap:12px;padding-block:24px 12px;color:var(--muted)}
+.flabel b{font:700 13px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+.scroll{overflow-x:auto}
+.frame{width:1440px;min-height:900px;border-radius:24px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 1px var(--line-strong);
+  background-color:var(--ground);background-image:radial-gradient(40% 320px at 0% 0%,rgba(34,211,238,.13),transparent 70%),radial-gradient(36% 300px at 100% 0%,rgba(229,84,214,.09),transparent 70%)}
+
+/* top bar */
+.topbar{height:64px;flex:none;display:flex;align-items:center;gap:24px;padding:0 48px}
+.brand{display:flex;align-items:center;gap:10px;font:600 16px var(--display)}
+.brand svg{width:32px;height:32px}
+.brand span{color:var(--muted);font-weight:300}
+.search{margin-left:24px;width:400px;height:44px;border-radius:999px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 18px;color:var(--muted)}
+.search svg{width:18px;height:18px}
+.back{margin-left:24px;display:inline-flex;align-items:center;gap:6px;font:600 13px var(--display);color:var(--btn)}
+.back svg{width:16px;height:16px}
+.me{margin-left:auto;display:flex;align-items:center;gap:14px;color:var(--muted)}
+.me i{width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font:600 13px var(--display);font-style:normal;color:var(--ink)}
+
+.page{flex:1;padding:16px 48px 48px;display:grid;gap:24px;align-content:start}
+.phead{display:flex;align-items:center;gap:20px}
+.phead .ttl b{font-size:32px;line-height:1.2}
+.phead .ttl .thin{font-size:18px}
+.counts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* status chips: tier is carried by frame, words and dot shape together */
+.st{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 14px;border-radius:999px;font:600 13px var(--display);white-space:nowrap;justify-self:start;color:var(--ink);border:1.5px solid transparent}
+.st .pip{position:relative;width:9px;height:9px;border-radius:50%;flex:none}
+.st.decide{font-weight:700;background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(125deg,#22D3EE,#8B5CF6 55%,#E554D6) border-box}
+.st.decide .pip{background:linear-gradient(135deg,var(--cyan),var(--magenta))}
+.st.review{background:#EFE9FE}
+.st.review .pip{background:#7C3AED;border-radius:2px;transform:rotate(45deg)}
+.st.approve{background:#DDF6FA}
+.st.approve .pip{background:#0891B2;border-radius:2px}
+.st.steady{background:var(--raised);color:var(--muted);font-weight:500}
+.st.steady .pip{background:#B9B3D6}
+.st.done{background:var(--done-tint);color:var(--done)}
+.st.done .pip{background:currentColor}
+.st.none{background:transparent;color:var(--muted);border-color:var(--line-strong);font-weight:500}
+.deadline{display:inline-flex;align-items:center;gap:8px;font:700 14px var(--display);color:var(--urgent)}
+.deadline svg{width:18px;height:18px;color:var(--urgent)}
+
+/* cards by tier */
+.canvas{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:24px;display:grid;gap:16px;align-content:start}
+.card.t1{border:2.5px solid transparent;padding:32px;gap:20px;box-shadow:0 18px 44px rgba(75,53,214,.16);
+  background:var(--wash) padding-box,linear-gradient(var(--surface),var(--surface)) padding-box,var(--grad) border-box}
+.card.t2{border:1.5px solid transparent;box-shadow:0 1px 2px rgba(18,20,58,.04),0 8px 24px rgba(18,20,58,.05);
+  background:linear-gradient(var(--surface),var(--surface)) padding-box,var(--grad-soft) border-box}
+.card.t3{background:var(--quiet);border-color:var(--line);box-shadow:none}
+.card.t3 .ttl b{font-weight:600;font-size:16px;color:var(--muted)}
+.card.t3 .ttl .thin{font-size:14px}
+.span8{grid-column:1/9}.span4{grid-column:9/13}.span6a{grid-column:1/7}.span6b{grid-column:7/13}.left5{grid-column:1/6}.right7{grid-column:6/13}.full{grid-column:1/13}
+.rows2{grid-row:1/3}
+.line{display:flex;align-items:center;gap:16px}
+.line .end{margin-left:auto}
+.who{display:flex;align-items:center;gap:14px}
+.who .ttl b{font-size:20px}
+.av{width:48px;height:48px;border-radius:50%;background:var(--raised);display:grid;place-items:center;font:600 13px var(--display);flex:none}
+.av.lg{width:64px;height:64px;font-size:20px}
+.av.sm{width:32px;height:32px}
+.evid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:36px;align-items:center;padding:24px 28px;border-radius:20px;background:rgba(255,255,255,.75);box-shadow:inset 0 0 0 1px var(--line)}
+.odds{display:grid;grid-template-columns:auto auto;gap:18px;align-items:center}
+.odds svg{width:88px;height:88px;display:block}
+.odds .t-s{max-width:18ch;margin-top:4px}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+.acts{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.acts .end{margin-left:auto}
+.b{height:48px;border-radius:16px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);font:700 16px var(--display);padding:0 22px}
+.b.ghost{background:var(--surface);color:var(--ink);border-color:var(--line-strong);font-weight:600}
+.b.sm{height:40px;font-size:13px;padding:0 16px;border-radius:14px}
+.ctx{display:grid;gap:6px;color:var(--muted)}
+.ctx b{color:var(--ink);font-weight:700}
+details.src summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font:600 13px var(--display);color:var(--btn)}
+details.src summary::-webkit-details-marker{display:none}
+details.src summary svg{width:14px;height:14px}
+details.src[open] summary svg{transform:rotate(90deg)}
+details.src ul{margin-top:10px;display:grid;gap:6px}
+details.src li{font:500 13px/1.45 var(--sans);color:var(--muted)}
+.people{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:16px}
+.people li{display:flex;align-items:center;gap:10px;color:var(--muted)}
+.pairs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pairs div{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);border-radius:16px;padding:14px 16px;display:grid;gap:2px}
+.pairs .t-l{font-weight:700}
+
+/* number lines: each value on its range, with where it was measured */
+.nl{display:grid;gap:6px}
+.nlhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.nlhead .name{font:700 16px var(--display)}
+.nlhead .unit{font:300 14px var(--display);color:var(--muted)}
+.nlhead .key{margin-left:auto;font:700 16px var(--display)}
+.nl svg{width:100%;height:auto;display:block;overflow:visible}
+.nl .vals{color:var(--muted)}
+.nl .vals b{color:var(--ink)}
+.nl .vals b.low,.nl .vals b.hi{color:var(--hot)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.kpi{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:14px;row-gap:6px;align-items:center;padding:14px 16px;border-radius:16px;box-shadow:inset 0 0 0 1px var(--line)}
+.kpi .big{font-size:26px;grid-row:1/3}
+.kpi svg{width:100%;height:14px;display:block}
+.divider{height:1px;background:var(--line)}
+
+.legend{display:flex;gap:18px;color:var(--muted);flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend svg{width:14px;height:14px}
+.row2{grid-column:1/13;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:24px;align-items:start}
+.board.off-mood .row2,.board.off-charts .row2{grid-template-columns:1fr}
+.mood{display:grid;gap:12px}
+.moodrow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.moodrow div{display:grid;justify-items:center;gap:4px}
+.moodrow svg{width:22px;height:22px;display:block}
+.donecard{display:flex;align-items:center;gap:20px;padding:20px 24px}
+.donecard svg.tickc{width:44px;height:44px;flex:none}
+
+/* chart text */
+.ax{fill:var(--muted);font:500 13px var(--sans);font-variant-numeric:tabular-nums}
+.ax-hot{fill:var(--hot);font:700 13px var(--display)}
+.lab{fill:var(--ink);font:700 13px var(--display);font-variant-numeric:tabular-nums}
+.lab-hot{fill:var(--hot);font:700 13px var(--display);font-variant-numeric:tabular-nums}
+
+/* principles */
+.principles{margin-top:48px;display:grid;gap:24px}
+.principles > h2{font:700 20px var(--display)}
+.prgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+@media (max-width:1000px){.prgrid{grid-template-columns:1fr}}
+.pr{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:24px;display:grid;gap:8px;align-content:start}
+.pr .t-l{font-weight:700}
+.pr p{color:var(--muted)}
+.pr cite{font:500 13px/1.45 var(--sans);font-style:normal;color:var(--muted)}
+
+/* toggles */
+.board.off-detail .detail{display:none}
+.board.off-charts .opt-chart{display:none}
+.board.off-sources details.src{display:none}
+.board.off-steady .opt-steady{display:none}
+.board.off-mood .opt-mood{display:none}
+.board.off-hl .focus{background:none}
+.board.off-colour .frame{filter:grayscale(1)}
+.board.off-charts .evid{grid-template-columns:auto}
+
+/* motion: the tier-1 frame turns once, its dot pulses twice, values land on their lines, the done tick draws */
+@keyframes sweep{from{--sweep:125deg}to{--sweep:485deg}}
+@keyframes pip{from{transform:scale(1);opacity:.6}to{transform:scale(3.2);opacity:0}}
+@keyframes land{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes tick{from{stroke-dashoffset:1}}
+.nl-dot{transform-box:fill-box;transform-origin:center}
+.play .card.t1{animation:sweep 1.8s cubic-bezier(.5,0,.3,1) .2s both}
+.play .st.decide .pip::before,.play .st.decide .pip::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid #8B5CF6;animation:pip 1.2s ease-out 2 both}
+.play .st.decide .pip::after{animation-delay:.35s}
+.play .nl-dot{animation:land .45s cubic-bezier(.2,.9,.3,1.3) calc(var(--d,0) * 90ms + 300ms) both}
+.play .tick{animation:tick .45s ease-out .3s both}
+.still .board *,.still .board *::before,.still .board *::after{animation:none!important}
+@media (prefers-reduced-motion:reduce){.board *,.board *::before,.board *::after{animation:none!important}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="g-mark" gradientUnits="userSpaceOnUse" x1="6" y1="24" x2="27" y2="8"><stop offset="0" stop-color="#22D3EE"/><stop offset=".55" stop-color="#8B5CF6"/><stop offset="1" stop-color="#E554D6"/></linearGradient>
+    <symbol id="mark-a" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#12143A"/><path d="M6.5 22.8C9.3 22.8 10.4 8.8 13.3 8.8C16.9 8.8 18.8 17.6 24.6 19.9" fill="none" stroke="url(#g-mark)" stroke-width="2.7" stroke-linecap="round"/><circle cx="24.8" cy="19.9" r="2.3" fill="#E554D6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M16 16l4 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5.5 15.5 12 9 18.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5.5 8.5 12 15 18.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="board play" id="board">
+  <header class="head">
+    <h1>Agentic Kinetic · Clinic Board <span>· cutting through the noise</span></h1>
+    <p class="t-m">A clinic list is mostly noise. Most patients are steady, and the few who need a doctor are buried among them, so every screen asks the doctor to read everything to find one thing. This board does that sorting first, so there is less to hold in your head. The full gradient frame marks the one action to take now, a softer frame marks what can wait until later today, and steady patients fade back. Inside a frame, the bold underlined words are the problem or the action, and numbers outside their range are bold with an arrow, so the eye lands on what matters before reading a sentence. Switch off anything you don't need, colour included. Only Elena's numbers are real backend output; the other patients are placeholders.</p>
+    <div class="switches" role="group" aria-label="Board options">
+      <span class="grp">View</span>
+      <label><input type="radio" name="view" id="vw-all" value="all" checked> Everything</label>
+      <label><input type="radio" name="view" id="vw-key" value="key"> Actions and key numbers</label>
+      <span class="sep" aria-hidden="true"></span>
+      <span class="grp">Show</span>
+      <label><input type="checkbox" id="sw-detail" checked> Supporting detail</label>
+      <label><input type="checkbox" id="sw-charts" checked> Trend charts</label>
+      <label><input type="checkbox" id="sw-sources" checked> Sources</label>
+      <label><input type="checkbox" id="sw-steady" checked> Steady patients</label>
+      <label><input type="checkbox" id="sw-mood" checked> Mood module (future development)</label>
+      <label><input type="checkbox" id="sw-hl" checked> Highlight key text</label>
+      <label><input type="checkbox" id="sw-colour" checked> Colour</label>
+      <span class="sep" aria-hidden="true"></span>
+      <button class="replay" type="button" id="replay">Replay motion</button>
+    </div>
+  </header>
+
+  <!-- ═══ FRAME 1 · TRIAGE ═══ -->
+  <div class="flabel t-m"><b>1 · Clinic triage</b>The one decision takes the full gradient frame; reviews take a soft frame; steady patients go quiet.</div>
+  <div class="scroll">
+  <section class="frame" aria-label="Frame 1, clinic triage">
+    <div class="topbar">
+      <span class="brand"><svg aria-hidden="true"><use href="#mark-a"/></svg>Agentic Kinetic <span>Clinic</span></span>
+      <span class="search t-m"><svg aria-hidden="true"><use href="#i-search"/></svg>Ask about a patient</span>
+      <span class="me t-s">Sat 10 Oct · 11:20<i aria-label="You">You</i></span>
+    </div>
+    <div class="page">
+      <div class="phead">
+        <h1 class="ttl"><b>Kidney clinic</b><span class="thin">12 patients · updated 11:18</span></h1>
+        <div class="counts">
+          <span class="st decide"><span class="pip"></span>1 decision</span>
+          <span class="st review"><span class="pip"></span>1 review</span>
+          <span class="st approve"><span class="pip"></span>1 to approve</span>
+          <span class="st steady"><span class="pip"></span>9 steady</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <article class="card t1 span8 rows2" aria-label="Elena Cruz needs your decision">
+          <div class="line"><span class="st decide"><span class="pip"></span>Needs your decision</span><span class="deadline end"><svg aria-hidden="true"><use href="#i-clock"/></svg>Decide by Sun 09:40</span></div>
+          <div class="who"><span class="av">EC</span><h2 class="ttl"><b>Elena Cruz</b><span class="thin">Kidney · Advagraf 12 mg daily · target 5–10 ng/mL</span></h2></div>
+          <h3 class="ttl"><b>Request extra samples?</b><span class="thin">so her estimate can be checked</span></h3>
+          <p class="t-m">Her next trough may <span class="focus">fall below range</span>. <span class="detail">Three of her four troughs already have.</span></p>
+          <div class="evid">
+            <div class="odds">
+              <svg id="waffle" viewBox="0 0 84 84" role="img" aria-label="57 of 100 squares filled"></svg>
+              <div><p class="big">57 in 100</p><p class="t-s muted">chance her next trough is <b class="low">below 5</b></p></div>
+            </div>
+            <svg class="chart opt-chart" id="c-mini" viewBox="0 0 560 200" role="img" aria-label="Troughs 4.04, 4.52 and 4.49 below the 5 to 10 target and 5.97 in range; next trough on 12 Oct predicted 2.47 to 7.29, median 4.74."></svg>
+          </div>
+          <div class="acts">
+            <button class="b" type="button">Request extra samples</button>
+            <button class="b ghost" type="button">Not now</button>
+            <details class="src end"><summary><svg aria-hidden="true"><use href="#i-chev"/></svg>Sources and details</summary><ul><li>Prediction: modelled, 90% prediction interval</li><li>Troughs: measured before the morning dose, 18 Sep – 9 Oct</li><li>Her report today: “Took it late, around eleven.”</li></ul></details>
+          </div>
+          <p class="t-s ctx detail"><span><b>3 fingerstick samples</b>, fasted, Sun 11 Oct. Nothing reaches Elena unless you accept.</span></p>
+        </article>
+
+        <article class="card t2 span4" aria-label="Patient B needs review">
+          <span class="st review"><span class="pip"></span>Needs review</span>
+          <div class="who"><span class="av">PB</span><h2 class="ttl"><b>Open Patient B's record</b><span class="thin">it could not be evaluated</span></h2></div>
+          <p class="t-m"><span class="focus">Two doses have no time recorded</span>, so no estimate was made.</p>
+          <div class="acts"><button class="b ghost" type="button">Open record</button></div>
+          <p class="t-s ctx detail">This is not the same as steady.</p>
+        </article>
+
+        <article class="card t2 span4" aria-label="A question to approve for Elena">
+          <span class="st approve"><span class="pip"></span>Needs approval</span>
+          <h2 class="ttl"><b>Send Elena this question?</b><span class="thin">it reaches her app only if you send it</span></h2>
+          <p class="t-m"><span class="focus">“Did you start any new medicine this week?”</span></p>
+          <div class="acts"><button class="b" type="button">Send</button><button class="b ghost" type="button">Edit</button></div>
+        </article>
+
+        <div class="card t3 full opt-steady">
+          <div class="line"><span class="st steady"><span class="pip"></span>Steady · 9</span><span class="t-s muted">All checked in this week. Nothing needs you.</span></div>
+          <ul class="people detail" data-people></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <!-- ═══ FRAME 2 · ONE PATIENT ═══ -->
+  <div class="flabel t-m"><b>2 · One patient, opened</b>The action sits on the left; the numbers that decide it sit on their ranges beside it.</div>
+  <div class="scroll">
+  <section class="frame" aria-label="Frame 2, Elena Cruz opened">
+    <div class="topbar">
+      <span class="brand"><svg aria-hidden="true"><use href="#mark-a"/></svg>Agentic Kinetic <span>Clinic</span></span>
+      <span class="back"><svg aria-hidden="true"><use href="#i-back"/></svg>Clinic</span>
+      <span class="me t-s">Sat 10 Oct · 11:21<i aria-label="You">You</i></span>
+    </div>
+    <div class="page">
+      <div class="phead">
+        <span class="av lg">EC</span>
+        <h1 class="ttl"><b>Elena Cruz</b><span class="thin">Kidney transplant 12 years · Advagraf 12 mg daily · target 5–10 ng/mL</span></h1>
+      </div>
+      <div class="canvas">
+        <section class="card t1 left5" aria-labelledby="h-dec">
+          <div class="line"><span class="st decide"><span class="pip"></span>Needs your decision</span><span class="deadline end"><svg aria-hidden="true"><use href="#i-clock"/></svg>Decide by Sun 09:40</span></div>
+          <h2 class="ttl" id="h-dec"><b>Request 3 extra samples?</b><span class="thin">so this estimate can be checked</span></h2>
+          <div><p class="big">57 in 100</p><p class="t-m">chance her <span class="focus">12 Oct trough is below 5</span></p></div>
+          <div class="pairs">
+            <div><span class="t-s muted">Estimate width</span><span class="t-l num">36% → 26%</span><span class="t-s muted detail">and it becomes checkable</span></div>
+            <div><span class="t-s muted">Burden</span><span class="t-l num">3 samples</span><span class="t-s muted detail">fingerstick, fasted, Sun</span></div>
+          </div>
+          <div class="acts"><button class="b" type="button">Request extra samples</button><button class="b ghost" type="button">Not now</button></div>
+          <ul class="ctx t-s">
+            <li class="detail">Samples on Sun 11 Oct: before the dose, then 1, 3 and 6 hours after.</li>
+            <li class="detail"><b>If not now:</b> the estimate still rests on 4 troughs, and nothing can check it until post-dose samples exist.</li>
+            <li>Nothing reaches Elena unless you accept. The software never suggests a dose.</li>
+          </ul>
+        </section>
+
+        <section class="card t2 right7" aria-labelledby="h-why">
+          <h2 class="ttl" id="h-why"><b>Review: her troughs are running low</b><span class="thin">why she is on your list</span></h2>
+
+          <div class="nl">
+            <div class="nlhead"><span class="name">Trough level</span><span class="unit">ng/mL · measured before the morning dose</span><span class="key"><span class="low">3 of 4 below range ↓</span></span></div>
+            <svg id="nl-trough" role="img" aria-label="Number line 0 to 12 ng/mL with the 5 to 10 target band. Measured troughs 4.04, 4.52 and 4.49 below range, 5.97 in range. Predicted 12 Oct trough 2.47 to 7.29, median 4.74, mostly below 5."></svg>
+            <p class="t-s vals num">18 Sep <b class="low">4.0 ↓</b> · 25 Sep <b class="low">4.5 ↓</b> · 2 Oct <b class="low">4.5 ↓</b> · 9 Oct <b>6.0</b> · 12 Oct predicted <b>4.7</b> <span class="detail">(2.5–7.3)</span></p>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="nl">
+            <div class="nlhead"><span class="name">Clearance</span><span class="unit">L/h · estimated from her 4 troughs</span><span class="key"><span class="hi">1.5× the average ↑</span></span></div>
+            <svg id="nl-clear" role="img" aria-label="Number line 0 to 60 L/h. Shaded: 90 percent of patients like her, 15.8 to 44.4. Average 26.5. Her estimate 40.5, interval 33.7 to 48.7."></svg>
+            <p class="t-s vals num">Shaded: 90% of patients like her, 15.8–44.4 · average <b>26.5</b> · her <b class="hi">40.5</b> <span class="detail">(33.7–48.7). Faster clearance means lower troughs.</span></p>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi"><span class="big low">22%</span><span class="t-s"><b>Time in range</b> · her last 21 days</span><svg class="bullet" data-v="21.9" data-flag="1" viewBox="0 0 200 14" role="img" aria-label="22 percent of the last 21 days inside her target range"></svg></div>
+            <div class="kpi"><span class="big">18%</span><span class="t-s"><b>Variability</b> · under the 30% mark</span><svg class="bullet" data-v="17.7" data-mark="30" viewBox="0 0 200 14" role="img" aria-label="18 percent against a 30 percent mark"></svg></div>
+          </div>
+          <p class="t-s ctx detail"><span>She reported today's dose as <b>late</b>, in her voice check-in.</span></p>
+          <details class="src"><summary><svg aria-hidden="true"><use href="#i-chev"/></svg>Sources (5)</summary><ul><li>Troughs: measured before the morning dose, 18 Sep – 9 Oct</li><li>Prediction: modelled, 90% prediction interval</li><li>Clearance: her estimate from 4 troughs. Average and 90% range for a 70 kg CYP3A5 expresser, from Fernández-Alarcón et al., Front Pharmacol 2024;15:1456565</li><li>That population was de novo, 5–15 days after transplant; for a patient 12 years out it is an extrapolation</li><li>Late dose: voice check-in today, “Took it late, around eleven.”</li></ul></details>
+        </section>
+
+        <div class="row2">
+          <section class="card t3 opt-chart" aria-labelledby="h-tl">
+            <div class="line"><h2 class="ttl" id="h-tl"><b>Troughs and doses</b><span class="thin">last 4 weeks</span></h2>
+              <div class="legend t-s end">
+                <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#A21CAF"/></svg>Below range</span>
+                <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="#12143A"/></svg>In range</span>
+                <span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="4.5" fill="#FFFFFF" stroke="#12143A" stroke-width="2"/></svg>Late dose</span>
+                <span><svg viewBox="0 0 14 14"><rect x="4" y="1" width="6" height="12" rx="3" fill="rgba(75,53,214,.16)" stroke="#4B35D6" stroke-width="1.5"/></svg>Predicted</span>
+              </div>
+            </div>
+            <svg class="chart" id="c-focus" viewBox="0 0 820 236" role="img" aria-label="Timeline 12 Sep to 12 Oct. Troughs 4.04, 4.52 and 4.49 below the 5 to 10 target and 5.97 in range; next trough 12 Oct predicted 2.47 to 7.29, median 4.74. Doses taken daily from 12 Sep to 9 Oct; today's dose reported late."></svg>
+          </section>
+          <section class="card t3 opt-mood" aria-labelledby="h-mood">
+            <h2 class="ttl" id="h-mood"><b>How she says she's been</b><span class="thin">future development · her own taps, never inferred</span></h2>
+            <div class="mood">
+              <div class="moodrow" role="img" aria-label="Last 7 days, Sunday to Saturday: okay, okay, tired, okay, okay, tired, rough day"><div><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8" fill="#4B35D6"/></svg><span class="t-s muted">Sun</span></div><div><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8" fill="#4B35D6"/></svg><span class="t-s muted">Mon</span></div><div><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="7.5" fill="#FFFFFF" stroke="#4B35D6" stroke-width="2"/><path d="M11 3.5A7.5 7.5 0 0 0 11 18.5Z" fill="#4B35D6"/></svg><span class="t-s muted">Tue</span></div><div><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8" fill="#4B35D6"/></svg><span class="t-s muted">Wed</span></div><div><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8" fill="#4B35D6"/></svg><span class="t-s muted">Thu</span></div><div><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="7.5" fill="#FFFFFF" stroke="#4B35D6" stroke-width="2"/><path d="M11 3.5A7.5 7.5 0 0 0 11 18.5Z" fill="#4B35D6"/></svg><span class="t-s muted">Fri</span></div><div><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="7.5" fill="#FFFFFF" stroke="#4B35D6" stroke-width="2"/></svg><span class="t-s muted">Sat</span></div></div>
+              <p class="t-s">Today: <b>rough day, named “Fed up”</b></p>
+              <p class="t-s muted detail">Filled: okay · half: tired · open: rough day</p>
+              <div class="acts"><button class="b ghost sm" type="button">Send PHQ-2</button></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <!-- ═══ FRAME 3 · AFTER THE DECISION ═══ -->
+  <div class="flabel t-m"><b>3 · After you decide</b>Elena becomes one quiet done line, and the review takes the full frame.</div>
+  <div class="scroll">
+  <section class="frame" aria-label="Frame 3, after the decision">
+    <div class="topbar">
+      <span class="brand"><svg aria-hidden="true"><use href="#mark-a"/></svg>Agentic Kinetic <span>Clinic</span></span>
+      <span class="search t-m"><svg aria-hidden="true"><use href="#i-search"/></svg>Ask about a patient</span>
+      <span class="me t-s">Sat 10 Oct · 11:24<i aria-label="You">You</i></span>
+    </div>
+    <div class="page">
+      <div class="phead">
+        <h1 class="ttl"><b>Kidney clinic</b><span class="thin">12 patients · updated 11:24</span></h1>
+        <div class="counts">
+          <span class="st none">No decisions waiting</span>
+          <span class="st review"><span class="pip"></span>1 review</span>
+          <span class="st approve"><span class="pip"></span>1 to approve</span>
+          <span class="st steady"><span class="pip"></span>9 steady</span>
+        </div>
+      </div>
+      <div class="canvas">
+        <article class="card t1 span6a" aria-label="Patient B needs review">
+          <span class="st review"><span class="pip"></span>Needs review</span>
+          <div class="who"><span class="av">PB</span><h2 class="ttl"><b>Open Patient B's record</b><span class="thin">it could not be evaluated</span></h2></div>
+          <p class="t-m"><span class="focus">Two doses have no time recorded</span>, so no estimate was made.</p>
+          <div class="acts"><button class="b" type="button">Open record</button></div>
+          <p class="t-s ctx detail">This is not the same as steady.</p>
+        </article>
+        <article class="card t2 span6b" aria-label="A question to approve for Elena">
+          <span class="st approve"><span class="pip"></span>Needs approval</span>
+          <h2 class="ttl"><b>Send Elena this question?</b><span class="thin">it reaches her app only if you send it</span></h2>
+          <p class="t-m"><span class="focus">“Did you start any new medicine this week?”</span></p>
+          <div class="acts"><button class="b" type="button">Send</button><button class="b ghost" type="button">Edit</button></div>
+        </article>
+        <article class="card t3 full donecard" aria-label="Elena Cruz, samples booked">
+          <svg class="tickc" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#E3F5EE"/><path class="tick" d="M14 24.5 21 31.5 34 17.5" fill="none" stroke="#15795A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="0"/></svg>
+          <h2 class="ttl"><b>Elena Cruz</b><span class="thin">You requested extra samples. She now sees the booking in her app.</span></h2>
+          <span class="st done" style="margin-left:auto"><span class="pip"></span>Booked · Sun 11 Oct 09:40</span>
+          <button class="b ghost" type="button">Open</button>
+        </article>
+        <div class="card t3 full opt-steady">
+          <div class="line"><span class="st steady"><span class="pip"></span>Steady · 9</span><span class="t-s muted">All checked in this week. Nothing needs you.</span></div>
+          <ul class="people detail" data-people></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <section class="principles" aria-labelledby="h-pr">
+    <h2 id="h-pr">What changed, and why</h2>
+    <div class="prgrid">
+      <div class="pr"><p class="t-l">Brightness means act</p><p class="t-m">The full gradient frame is kept for the one thing to act on now. Today's reviews get a soft frame, and steady items go flat and quiet. The tier is also in the words and the dot shape, never in colour alone.</p><cite>WCAG 2.2 SC 1.4.1 Use of Color; NN/g on preattentive attributes</cite></div>
+      <div class="pr"><p class="t-l">The frame points at the words</p><p class="t-m">Inside a framed card, the exact problem or action is bold and underlined in the frame's own gradient, so the eye goes from the frame to the sentence that matters.</p><cite>NN/g on writing for scanning</cite></div>
+      <div class="pr"><p class="t-l">Titles say the action</p><p class="t-m">Every card title is the action in bold, with thin context beside it. Smaller text under the buttons gives the burden and what happens if she waits.</p><cite>CDS Hooks card summary; NN/g on progressive disclosure</cite></div>
+      <div class="pr"><p class="t-l">Values on their range</p><p class="t-m">Each number sits on a line with its target band and says where it was measured. Values outside the range are bold, with an arrow and the word, in the one warm colour.</p><cite>Zikmund-Fisher et al., JAMIA 2017;24(3):520–528 (number lines vs tables); Few, bullet graphs</cite></div>
+      <div class="pr"><p class="t-l">Her clearance against patients like her</p><p class="t-m">Her estimate and its interval are drawn against the population average and the range 90% of similar patients fall in, which shows why her troughs run low.</p><cite>Fernández-Alarcón et al., Front Pharmacol 2024;15:1456565 · de novo population, so an extrapolation for her</cite></div>
+      <div class="pr"><p class="t-l">Detail you can turn down</p><p class="t-m">"Actions and key numbers" hides trend charts, supporting lines, sources, steady patients and the mood module, and leaves the frames, the actions and the numbers that decide them. Colour can be switched off too: every state still reads from words, dot shapes, bold and arrows.</p><cite>NN/g on progressive disclosure</cite></div>
+    </div>
+    <p class="t-s muted">Sources were gathered by research agents. The JAMIA 2017 paper's title, journal and DOI (10.1093/jamia/ocw169) were checked by search, at abstract level. The clearance average and range come from the project's PK module for the demo patient's covariates.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var INK = '#12143A', HOT = '#A21CAF', BAND = '#E9E5FB', LINE = '#D3CDEB';
+  var root = document.documentElement, board = document.getElementById('board');
+  var flags = (location.hash || '').slice(1).split(',');
+  if (flags.indexOf('still') > -1) root.classList.add('still');
+  var uid = 0;
+
+  // Elena, from the backend capture. Hours since its reference instant (Sat 12 Sep 2026 09:40 UTC).
+  var TROUGHS = [[143.75, 4.035, '18 Sep'], [311.75, 4.5242, '25 Sep'], [479.75, 4.4931, '2 Oct'], [647.75, 5.97, '9 Oct']];
+  var PRED = { t: 719.75, lo: 2.4705, med: 4.7373, hi: 7.2926 };
+  var TARGET = [5, 10];
+  var CLEAR = { v: 40.50, lo: 33.66, hi: 48.74 };
+  // Population prior for the demo covariates (agent_pk.pk.priors.prior_for): typical and 90% range.
+  var POP = { typical: 26.5, lo: 15.83, hi: 44.36 };
+  var TODAY = 673.67, XMAX = 768;
+
+  function mk(parent, name, attrs, text, tip) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    if (tip) { var t = document.createElementNS(NS, 'title'); t.textContent = tip; e.appendChild(t); }
+    parent.appendChild(e);
+    return e;
+  }
+  function low(v) { return v < TARGET[0]; }
+  // A capsule from y/x a..b whose part below the target is tinted warm, clipped to the capsule's rounded shape.
+  function capsule(svg, rect, warm) {
+    var id = 'cap' + (++uid);
+    var defs = mk(svg, 'defs', {});
+    var cp = mk(defs, 'clipPath', { id: id });
+    mk(cp, 'rect', rect);
+    var fill = {}; for (var k in rect) fill[k] = rect[k];
+    fill.fill = 'rgba(75,53,214,.14)';
+    mk(svg, 'rect', fill);
+    if (warm) { warm['clip-path'] = 'url(#' + id + ')'; warm.fill = 'rgba(162,28,175,.30)'; mk(svg, 'rect', warm); }
+    var edge = {}; for (var j in rect) edge[j] = rect[j];
+    edge.fill = 'none'; edge.stroke = '#4B35D6'; edge['stroke-width'] = 1.5;
+    return mk(svg, 'rect', edge);
+  }
+
+  function chart(svg, o) {
+    if (!svg) return;
+    var x0 = o.l, x1 = o.W - o.r, y0 = o.top, y1 = o.bottom;
+    function X(t) { return x0 + t / XMAX * (x1 - x0); }
+    function Y(c) { return y1 - c / 12 * (y1 - y0); }
+    mk(svg, 'rect', { x: x0, y: Y(TARGET[0]), width: x1 - x0, height: Y(0) - Y(TARGET[0]), fill: 'rgba(229,84,214,.07)' });
+    mk(svg, 'rect', { x: x0, y: Y(TARGET[1]), width: x1 - x0, height: Y(TARGET[0]) - Y(TARGET[1]), rx: 6, fill: BAND });
+    [0, 5, 10].forEach(function (v) {
+      mk(svg, 'text', { x: x0 - 12, y: Y(v) + 4, 'text-anchor': 'end', 'class': 'ax' }, String(v));
+    });
+    mk(svg, 'text', { x: x0 + 12, y: Y(TARGET[1]) + 20, 'class': 'ax' }, 'target 5–10');
+    mk(svg, 'text', { x: x0 + 12, y: Y(0) - 8, 'class': 'ax-hot' }, 'below range');
+    var tx = X(TODAY);
+    mk(svg, 'line', { x1: tx, x2: tx, y1: y0 - 2, y2: (o.doses ? o.doseY + 10 : y1), stroke: LINE, 'stroke-width': 1.5 });
+    mk(svg, 'text', { x: tx, y: y0 - 8, 'text-anchor': 'middle', 'class': 'ax' }, 'today');
+    o.ticks.forEach(function (d) { mk(svg, 'text', { x: X(d[0]), y: o.axisY, 'text-anchor': 'middle', 'class': 'ax' }, d[1]); });
+    if (o.doses) {
+      mk(svg, 'text', { x: x0 - 12, y: o.doseY + 4, 'text-anchor': 'end', 'class': 'ax' }, 'doses');
+      for (var i = 0; i <= 28; i++) {
+        if (i < 28) mk(svg, 'circle', { cx: X(24 * i), cy: o.doseY, r: 4, fill: INK }, null, 'Dose taken · from her log');
+        else mk(svg, 'circle', { cx: X(24 * i), cy: o.doseY, r: 5, fill: '#FFFFFF', stroke: INK, 'stroke-width': 2 }, null, 'Today · reported late in her check-in');
+      }
+    }
+    TROUGHS.forEach(function (p) {
+      var isLow = low(p[1]);
+      mk(svg, 'circle', { cx: X(p[0]), cy: Y(p[1]), r: o.dotR, fill: isLow ? HOT : INK, stroke: '#FFFFFF', 'stroke-width': 2.5 }, null, 'Trough ' + p[2] + ': ' + p[1].toFixed(2) + ' ng/mL · measured' + (isLow ? ' · below range' : ''));
+      mk(svg, 'text', { x: X(p[0]), y: Y(p[1]) - o.dotR - 10, 'text-anchor': 'middle', 'class': isLow ? 'lab-hot' : 'lab' }, p[1].toFixed(1) + (isLow ? ' ↓' : ''));
+    });
+    var px = X(PRED.t), w = o.barW;
+    var r = { x: px - w / 2, y: Y(PRED.hi), width: w, height: Y(PRED.lo) - Y(PRED.hi), rx: w / 2 };
+    capsule(svg, r, { x: px - w / 2, y: Y(TARGET[0]), width: w, height: Y(PRED.lo) - Y(TARGET[0]) });
+    mk(svg, 'line', { x1: px - w / 2 - 5, x2: px + w / 2 + 5, y1: Y(PRED.med), y2: Y(PRED.med), stroke: INK, 'stroke-width': 3, 'stroke-linecap': 'round' }, null, 'Next trough 12 Oct · median 4.74 ng/mL · 90% prediction interval 2.47–7.29');
+    mk(svg, 'text', { x: px + w / 2 + 16, y: Y(PRED.med) - 4, 'class': 'lab' }, '12 Oct');
+    mk(svg, 'text', { x: px + w / 2 + 16, y: Y(PRED.med) + 16, 'class': 'ax' }, '2.5–7.3');
+  }
+
+  // A number line: value(s) on a scale with a reference band, tracks labelled in the left gutter.
+  function numline(svg, o) {
+    if (!svg) return;
+    var W = 640, x0 = 104, x1 = 600, top = 26, TH = 40;
+    var bottom = top + o.tracks.length * TH;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + (bottom + 28));
+    function X(v) { return x0 + (v - o.min) / (o.max - o.min) * (x1 - x0); }
+    if (o.lowZone) {
+      mk(svg, 'rect', { x: x0, y: top, width: X(o.band[0]) - x0, height: bottom - top, fill: 'rgba(229,84,214,.08)' });
+      mk(svg, 'text', { x: x0 + 4, y: top - 9, 'class': 'ax-hot' }, 'below range');
+    }
+    mk(svg, 'rect', { x: X(o.band[0]), y: top, width: X(o.band[1]) - X(o.band[0]), height: bottom - top, rx: 6, fill: BAND });
+    if (o.bandLabel) mk(svg, 'text', { x: X(o.band[0]) + 8, y: top - 9, 'class': 'ax' }, o.bandLabel);
+    mk(svg, 'line', { x1: x0, x2: x1, y1: bottom, y2: bottom, stroke: LINE, 'stroke-width': 1.5 });
+    o.ticks.forEach(function (t) {
+      mk(svg, 'line', { x1: X(t), x2: X(t), y1: bottom, y2: bottom + 5, stroke: LINE, 'stroke-width': 1.5 });
+      mk(svg, 'text', { x: X(t), y: bottom + 21, 'text-anchor': 'middle', 'class': 'ax' }, String(t));
+    });
+    if (o.marker) {
+      var mx = X(o.marker.v);
+      mk(svg, 'line', { x1: mx, x2: mx, y1: top - 4, y2: bottom, stroke: INK, 'stroke-width': 2 }, null, o.marker.tip);
+      mk(svg, 'text', { x: mx, y: top - 9, 'text-anchor': 'middle', 'class': 'lab' }, o.marker.label);
+    }
+    o.tracks.forEach(function (tr, i) {
+      var mid = top + TH * i + TH / 2;
+      mk(svg, 'text', { x: 0, y: mid + 4, 'class': 'ax' }, tr.label);
+      if (tr.kind === 'dots') {
+        var prev = -99, stack = 0;
+        tr.values.slice().sort(function (a, b) { return a.v - b.v; }).forEach(function (p, j) {
+          var x = X(p.v);
+          stack = x - prev < 13 ? stack + 1 : 0;
+          prev = x;
+          var dy = stack === 0 ? 0 : (stack % 2 ? -11 : 11);
+          var flag = p.v < o.band[0] || p.v > o.band[1];
+          var c = mk(svg, 'circle', { cx: x, cy: mid + dy, r: 6.5, fill: flag ? HOT : INK, stroke: '#FFFFFF', 'stroke-width': 2, 'class': 'nl-dot' }, null, p.tip);
+          c.style.setProperty('--d', j);
+        });
+      } else if (tr.kind === 'interval') {
+        var rect = { x: X(tr.lo), y: mid - 7, width: X(tr.hi) - X(tr.lo), height: 14, rx: 7 };
+        capsule(svg, rect, tr.lo < o.band[0] ? { x: X(tr.lo), y: mid - 7, width: X(Math.min(o.band[0], tr.hi)) - X(tr.lo), height: 14 } : null);
+        mk(svg, 'line', { x1: X(tr.mid), x2: X(tr.mid), y1: mid - 12, y2: mid + 12, stroke: INK, 'stroke-width': 3, 'stroke-linecap': 'round' }, null, tr.tip);
+      } else if (tr.kind === 'estimate') {
+        mk(svg, 'line', { x1: X(tr.lo), x2: X(tr.hi), y1: mid, y2: mid, stroke: HOT, 'stroke-opacity': .4, 'stroke-width': 6, 'stroke-linecap': 'round' });
+        var d = mk(svg, 'circle', { cx: X(tr.v), cy: mid, r: 7.5, fill: HOT, stroke: '#FFFFFF', 'stroke-width': 2.5, 'class': 'nl-dot' }, null, tr.tip);
+        d.style.setProperty('--d', 1);
+        mk(svg, 'text', { x: X(tr.hi) + 10, y: mid + 5, 'class': 'lab-hot' }, tr.text);
+      }
+    });
+  }
+
+  function bullet(svg) {
+    // A mark is drawn only where one is sourced: variability's 30% (HIGH_IPV_THRESHOLD_PERCENT). Time in range has none.
+    var v = parseFloat(svg.getAttribute('data-v')), flag = svg.hasAttribute('data-flag');
+    mk(svg, 'rect', { x: 0, y: 3, width: 200, height: 8, rx: 4, fill: '#ECE9FF' });
+    mk(svg, 'rect', { x: 0, y: 3, width: v * 2, height: 8, rx: 4, fill: flag ? HOT : INK });
+    if (svg.hasAttribute('data-mark')) {
+      var m = parseFloat(svg.getAttribute('data-mark'));
+      mk(svg, 'line', { x1: m * 2, x2: m * 2, y1: 0, y2: 14, stroke: INK, 'stroke-width': 2.5, 'stroke-linecap': 'round' });
+    }
+  }
+
+  chart(document.getElementById('c-mini'), { W: 560, l: 36, r: 90, top: 22, bottom: 164, axisY: 194, dotR: 6, barW: 16, doses: false, ticks: [[143.75, '18 Sep'], [647.75, '9 Oct']] });
+  chart(document.getElementById('c-focus'), { W: 820, l: 64, r: 100, top: 24, bottom: 160, axisY: 230, dotR: 7, barW: 18, doses: true, doseY: 194, ticks: [[0, '12 Sep'], [168, '19 Sep'], [336, '26 Sep'], [504, '3 Oct'], [672, '10 Oct']] });
+
+  numline(document.getElementById('nl-trough'), {
+    min: 0, max: 12, band: TARGET, bandLabel: 'target 5–10 · her care plan', lowZone: true, ticks: [0, 5, 10, 12],
+    tracks: [
+      { kind: 'dots', label: 'Measured', values: TROUGHS.map(function (p) { return { v: p[1], tip: p[2] + ': ' + p[1].toFixed(2) + ' ng/mL' + (low(p[1]) ? ' · below range' : '') }; }) },
+      { kind: 'interval', label: '12 Oct', lo: PRED.lo, mid: PRED.med, hi: PRED.hi, tip: 'Predicted 12 Oct trough · median 4.74 · 90% interval 2.47–7.29 ng/mL' }
+    ]
+  });
+  numline(document.getElementById('nl-clear'), {
+    min: 0, max: 60, band: [POP.lo, POP.hi], ticks: [0, 15, 30, 45, 60],
+    marker: { v: POP.typical, label: 'average 26.5', tip: 'Population average for a 70 kg CYP3A5 expresser' },
+    tracks: [{ kind: 'estimate', label: 'Her estimate', v: CLEAR.v, lo: CLEAR.lo, hi: CLEAR.hi, text: 'her 40.5', tip: 'Her clearance 40.5 L/h · interval 33.7–48.7' }]
+  });
+  document.querySelectorAll('svg.bullet').forEach(bullet);
+
+  var waf = document.getElementById('waffle');
+  if (waf) {
+    var gd = mk(mk(waf, 'defs', {}), 'linearGradient', { id: 'g-waf', gradientUnits: 'userSpaceOnUse', x1: '0', y1: '84', x2: '84', y2: '0' });
+    [['0', '#0891B2'], ['.55', '#7C3AED'], ['1', '#C026D3']].forEach(function (s) { mk(gd, 'stop', { offset: s[0], 'stop-color': s[1] }); });
+    for (var n = 0; n < 100; n++) mk(waf, 'rect', { x: (n % 10) * 8.4 + .5, y: Math.floor(n / 10) * 8.4 + .5, width: 7.4, height: 7.4, rx: 2, fill: n < 57 ? 'url(#g-waf)' : '#E4E0F5' });
+  }
+
+  var people = [['PC', 'Patient C'], ['PD', 'Patient D'], ['PE', 'Patient E'], ['PF', 'Patient F'], ['PG', 'Patient G'], ['PH', 'Patient H'], ['PJ', 'Patient J'], ['PK', 'Patient K'], ['PL', 'Patient L']];
+  document.querySelectorAll('[data-people]').forEach(function (ul) {
+    people.forEach(function (p) {
+      var li = document.createElement('li');
+      li.innerHTML = '<span class="av sm">' + p[0] + '</span><span class="t-s">' + p[1] + '</span>';
+      ul.appendChild(li);
+    });
+  });
+
+  // Toggles. "Actions and key numbers" turns off everything that is not a frame, an action or a deciding number.
+  var MAP = { 'sw-detail': 'off-detail', 'sw-charts': 'off-charts', 'sw-sources': 'off-sources', 'sw-steady': 'off-steady', 'sw-mood': 'off-mood', 'sw-hl': 'off-hl', 'sw-colour': 'off-colour' };
+  var KEY_OFF = ['sw-detail', 'sw-charts', 'sw-sources', 'sw-steady', 'sw-mood'];
+  function box(id) { return document.getElementById(id); }
+  function apply() {
+    Object.keys(MAP).forEach(function (id) { board.classList.toggle(MAP[id], !box(id).checked); });
+    var all = Object.keys(MAP).every(function (id) { return box(id).checked; });
+    var key = Object.keys(MAP).every(function (id) { return box(id).checked === (KEY_OFF.indexOf(id) < 0); });
+    box('vw-all').checked = all;
+    box('vw-key').checked = key;
+  }
+  function preset(which) {
+    Object.keys(MAP).forEach(function (id) { box(id).checked = which === 'all' ? true : KEY_OFF.indexOf(id) < 0; });
+    apply();
+  }
+  Object.keys(MAP).forEach(function (id) { box(id).addEventListener('change', apply); });
+  box('vw-all').addEventListener('change', function () { if (box('vw-all').checked) preset('all'); });
+  box('vw-key').addEventListener('change', function () { if (box('vw-key').checked) preset('key'); });
+  if (flags.indexOf('key') > -1) preset('key'); else apply();
+
+  var btn = box('replay');
+  if (btn) btn.addEventListener('click', function () { board.classList.remove('play'); void board.offsetWidth; board.classList.add('play'); });
+})();
+</script>

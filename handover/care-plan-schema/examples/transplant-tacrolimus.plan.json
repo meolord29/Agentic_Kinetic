@@ -1,0 +1,451 @@
+{
+  "schema_version": 1,
+  "plan_id": "tx-kidney-tacrolimus-demo",
+  "revision": 1,
+  "subject_ref": "subject-a",
+  "condition": {
+    "label": "Kidney transplant — maintenance immunosuppression (tacrolimus, twice daily)",
+    "plain_english": "Her new kidney only keeps working while she takes the anti-rejection medicine exactly on time, every day, for life.",
+    "coding": [
+      "Z94.0"
+    ]
+  },
+  "authored": {
+    "clinician_role": "transplant nephrologist",
+    "organisation_ref": "transplant-centre-demo",
+    "approved_utc": "2026-09-01T00:00:00Z"
+  },
+  "languages": [
+    "en",
+    "zh-Hant"
+  ],
+  "roles": [
+    {
+      "id": "helper",
+      "kind": "observer",
+      "language": "zh-Hant",
+      "channel": "group_chat",
+      "may_receive": [
+        "observations",
+        "escalations"
+      ]
+    },
+    {
+      "id": "family_on_call",
+      "kind": "decision_maker",
+      "language": "en",
+      "channel": "group_chat",
+      "on_call_rota": true,
+      "may_receive": [
+        "observations",
+        "trends",
+        "escalations"
+      ]
+    },
+    {
+      "id": "tx_coordinator",
+      "kind": "clinician",
+      "language": "en",
+      "channel": "portal",
+      "may_receive": [
+        "observations",
+        "trends",
+        "escalations",
+        "clinical_detail"
+      ]
+    },
+    {
+      "id": "emergency",
+      "kind": "emergency_service",
+      "language": "en",
+      "channel": "voice",
+      "may_receive": [
+        "escalations"
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "id": "dose_taken",
+      "type": "boolean",
+      "collected_by": "helper",
+      "schedule": {
+        "kind": "twice_daily",
+        "at_local": [
+          "08:00",
+          "20:00"
+        ],
+        "conditions": "Same two times every day, twelve hours apart."
+      },
+      "prompts": {
+        "en": "Did she take the anti-rejection tablet just now?",
+        "zh-Hant": "剛才有冇食咗抗排斥藥？"
+      },
+      "missing_after_hours": 3
+    },
+    {
+      "id": "vomited_after_dose",
+      "type": "boolean",
+      "collected_by": "helper",
+      "schedule": {
+        "kind": "on_event",
+        "event": "She is sick (vomits) within an hour of a tablet."
+      },
+      "prompts": {
+        "en": "Did she bring the tablet back up?",
+        "zh-Hant": "食完藥之後有冇嘔返出嚟？"
+      },
+      "missing_after_hours": 24
+    },
+    {
+      "id": "temp_c",
+      "type": "scalar",
+      "unit": "degC",
+      "collected_by": "helper",
+      "schedule": {
+        "kind": "daily",
+        "at_local": [
+          "08:00"
+        ],
+        "conditions": "Same thermometer, before breakfast."
+      },
+      "prompts": {
+        "en": "What is her temperature this morning?",
+        "zh-Hant": "今朝探熱幾多度？"
+      },
+      "missing_after_hours": 36
+    },
+    {
+      "id": "new_medicine_started",
+      "type": "boolean",
+      "collected_by": "helper",
+      "schedule": {
+        "kind": "on_event",
+        "event": "Any new medicine, supplement or herbal remedy, from any doctor or shop."
+      },
+      "prompts": {
+        "en": "Has anyone given her a new medicine, supplement or herbal remedy?",
+        "zh-Hant": "有冇人畀咗新藥、補充劑或者中藥佢食？"
+      },
+      "missing_after_hours": 168
+    },
+    {
+      "id": "trough_ng_ml",
+      "type": "scalar",
+      "unit": "ng/mL",
+      "collected_by": "tx_coordinator",
+      "schedule": {
+        "kind": "on_demand",
+        "conditions": "Laboratory trough level, entered from the clinic result."
+      },
+      "prompts": {
+        "en": "Latest tacrolimus trough level."
+      },
+      "missing_after_hours": 2160
+    }
+  ],
+  "derivations": [
+    {
+      "id": "missed_doses_7d",
+      "fn": "count_in_window",
+      "from": [
+        "dose_taken"
+      ],
+      "window_hours": 168,
+      "unit": "doses recorded false"
+    },
+    {
+      "id": "consecutive_missed",
+      "fn": "streak_false",
+      "from": [
+        "dose_taken"
+      ],
+      "unit": "doses"
+    },
+    {
+      "id": "temp_max_24h",
+      "fn": "max_in_window",
+      "from": [
+        "temp_c"
+      ],
+      "window_hours": 24,
+      "unit": "degC"
+    },
+    {
+      "id": "trough_cv",
+      "fn": "coefficient_of_variation",
+      "from": [
+        "trough_ng_ml"
+      ],
+      "window_hours": 4320,
+      "unit": "percent"
+    }
+  ],
+  "rules": [
+    {
+      "id": "single_missed_dose",
+      "when": {
+        "test": {
+          "metric": "consecutive_missed",
+          "op": "gte",
+          "value": 1
+        }
+      },
+      "escalate_to": "tell_family",
+      "agent_authority": "inform",
+      "cites": [
+        "centre_protocol"
+      ],
+      "why": "A single missed dose is the start of the pattern that ends in graft loss, and it is the only point at which it is still trivial to correct.",
+      "cooldown_hours": 12
+    },
+    {
+      "id": "two_missed_in_a_week",
+      "when": {
+        "test": {
+          "metric": "missed_doses_7d",
+          "op": "gte",
+          "value": 2
+        }
+      },
+      "escalate_to": "tell_coordinator_today",
+      "agent_authority": "inform",
+      "cites": [
+        "ipv_graft_outcomes",
+        "centre_protocol"
+      ],
+      "why": "Undetectable drug levels were present in 53 percent of patients who lost their graft against 13 percent of those who did not, and the first undetectable level came a median of about three years before the loss.",
+      "cooldown_hours": 72
+    },
+    {
+      "id": "dose_not_absorbed",
+      "when": {
+        "test": {
+          "metric": "vomited_after_dose",
+          "op": "is_true"
+        }
+      },
+      "escalate_to": "tell_coordinator_today",
+      "agent_authority": "inform",
+      "cites": [
+        "centre_protocol"
+      ],
+      "why": "A tablet that was brought back up was never delivered, and nobody can tell from the pill box that this happened."
+    },
+    {
+      "id": "fever_while_immunosuppressed",
+      "when": {
+        "test": {
+          "metric": "temp_max_24h",
+          "op": "gte",
+          "value": 38.0
+        }
+      },
+      "escalate_to": "call_coordinator_now",
+      "agent_authority": "inform",
+      "cites": [
+        "centre_protocol"
+      ],
+      "why": "Immunosuppression removes the usual signs of infection, so a fever is treated as significant until the transplant team says otherwise."
+    },
+    {
+      "id": "possible_interaction",
+      "when": {
+        "test": {
+          "metric": "new_medicine_started",
+          "op": "is_true"
+        }
+      },
+      "escalate_to": "tell_coordinator_today",
+      "agent_authority": "inform",
+      "cites": [
+        "centre_protocol"
+      ],
+      "why": "Ordinary medicines, supplements and some foods change how much anti-rejection drug reaches the blood, and the person prescribing them usually does not know she is a transplant patient."
+    },
+    {
+      "id": "level_variability",
+      "when": {
+        "test": {
+          "metric": "trough_cv",
+          "op": "gt",
+          "value": 30
+        }
+      },
+      "escalate_to": "note_for_clinic",
+      "agent_authority": "observe_only",
+      "cites": [
+        "ipv_graft_outcomes"
+      ],
+      "why": "Swinging drug levels are themselves a validated warning sign, independently of whether any single level looks acceptable."
+    },
+    {
+      "id": "nobody_is_answering",
+      "when": {
+        "test": {
+          "metric": "dose_taken",
+          "op": "is_stale"
+        }
+      },
+      "escalate_to": "tell_family",
+      "agent_authority": "observe_only",
+      "cites": [
+        "centre_protocol"
+      ],
+      "why": "No answer is not the same as nothing wrong, and it is the most common way a monitoring routine fails quietly."
+    }
+  ],
+  "escalations": [
+    {
+      "id": "note_for_clinic",
+      "rung": "note",
+      "route_to": [
+        "tx_coordinator"
+      ],
+      "message": {
+        "ask": "Add this to her file for the next clinic visit.",
+        "because": "A pattern has appeared that is worth seeing alongside her bloods.",
+        "if_ignored": "Nothing happens today, but the pattern will not be visible at the appointment."
+      },
+      "requires_ack": false
+    },
+    {
+      "id": "tell_family",
+      "rung": "note",
+      "route_to": [
+        "family_on_call"
+      ],
+      "message": {
+        "ask": "Please check with her that the tablet was actually taken, and tell us what you find.",
+        "because": "One dose was recorded as missed, or nobody has answered for longer than expected.",
+        "if_ignored": "Single misses turn into a habit, and the habit is what costs the kidney."
+      },
+      "requires_ack": true,
+      "ack_timeout_minutes": 240,
+      "on_timeout_escalate_to": "tell_coordinator_today"
+    },
+    {
+      "id": "tell_coordinator_today",
+      "rung": "act_today",
+      "route_to": [
+        "tx_coordinator",
+        "family_on_call"
+      ],
+      "message": {
+        "ask": "Please contact the transplant team today.",
+        "because": "Something has happened that changes how much anti-rejection medicine is reaching her blood.",
+        "if_ignored": "Rejection begins silently, and by the time it is felt the damage is usually permanent."
+      },
+      "requires_ack": true,
+      "ack_timeout_minutes": 480,
+      "on_timeout_escalate_to": "call_coordinator_now"
+    },
+    {
+      "id": "call_coordinator_now",
+      "rung": "urgent",
+      "route_to": [
+        "tx_coordinator",
+        "family_on_call"
+      ],
+      "message": {
+        "ask": "Telephone the transplant unit now — do not wait for the next clinic.",
+        "because": "She has a fever while on medicine that hides infection, or a same-day contact went unanswered.",
+        "if_ignored": "Infection in a transplant patient can move from mild to dangerous within a day."
+      },
+      "requires_ack": true,
+      "ack_timeout_minutes": 60,
+      "on_timeout_escalate_to": "emergency_now"
+    },
+    {
+      "id": "emergency_now",
+      "rung": "emergency",
+      "route_to": [
+        "family_on_call",
+        "emergency"
+      ],
+      "message": {
+        "ask": "Take her to the emergency department, or call an ambulance.",
+        "because": "An urgent contact has gone unanswered and she may be developing an infection she cannot fight.",
+        "if_ignored": "This is the point at which delay becomes life-threatening."
+      },
+      "requires_ack": false
+    }
+  ],
+  "prohibitions": [
+    "Never tell anyone to change, skip, double or make up a dose. Missed-dose handling belongs to the transplant centre's own protocol.",
+    "Never state or imply that rejection is occurring. The agent reports observations and routes them; it does not diagnose.",
+    "Never reassure. If a rule did not fire, say nothing rather than saying everything is fine.",
+    "Never send clinical detail to a role whose may_receive list does not include clinical_detail."
+  ],
+  "sources": [
+    {
+      "id": "ipv_graft_outcomes",
+      "citation": "Tacrolimus intrapatient variability and rejection are associated with inferior allograft outcomes after kidney transplantation, Frontiers in Nephrology, 2025.",
+      "url": "https://www.frontiersin.org/journals/nephrology/articles/10.3389/fneph.2025.1666191/full",
+      "retrieved_utc": "2026-09-07T00:00:00Z",
+      "kind": "trial"
+    },
+    {
+      "id": "centre_protocol",
+      "citation": "Local transplant centre maintenance immunosuppression protocol — SYNTHETIC PLACEHOLDER for demonstration. A real plan carries the issuing unit's own document.",
+      "kind": "local_protocol"
+    }
+  ],
+  "review": {
+    "cadences": [
+      {
+        "period": "daily",
+        "produces": "capture",
+        "for_role": "helper"
+      },
+      {
+        "period": "weekly",
+        "produces": "household_review",
+        "for_role": "family_on_call"
+      },
+      {
+        "period": "quarterly",
+        "produces": "clinician_pack",
+        "for_role": "tx_coordinator"
+      }
+    ],
+    "review_by_utc": "2026-12-01T00:00:00Z",
+    "outcome_metrics": [
+      "doses taken on time per month",
+      "days between a missed dose and a human acknowledging it",
+      "trough variability"
+    ]
+  },
+  "activation": {
+    "state": "awaiting_clinician",
+    "open_questions": [
+      {
+        "id": "q_missed_dose_window",
+        "question": "If a dose is remembered late, how many hours late may it still be taken, and after how long should it be skipped instead?",
+        "ask_role": "tx_coordinator",
+        "required": true,
+        "blocks": [
+          "single_missed_dose"
+        ]
+      },
+      {
+        "id": "q_trough_range",
+        "question": "What trough range are we aiming for, and what variability would you want to hear about?",
+        "ask_role": "tx_coordinator",
+        "required": false,
+        "blocks": [
+          "level_variability"
+        ]
+      },
+      {
+        "id": "q_out_of_hours",
+        "question": "Who should be telephoned outside clinic hours, and on what number?",
+        "ask_role": "tx_coordinator",
+        "required": true,
+        "blocks": [
+          "fever_while_immunosuppressed"
+        ]
+      }
+    ]
+  }
+}

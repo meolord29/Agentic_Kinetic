@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "plan_id": "he-lactulose-demo",
+  "revision": 1,
+  "subject_ref": "subject-c",
+  "condition": {
+    "label": "Hepatic encephalopathy — secondary prevention with lactulose",
+    "plain_english": "Her liver cannot clear the substances that affect her brain, so she becomes confused before she or anyone else notices she is unwell.",
+    "coding": ["K72.9"]
+  },
+  "authored": {
+    "clinician_role": "hepatologist",
+    "organisation_ref": "liver-clinic-demo",
+    "approved_utc": "2026-09-01T00:00:00Z"
+  },
+  "languages": ["en", "zh-Hant"],
+  "roles": [
+    { "id": "helper", "kind": "observer", "language": "zh-Hant", "channel": "group_chat", "may_receive": ["observations", "escalations"] },
+    { "id": "family_on_call", "kind": "decision_maker", "language": "en", "channel": "group_chat", "on_call_rota": true, "may_receive": ["observations", "trends", "escalations"] },
+    { "id": "liver_clinic", "kind": "clinician", "language": "en", "channel": "portal", "may_receive": ["observations", "trends", "escalations", "clinical_detail"] },
+    { "id": "emergency", "kind": "emergency_service", "language": "en", "channel": "voice", "may_receive": ["escalations"] }
+  ],
+  "observations": [
+    {
+      "id": "stools_24h",
+      "type": "count",
+      "collected_by": "helper",
+      "schedule": { "kind": "daily", "at_local": ["20:00"], "conditions": "Counted over the whole day, soft stools only." },
+      "prompts": { "en": "How many soft bowel movements did she have today?", "zh-Hant": "佢今日去咗幾多次軟便？" },
+      "missing_after_hours": 30
+    },
+    {
+      "id": "lactulose_doses",
+      "type": "count",
+      "collected_by": "helper",
+      "schedule": { "kind": "daily", "at_local": ["20:00"] },
+      "prompts": { "en": "How many doses of the lactulose syrup did she take today?", "zh-Hant": "佢今日食咗幾多次乳果糖？" },
+      "missing_after_hours": 30
+    },
+    {
+      "id": "awake_at_night",
+      "type": "boolean",
+      "collected_by": "helper",
+      "schedule": { "kind": "daily", "at_local": ["08:00"] },
+      "prompts": { "en": "Was she awake and active during the night?", "zh-Hant": "佢琴晚有冇成晚唔瞓、周圍郁？" },
+      "missing_after_hours": 36
+    },
+    {
+      "id": "daytime_sleep_hours",
+      "type": "scalar", "unit": "hours",
+      "collected_by": "helper",
+      "schedule": { "kind": "daily", "at_local": ["20:00"] },
+      "prompts": { "en": "Roughly how many hours did she sleep during the day?", "zh-Hant": "佢日頭大概瞓咗幾多個鐘？" },
+      "missing_after_hours": 36
+    },
+    {
+      "id": "orientation",
+      "type": "enum",
+      "enum_values": ["as_usual", "slightly_muddled", "clearly_confused", "very_drowsy_or_unrousable"],
+      "collected_by": "helper",
+      "schedule": { "kind": "daily", "at_local": ["08:00"], "conditions": "Judged from ordinary conversation during normal care. Do not test or quiz her." },
+      "prompts": { "en": "Compared with her usual self, how clear was she this morning?", "zh-Hant": "同平時比，佢今朝精神清唔清醒？" },
+      "missing_after_hours": 36,
+      "normalisation_hint": "The observer describes behaviour in their own words; the model maps that description onto the enum and never invents a grade."
+    },
+    {
+      "id": "red_flag_event",
+      "type": "enum",
+      "enum_values": ["none", "fever", "vomiting_repeatedly", "black_or_bloody_stool", "fall_or_head_injury", "not_drinking"],
+      "collected_by": "helper",
+      "schedule": { "kind": "on_event", "event": "Any of the listed events, at any time." },
+      "prompts": { "en": "Has any of these happened: fever, repeated vomiting, black or bloody stool, a fall, or she has stopped drinking?", "zh-Hant": "有冇發燒、嘔到停唔到、大便黑或者有血、跌親、或者唔肯飲水？" },
+      "missing_after_hours": 48
+    },
+    {
+      "id": "new_sedative",
+      "type": "boolean",
+      "collected_by": "helper",
+      "schedule": { "kind": "on_event", "event": "Any new sleeping tablet, sedative, painkiller or anti-sickness medicine." },
+      "prompts": { "en": "Has she been given anything new for sleep, pain or nausea?", "zh-Hant": "有冇畀咗新嘅安眠藥、止痛藥或者止嘔藥佢？" },
+      "missing_after_hours": 168
+    }
+  ],
+  "derivations": [
+    { "id": "days_below_stool_target", "fn": "consecutive_days_below", "from": ["stools_24h"], "threshold": 2, "unit": "days" },
+    { "id": "days_above_stool_target", "fn": "consecutive_days_above", "from": ["stools_24h"], "threshold": 3, "unit": "days" },
+    { "id": "day_night_inversion", "fn": "pattern_inversion", "from": ["awake_at_night", "daytime_sleep_hours"], "window_hours": 72 },
+    { "id": "orientation_decline", "fn": "delta", "from": ["orientation"], "window_hours": 72 }
+  ],
+  "rules": [
+    {
+      "id": "under_target_stools",
+      "when": { "test": { "metric": "days_below_stool_target", "op": "gte", "value": 2 } },
+      "escalate_to": "tell_family",
+      "agent_authority": "instruct_within_plan",
+      "permitted_action": "Give the next lactulose dose as written on the plan card, and keep counting. Do not go above the maximum on the card.",
+      "cites": ["clinic_titration_card"],
+      "why": "The syrup is dosed to an effect rather than to a number, and falling below the target range for two days is the point at which the clinic's card permits the household to act.",
+      "cooldown_hours": 24
+    },
+    {
+      "id": "over_target_stools",
+      "when": { "test": { "metric": "days_above_stool_target", "op": "gte", "value": 2 } },
+      "escalate_to": "clinic_today",
+      "agent_authority": "inform",
+      "cites": ["clinic_titration_card"],
+      "why": "Too much syrup dries her out, and dehydration is itself one of the things that brings the confusion on, so overshooting is not a safe error."
+    },
+    {
+      "id": "night_day_reversal",
+      "when": { "test": { "metric": "day_night_inversion", "op": "is_true" } },
+      "escalate_to": "clinic_today",
+      "agent_authority": "inform",
+      "cites": ["clinic_titration_card"],
+      "why": "Sleeping through the day and being awake at night is often the first visible change, and it appears before anyone would call her confused."
+    },
+    {
+      "id": "getting_less_clear",
+      "when": { "test": { "metric": "orientation_decline", "op": "gte", "value": 1 } },
+      "escalate_to": "clinic_today",
+      "agent_authority": "inform",
+      "cites": ["clinic_titration_card"],
+      "why": "Worsening confusion has many causes besides the liver, so it needs looking at rather than simply treating with more syrup."
+    },
+    {
+      "id": "precipitant_present",
+      "when": {
+        "any": [
+          { "test": { "metric": "red_flag_event", "op": "eq", "value": "fever" } },
+          { "test": { "metric": "red_flag_event", "op": "eq", "value": "vomiting_repeatedly" } },
+          { "test": { "metric": "red_flag_event", "op": "eq", "value": "not_drinking" } },
+          { "test": { "metric": "new_sedative", "op": "is_true" } }
+        ]
+      },
+      "escalate_to": "clinic_today",
+      "agent_authority": "inform",
+      "cites": ["clinic_titration_card"],
+      "why": "Infection, dehydration and sedating medicines are the usual triggers, and each is treatable in its own right if it is found."
+    },
+    {
+      "id": "emergency_signs",
+      "when": {
+        "any": [
+          { "test": { "metric": "red_flag_event", "op": "eq", "value": "black_or_bloody_stool" } },
+          { "test": { "metric": "red_flag_event", "op": "eq", "value": "fall_or_head_injury" } },
+          { "test": { "metric": "orientation", "op": "eq", "value": "very_drowsy_or_unrousable" } }
+        ]
+      },
+      "escalate_to": "emergency_now",
+      "agent_authority": "inform",
+      "cites": ["clinic_titration_card"],
+      "why": "Bleeding into the gut, a head injury on thinned blood, and unrousable drowsiness are all hospital problems and none of them waits."
+    }
+  ],
+  "escalations": [
+    {
+      "id": "tell_family",
+      "rung": "note",
+      "route_to": ["family_on_call"],
+      "message": {
+        "ask": "Follow the lactulose card for the next dose, and let us know how tomorrow goes.",
+        "because": "She has been under her target for two days running.",
+        "if_ignored": "The confusion usually returns within a few days of the syrup falling short."
+      },
+      "requires_ack": true,
+      "ack_timeout_minutes": 720,
+      "on_timeout_escalate_to": "clinic_today"
+    },
+    {
+      "id": "clinic_today",
+      "rung": "act_today",
+      "route_to": ["liver_clinic", "family_on_call"],
+      "message": {
+        "ask": "Please contact the liver clinic today.",
+        "because": "Something has changed that usually comes before an episode of confusion, and it is worth finding the cause rather than waiting.",
+        "if_ignored": "These episodes are largely preventable, but once she is clearly confused she usually needs admitting."
+      },
+      "requires_ack": true,
+      "ack_timeout_minutes": 480,
+      "on_timeout_escalate_to": "emergency_now"
+    },
+    {
+      "id": "emergency_now",
+      "rung": "emergency",
+      "route_to": ["family_on_call", "emergency"],
+      "message": {
+        "ask": "Take her to the emergency department, or call an ambulance.",
+        "because": "There is bleeding, a head injury, or she cannot be roused.",
+        "if_ignored": "Each of these can deteriorate within hours and none can be managed at home."
+      },
+      "requires_ack": false
+    }
+  ],
+  "prohibitions": [
+    "Never attribute confusion to the liver. Worsening cognition has many causes and the plan's response is to evaluate, not to treat.",
+    "Never suggest a lactulose dose above the maximum written on the clinic's card, and never suggest one at all if the card is absent.",
+    "Never ask the observer to test or quiz her to establish how confused she is. Orientation is judged from ordinary conversation.",
+    "Never describe her as having a grade or stage of encephalopathy."
+  ],
+  "sources": [
+    {
+      "id": "clinic_titration_card",
+      "citation": "Liver clinic lactulose titration card and red-flag list — SYNTHETIC PLACEHOLDER for demonstration. A real plan carries the issuing clinic's own card, including its dose range and maximum.",
+      "kind": "prescriber_instruction"
+    }
+  ],
+  "review": {
+    "cadences": [
+      { "period": "daily", "produces": "capture", "for_role": "helper" },
+      { "period": "weekly", "produces": "household_review", "for_role": "family_on_call" },
+      { "period": "monthly", "produces": "evidence_refresh", "for_role": "family_on_call" },
+      { "period": "quarterly", "produces": "clinician_pack", "for_role": "liver_clinic" }
+    ],
+    "review_by_utc": "2026-12-01T00:00:00Z",
+    "outcome_metrics": ["days within the stool target range", "episodes of confusion caught before admission", "hours from first change to a human acknowledging it"]
+  },
+  "activation": {
+    "state": "awaiting_clinician",
+    "open_questions": [
+      {
+        "id": "q_titration_range",
+        "question": "What daily range of soft stools are we aiming for, and what is the maximum lactulose the household may give without calling you?",
+        "ask_role": "liver_clinic",
+        "required": true,
+        "blocks": ["under_target_stools"]
+      },
+      {
+        "id": "q_rifaximin",
+        "question": "Is she on a second medicine alongside the syrup, and should we track it separately?",
+        "ask_role": "liver_clinic",
+        "required": false,
+        "blocks": []
+      }
+    ]
+  }
+}

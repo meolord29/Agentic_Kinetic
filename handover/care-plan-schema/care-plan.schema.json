@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://catalystcase.invalid/schemas/care-plan/v1.json",
+  "title": "Home Care Plan",
+  "description": "A clinician-authored, machine-evaluable home care plan. The agent NEVER originates a threshold: every rule cites a source in this document. An LLM may normalise lay observations into typed values; only deterministic code evaluates rules and fires escalations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "plan_id", "revision", "condition", "authored",
+    "languages", "roles", "observations", "rules", "escalations",
+    "prohibitions", "sources", "review", "activation"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "plan_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,63}$" },
+    "revision": { "type": "integer", "minimum": 1 },
+    "subject_ref": {
+      "type": "string",
+      "description": "Pseudonymous handle only. Never a name, date of birth, or record number.",
+      "pattern": "^[a-z0-9-]{3,64}$"
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "plain_english"],
+      "properties": {
+        "label": { "type": "string", "minLength": 3 },
+        "plain_english": {
+          "type": "string",
+          "minLength": 20,
+          "description": "One sentence a layperson understands, used verbatim in escalations."
+        },
+        "coding": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "authored": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clinician_role", "organisation_ref", "approved_utc"],
+      "properties": {
+        "clinician_role": { "type": "string", "minLength": 3 },
+        "organisation_ref": { "type": "string", "minLength": 2 },
+        "approved_utc": { "type": "string", "format": "date-time" }
+      }
+    },
+    "languages": {
+      "type": "array", "minItems": 1,
+      "items": { "type": "string", "pattern": "^[a-z]{2}(-[A-Za-z0-9]{2,8})*$" },
+      "description": "BCP-47. The FIRST is the plan's authoring language; observation prompts must exist in every language listed."
+    },
+
+    "roles": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "language", "channel"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]{2,32}$" },
+          "kind": {
+            "enum": ["observer", "decision_maker", "clinician", "emergency_service", "subject"],
+            "description": "observer = the person who sees the patient daily and is NOT clinically trained."
+          },
+          "language": { "type": "string" },
+          "channel": { "enum": ["group_chat", "direct_message", "voice", "email", "portal"] },
+          "on_call_rota": {
+            "type": "boolean", "default": false,
+            "description": "If true this role is filled by whoever is on call now, never a fixed person."
+          },
+          "may_receive": {
+            "type": "array",
+            "items": { "enum": ["observations", "trends", "escalations", "clinical_detail"] },
+            "description": "Role-scoped disclosure. An observer may be sent observations and escalations without clinical_detail."
+          }
+        }
+      }
+    },
+
+    "observations": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "collected_by", "schedule", "prompts"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]{2,48}$" },
+          "type": { "enum": ["boolean", "count", "scalar", "enum", "text", "image"] },
+          "unit": { "type": "string" },
+          "enum_values": { "type": "array", "items": { "type": "string" } },
+          "collected_by": { "type": "string", "description": "roles[].id" },
+          "schedule": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind"],
+            "properties": {
+              "kind": { "enum": ["daily", "twice_daily", "weekly", "on_event", "on_demand"] },
+              "at_local": { "type": "array", "items": { "type": "string", "pattern": "^[0-2][0-9]:[0-5][0-9]$" } },
+              "conditions": {
+                "type": "string",
+                "description": "Human-readable measurement conditions, e.g. 'after voiding, before eating, same scale'."
+              },
+              "event": { "type": "string", "description": "For kind=on_event: the trigger the observer reports." }
+            }
+          },
+          "prompts": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": { "type": "string", "minLength": 5 },
+            "description": "Keyed by BCP-47 tag. Written for a layperson, not a clinician."
+          },
+          "missing_after_hours": {
+            "type": "integer", "minimum": 1,
+            "description": "Beyond this the value is state STALE. Silence is a signal, never an implied normal."
+          },
+          "normalisation_hint": {
+            "type": "string",
+            "description": "Guidance for the extraction model only. Never used to decide an escalation."
+          }
+        }
+      }
+    },
+
+    "derivations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "fn", "from"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]{2,48}$" },
+          "fn": {
+            "enum": [
+              "count_in_window", "sum_in_window", "max_in_window", "min_in_window",
+              "delta", "streak_true", "streak_false",
+              "consecutive_days_below", "consecutive_days_above",
+              "coefficient_of_variation", "pattern_inversion", "days_until", "latch_true"
+            ],
+            "description": "Closed set. No expression is ever evaluated from a string."
+          },
+          "from": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "window_hours": { "type": "integer", "minimum": 1 },
+          "threshold": { "type": "number" },
+          "unit": { "type": "string" }
+        }
+      }
+    },
+
+    "rules": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "when", "escalate_to", "agent_authority", "cites", "why"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]{2,48}$" },
+          "when": { "$ref": "#/$defs/predicate" },
+          "escalate_to": { "type": "string", "description": "escalations[].id" },
+          "agent_authority": {
+            "enum": ["observe_only", "inform", "instruct_within_plan"],
+            "description": "instruct_within_plan is the ONLY value permitting the agent to state an action, and only one enumerated in permitted_action."
+          },
+          "permitted_action": {
+            "type": "string",
+            "description": "Required when agent_authority is instruct_within_plan. The exact wording the agent may use."
+          },
+          "cites": {
+            "type": "array", "minItems": 1, "items": { "type": "string" },
+            "description": "sources[].id. A rule with no citation is not authorable — this is the control that stops invented thresholds."
+          },
+          "why": {
+            "type": "string", "minLength": 20,
+            "description": "Why this threshold matters, in plain English, for the escalation message and the audit record."
+          },
+          "cooldown_hours": { "type": "integer", "minimum": 0, "default": 24 },
+          "suppress_if": { "$ref": "#/$defs/predicate" }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "agent_authority": { "const": "instruct_within_plan" } }, "required": ["agent_authority"] },
+            "then": { "required": ["permitted_action"] }
+          }
+        ]
+      }
+    },
+
+    "escalations": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "rung", "route_to", "message"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]{2,48}$" },
+          "rung": {
+            "enum": ["note", "act_today", "urgent", "emergency"],
+            "description": "note = record only. act_today = a human must act within the day. urgent = same-hour clinical contact. emergency = emergency services."
+          },
+          "route_to": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "message": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ask", "because", "if_ignored"],
+            "properties": {
+              "ask": { "type": "string", "minLength": 10, "description": "The action, first, in ordinary words. No identifiers before this sentence." },
+              "because": { "type": "string", "minLength": 10 },
+              "if_ignored": { "type": "string", "minLength": 10 }
+            }
+          },
+          "requires_ack": { "type": "boolean", "default": true },
+          "ack_timeout_minutes": { "type": "integer", "minimum": 1 },
+          "on_timeout_escalate_to": {
+            "type": "string",
+            "description": "An unanswered escalation MUST promote. A silent human is not a handled escalation."
+          },
+          "attach_evidence": { "type": "boolean", "default": true }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "requires_ack": { "const": true } }, "required": ["requires_ack"] },
+            "then": { "required": ["ack_timeout_minutes", "on_timeout_escalate_to"] }
+          }
+        ]
+      }
+    },
+
+    "prohibitions": {
+      "type": "array", "minItems": 1,
+      "items": { "type": "string", "minLength": 10 },
+      "description": "Absolute constraints on agent output for this plan. Enforced outside the model."
+    },
+
+    "sources": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "citation"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_]{2,48}$" },
+          "citation": { "type": "string", "minLength": 10 },
+          "url": { "type": "string" },
+          "retrieved_utc": { "type": "string", "format": "date-time" },
+          "kind": { "enum": ["guideline", "trial", "local_protocol", "prescriber_instruction"] }
+        }
+      }
+    },
+
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cadences", "review_by_utc"],
+      "properties": {
+        "cadences": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["period", "produces", "for_role"],
+            "properties": {
+              "period": { "enum": ["daily", "weekly", "monthly", "quarterly"] },
+              "produces": { "enum": ["capture", "household_review", "evidence_refresh", "clinician_pack"] },
+              "for_role": { "type": "string" }
+            }
+          }
+        },
+        "review_by_utc": { "type": "string", "format": "date-time" },
+        "outcome_metrics": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "activation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "open_questions"],
+      "properties": {
+        "state": {
+          "enum": ["draft", "awaiting_clinician", "active", "suspended"],
+          "description": "A plan is evaluable ONLY in state active. Any required open_question blocks activation."
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "question", "ask_role", "required", "blocks"],
+            "properties": {
+              "id": { "type": "string" },
+              "question": { "type": "string", "minLength": 10 },
+              "ask_role": { "type": "string" },
+              "by_utc": { "type": "string", "format": "date-time" },
+              "required": { "type": "boolean" },
+              "blocks": { "type": "array", "items": { "type": "string" }, "description": "rules[].id disabled until answered." }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 1,
+      "properties": {
+        "all": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/predicate" } },
+        "any": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/predicate" } },
+        "not": { "$ref": "#/$defs/predicate" },
+        "test": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["metric", "op"],
+          "properties": {
+            "metric": { "type": "string", "description": "An observations[].id or derivations[].id. Nothing else resolves." },
+            "op": { "enum": ["eq", "ne", "lt", "lte", "gt", "gte", "is_true", "is_false", "is_stale", "matches_list"] },
+            "value": {},
+            "list_ref": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

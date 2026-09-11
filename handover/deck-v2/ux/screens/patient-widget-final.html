@@ -1,0 +1,778 @@
+<title>Agentic Kinetic Patient Widget</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap">
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Agentic Kinetic · patient widget · final   (s16)
+   Brand ring badges only. Motion has three levels: Off, Feedback, Motion graphics.
+   Light is the default; dark follows the device, or the switch.
+   Render hooks (URL hash, comma-separated): light | dark · still · mg (motion graphics) | off
+   ───────────────────────────────────────────────────────────────────────────── */
+@property --ak-draw{syntax:'<number>';inherits:true;initial-value:0}
+@property --ak-num{syntax:'<number>';inherits:true;initial-value:0}
+@property --ak-dot{syntax:'<number>';inherits:true;initial-value:1}
+@property --ak-sweep{syntax:'<angle>';inherits:false;initial-value:125deg}
+
+:root{
+  --chrome:#E7E4F4; --chrome-ink:#12143A; --chrome-muted:#4A5080; --chrome-line:#CFCAE6; --chrome-card:#F3F1FF;
+  --ground:#F3F1FF; --glow-a:rgba(34,211,238,.16); --glow-b:rgba(229,84,214,.11);
+  --surface:#FFFFFF; --raised:#ECE9FF; --line:#DEDAF5;
+  --ink:#12143A; --muted:#545A86;
+  --chip:#ECE9FF; --chip-ink:#12143A; --chip-line:#ECE9FF;
+  --btn:#4B35D6; --btn-ink:#FFFFFF;
+  --cyan:#22D3EE; --violet:#8B5CF6; --magenta:#E554D6;
+  --num-a:#0891B2; --num-b:#7C3AED; --num-c:#C026D3;
+  --accent-text:#0E7490;
+  --done:#15795A; --done-tint:#E3F5EE;
+  --tile:#12143A; --fab:#12143A; --fab-ink:#FFFFFF;
+  --shadow:0 1px 2px rgba(18,20,58,.05),0 6px 18px rgba(18,20,58,.05);
+  --now-glow:0 12px 30px rgba(75,53,214,.13);
+  --frame:#D5D0EA;
+  --display:"Poppins",ui-sans-serif,system-ui,sans-serif;
+  --sans:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+:root[data-ak="dark"]{
+  --chrome:#05081C; --chrome-ink:#EAF4FF; --chrome-muted:#A7B4E0; --chrome-line:#1E2560; --chrome-card:#0B0F2E;
+  --ground:#0B0F2E; --glow-a:rgba(88,229,252,.19); --glow-b:rgba(229,84,214,.17);
+  --surface:#161C4A; --raised:#1E2560; --line:#2C3778;
+  --ink:#EAF4FF; --muted:#A7B4E0;
+  --chip:#1E2560; --chip-ink:#EAF4FF; --chip-line:#2C3778;
+  --btn:#58E5FC; --btn-ink:#0B0F2E;
+  --cyan:#58E5FC; --violet:#C164F3; --magenta:#E554D6;
+  --num-a:#58E5FC; --num-b:#C164F3; --num-c:#E554D6;
+  --accent-text:#58E5FC;
+  --done:#6EE7B7; --done-tint:rgba(110,231,183,.13);
+  --tile:#1E2560; --fab:#0B0F2E; --fab-ink:#EAF4FF;
+  --shadow:none;
+  --now-glow:0 0 34px rgba(88,229,252,.13);
+  --frame:#161C4A;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--chrome);color:var(--chrome-ink);font-family:var(--sans)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.switches input:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.board{padding-inline:40px;padding-block:0 48px}
+@media (max-width:700px){.board{padding-inline:16px}}
+
+/* ── Board chrome ─────────────────────────────────────────────────────────── */
+.head{display:grid;align-content:center;gap:14px;padding-block:28px}
+.head h1{margin:0;font:600 26px/1.2 var(--display);letter-spacing:.005em;text-wrap:balance}
+.head h1 span{font-weight:500;color:var(--chrome-muted)}
+.head .lead{margin:0;max-width:78ch;font-size:15px;line-height:1.5;color:var(--chrome-muted)}
+.switches{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;font-size:14px}
+.switches label{display:inline-flex;gap:8px;align-items:center;cursor:pointer;padding:6px 12px;border:1px solid var(--chrome-line);border-radius:999px;color:var(--chrome-ink)}
+.switches input{accent-color:#8B5CF6;width:15px;height:15px;margin:0}
+.switches .sep{width:1px;height:22px;background:var(--chrome-line)}
+.switches .grp{font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--chrome-muted)}
+.switches .replay{min-height:34px;border-radius:999px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);font:600 13px var(--display);padding:0 16px;display:inline-flex;align-items:center;gap:8px}
+.switches .replay svg{width:14px;height:14px}
+
+.rail{display:flex;gap:40px;overflow-x:auto}
+.col{flex:none;width:390px;display:grid;gap:14px;align-content:start}
+.cap{margin:0;font-size:14px;line-height:1.45;color:var(--chrome-muted)}
+.cap b{font:600 12px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--chrome-ink);margin-right:6px}
+.tag{display:inline-block;font:600 10.5px var(--display);letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--chrome-line);color:var(--chrome-muted);border-radius:999px;padding:1px 8px;margin-left:4px;vertical-align:1px}
+
+/* ── Phone screen ─────────────────────────────────────────────────────────── */
+.screen{width:390px;height:844px;border-radius:46px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  background-color:var(--ground);color:var(--ink);font-family:var(--sans);
+  background-image:radial-gradient(95% 38% at 0% 0%,var(--glow-a),transparent 62%),radial-gradient(85% 34% at 100% 0%,var(--glow-b),transparent 62%);
+  box-shadow:0 0 0 1px var(--frame)}
+.status{height:48px;flex:none;display:flex;justify-content:space-between;align-items:flex-end;padding:0 32px 6px;font:600 15px var(--sans)}
+.status i{font-style:normal;display:flex;gap:6px;align-items:center;font-size:12px;letter-spacing:.04em;color:var(--muted)}
+.status svg{width:24px;height:12px}
+.homebar{position:absolute;left:50%;bottom:8px;width:134px;height:5px;border-radius:3px;background:var(--ink);opacity:.3;transform:translateX(-50%)}
+
+.hdr{display:flex;align-items:center;gap:12px;padding:8px 20px 12px}
+.hdr .mark{width:38px;height:38px;flex:none}
+.hello b{display:block;font:600 17px/1.2 var(--display)}
+.hello span{font-size:13px;color:var(--muted)}
+.lvl{margin-left:auto;width:48px;height:48px;position:relative;flex:none}
+.lvl svg{width:48px;height:48px;display:block;transform:rotate(-90deg)}
+.lvl b{position:absolute;inset:0;display:grid;place-items:center;font:600 13px var(--display)}
+.menu{width:40px;height:40px;border:0;background:none;border-radius:12px;display:grid;place-items:center;color:var(--muted);flex:none}
+.menu svg{width:22px;height:22px}
+
+.stack{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:2px 16px 110px}
+
+/* widgets */
+.w{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:var(--shadow)}
+.w.now{border:1.5px solid transparent;border-radius:26px;padding:20px;
+  background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(var(--ak-sweep,125deg),var(--cyan),var(--violet) 55%,var(--magenta)) border-box;
+  box-shadow:var(--now-glow)}
+.eyebrow{display:flex;align-items:center;gap:8px;font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.eyebrow .pip{position:relative;width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--magenta));flex:none}
+.eyebrow svg{width:16px;height:16px;color:var(--ink)}
+.w h2{margin:8px 0 4px;font:600 22px/1.25 var(--display);text-wrap:balance}
+.w h3{margin:0;font:600 17px/1.3 var(--display);text-wrap:balance}
+.w p{margin:0;font-size:15px;line-height:1.45;color:var(--muted)}
+.w p.say{color:var(--ink);font-size:17px;line-height:1.4}
+.w .fine{font-size:13px;line-height:1.4}
+.w .fine b{color:var(--ink)}
+.hr{height:1px;background:var(--line);margin:14px 0}
+
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.answers.three{grid-template-columns:repeat(3,1fr)}
+.answers.tight{margin-top:12px}
+.answers.three .chip{font-size:14px;padding:6px 4px;white-space:nowrap}
+.chip{min-height:52px;border-radius:16px;border:1px solid var(--chip-line);background:var(--chip);color:var(--chip-ink);font:600 15px var(--display);padding:6px 8px}
+.chip.sel{background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
+.chip.ghost{background:transparent;border-color:var(--line)}
+.btn{min-height:50px;border-radius:16px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);font:600 15px var(--display);padding:0 14px;width:100%}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+
+.row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:20px}
+.ic{width:40px;height:40px;border-radius:12px;background:var(--raised);display:grid;place-items:center;color:var(--ink);flex:none}
+.ic svg{width:22px;height:22px}
+.row .t1{font:600 11px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.row .t2{font:600 15px/1.3 var(--display)}
+.row .chev{margin-left:auto;width:20px;height:20px;color:var(--muted);flex:none}
+
+.done{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.done .ok{width:28px;height:28px;border-radius:50%;background:var(--done-tint);color:var(--done);display:grid;place-items:center;flex:none}
+.done .ok svg{width:16px;height:16px}
+.done b{font:600 15px var(--display)}
+.done span{margin-left:auto;font:600 13px var(--display);color:var(--done)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{display:grid;gap:10px;align-content:start;padding:14px}
+.tile b{font:600 15px/1.25 var(--display)}
+.tile small{font-size:13px;line-height:1.35;color:var(--muted)}
+.minis{display:flex;gap:6px}
+.minis svg{width:34px;height:34px}
+
+/* hold-to-talk */
+.fab-wrap{position:absolute;right:20px;bottom:34px;display:flex;align-items:center;gap:10px}
+.hint{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--display);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 13px;box-shadow:var(--shadow)}
+.hint svg{width:16px;height:16px;color:var(--muted)}
+.fab{position:relative;width:66px;height:66px;border-radius:50%;padding:3px;border:0;background:conic-gradient(from 210deg,var(--cyan),var(--violet),var(--magenta),var(--cyan));box-shadow:var(--now-glow)}
+.fab span{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;background:var(--fab);color:var(--fab-ink)}
+.fab svg{width:26px;height:26px}
+
+/* celebration, badge, voice, timeline */
+.cheer{display:grid;justify-items:center;text-align:center;gap:6px;padding:14px 16px 18px}
+.cheer .burst{width:150px;height:104px;display:block;overflow:visible}
+.burst .cf{transform-box:fill-box;transform-origin:center}
+.plus{margin-top:6px;font:600 13px var(--display);background:var(--raised);color:var(--ink);border-radius:999px;padding:5px 12px}
+.badge-w{display:grid;justify-items:center;text-align:center;gap:6px}
+.badge-w .emb-big{width:112px;height:112px;margin-bottom:4px}
+.badge-w h2{margin:0}
+.shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin-top:12px;padding-top:14px;border-top:1px solid var(--line)}
+.shelf div{display:grid;justify-items:center;gap:4px}
+.shelf svg{width:44px;height:44px}
+.shelf span{font:600 12px var(--display);color:var(--ink)}
+.shelf small{font-size:12px;color:var(--muted)}
+.wave{width:100%;height:34px;display:block;margin:10px 0}
+.wave rect{transform-box:fill-box;transform-origin:center}
+.rows{display:grid;margin-top:10px}
+.rows .r{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+.rows .r span{font-size:14px;color:var(--muted);width:92px;flex:none}
+.rows .r b{font:600 15px var(--display)}
+.rows .r button{margin-left:auto;border:0;background:none;font:600 14px var(--display);color:var(--accent-text);padding:6px 0}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.tl{position:relative;display:grid;grid-template-columns:repeat(4,1fr);margin:18px 0 14px}
+.tl::before{content:"";position:absolute;left:12.5%;right:12.5%;top:9px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--cyan),var(--violet),var(--magenta));transform-origin:left center}
+.tl .st{position:relative;display:grid;justify-items:center;gap:8px;text-align:center}
+.tl .nd{width:20px;height:20px;border-radius:50%;background:var(--surface);border:2.5px solid var(--violet)}
+.tl .st:first-child .nd{border-color:var(--cyan)}
+.tl .st:last-child .nd{border-color:var(--magenta)}
+.tl b{font:600 13px var(--display)}
+.team-line{display:flex;gap:10px;align-items:flex-start}
+.team-line p{color:var(--ink)}
+
+/* ── Identity strip ───────────────────────────────────────────────────────── */
+.identity{margin-top:36px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:40px}
+@media (max-width:1100px){.identity{grid-template-columns:1fr}}
+@media (max-width:760px){.marks{grid-template-columns:1fr}.badges{grid-template-columns:repeat(2,minmax(0,1fr))}.sect{padding:22px}}
+.sect{background:var(--chrome-card);border:1px solid var(--chrome-line);border-radius:28px;padding:32px;display:grid;gap:22px;align-content:start}
+.sect h2{margin:0;font:600 13px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--chrome-muted)}
+.sect .sub{margin:-12px 0 0;font-size:15px;line-height:1.5;color:var(--chrome-muted);max-width:70ch}
+.marks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.markopt{display:grid;gap:14px;align-content:start;padding:22px;border-radius:22px;border:1px solid var(--chrome-line)}
+.markopt.rec{background:linear-gradient(var(--chrome-card),var(--chrome-card)) padding-box,linear-gradient(125deg,var(--cyan),var(--violet) 55%,var(--magenta)) border-box;border:1.5px solid transparent}
+.sizes{display:flex;align-items:flex-end;gap:18px}
+.sizes .s96{width:96px;height:96px}.sizes .s40{width:40px;height:40px}.sizes .s20{width:20px;height:20px}
+.markopt b{font:600 17px var(--display)}
+.markopt p{margin:0;font-size:14px;line-height:1.45;color:var(--chrome-muted)}
+.lockup{display:flex;align-items:center;font:600 26px var(--display);gap:14px;min-height:96px}
+.lockup svg{width:44px;height:44px}
+.badges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 16px}
+.badges figure{margin:0;display:grid;justify-items:center;gap:8px;text-align:center}
+.badges svg{width:72px;height:72px}
+.badges figcaption b{display:block;font:600 15px var(--display)}
+.badges figcaption span{font-size:13px;color:var(--chrome-muted)}
+.rules{margin:0;padding:0;list-style:none;display:grid;gap:8px;font-size:14px;line-height:1.45;color:var(--chrome-muted)}
+.rules li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--violet);margin-right:10px;vertical-align:2px}
+
+/* ── Motion spec ──────────────────────────────────────────────────────────── */
+.spec{margin-top:40px}
+.tablewrap{overflow-x:auto}
+.spec table{width:100%;max-width:1180px;min-width:720px;border-collapse:collapse;font-size:14px;line-height:1.45}
+.spec th{text-align:left;font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--chrome-muted);padding:0 20px 10px 0}
+.spec td{padding:12px 20px 12px 0;border-top:1px solid var(--chrome-line);vertical-align:top;color:var(--chrome-muted)}
+.spec td:first-child{font:600 15px var(--display);color:var(--chrome-ink);white-space:nowrap}
+.spec td.t{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--chrome-ink)}
+.mode{display:inline-block;font:600 10.5px var(--display);letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.mode.fb{background:var(--chrome-line);color:var(--chrome-ink)}
+.mode.mg{background:var(--btn);color:var(--btn-ink)}
+
+/* ── Badges (brand ring) ──────────────────────────────────────────────────── */
+.bw{position:relative;display:inline-grid;place-items:center;isolation:isolate}
+.bw svg{display:block;overflow:visible}
+.bw .ring{position:absolute;inset:8%;border-radius:50%;border:2px solid var(--hue,#8B5CF6);opacity:0;z-index:-1;pointer-events:none}
+.bw.lockedb svg{filter:grayscale(1);opacity:.35}
+:root[data-ak="dark"] .bw.lockedb svg{opacity:.62}
+
+/* ── Motion · Feedback (the default): small, once, on the thing that changed ── */
+@keyframes ring{0%{transform:scale(.86);opacity:.55}100%{transform:scale(1.5);opacity:0}}
+@keyframes pop{0%{transform:scale(.86)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes ringdraw{from{stroke-dashoffset:125.66}}
+@keyframes pipring{from{transform:scale(1);opacity:.7}to{transform:scale(3);opacity:0}}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.07);opacity:.95}}
+.play .bw.hero .ring{animation:ring 1.2s cubic-bezier(.2,.7,.3,1) 2 both}
+.play .bw.hero .ring.two{animation-delay:.35s}
+.play .bw.hero svg{animation:pop .52s cubic-bezier(.2,.9,.3,1.25) both}
+.play .ringdraw{animation:ringdraw .9s cubic-bezier(.3,.7,.3,1) .2s both}
+.play .eyebrow .pip::before,.play .eyebrow .pip::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--violet);animation:pipring 1.2s ease-out 2 both}
+.play .eyebrow .pip::after{animation-delay:.35s}
+.play .done .ok{animation:pop .5s cubic-bezier(.2,.9,.3,1.25) .15s both}
+.play .fab::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid var(--violet);animation:ring 1.4s ease-out .6s 2 both;pointer-events:none}
+.pulse{transform-box:fill-box;transform-origin:center}
+.play .pulse{animation:pulse 2.2s ease-in-out 2}
+.play .pulse.two{animation-delay:.5s}
+
+/* ── Motion · Motion graphics: Feedback, plus one choreographed arrival per screen ── */
+@keyframes trace{0%{--ak-draw:1;--ak-dot:0}72%{--ak-draw:0;--ak-dot:0}86%{--ak-dot:1.4}100%{--ak-draw:0;--ak-dot:1}}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.98)}}
+@keyframes sweep{from{--ak-sweep:125deg}to{--ak-sweep:485deg}}
+@keyframes rimtrace{0%{--ak-draw:1;--ak-num:1}55%{--ak-draw:0;--ak-num:1}100%{--ak-draw:0;--ak-num:0}}
+@keyframes tickdraw{from{--ak-draw:1}}
+@keyframes bar{from{transform:scaleY(.12)}}
+@keyframes line{from{transform:scaleX(0)}}
+@keyframes nodepop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes settle{from{transform:translate(var(--dx),var(--dy)) scale(.3);opacity:0}}
+.mo-graphics.play .hdr .mark,.mo-graphics.play .burst use{animation:trace 1.1s cubic-bezier(.45,0,.2,1) calc(var(--col,0) * 110ms) both}
+.mo-graphics.play .markopt.rec .s96{animation:trace 1.4s cubic-bezier(.45,0,.2,1) .3s both}
+.mo-graphics.play .stack>*{animation:rise .55s cubic-bezier(.2,.8,.2,1) calc(var(--col,0) * 110ms + 120ms + var(--k,0) * 90ms) both}
+.mo-graphics.play .stack>.w.now{animation:rise .55s cubic-bezier(.2,.8,.2,1) calc(var(--col,0) * 110ms + 120ms + var(--k,0) * 90ms) both,sweep 1.6s cubic-bezier(.5,0,.3,1) calc(var(--col,0) * 110ms + 400ms) both}
+.mo-graphics.play .ringdraw{animation-delay:calc(var(--col,0) * 110ms + 200ms)}
+.mo-graphics.play .done .ok svg{animation:tickdraw .45s ease-out calc(var(--col,0) * 110ms + 450ms) both}
+.mo-graphics.play .bw.hero svg{animation:pop .52s cubic-bezier(.2,.9,.3,1.25) both,rimtrace 1.2s cubic-bezier(.45,0,.2,1) calc(var(--col,0) * 110ms + 150ms) both}
+.mo-graphics.play .burst .cf{animation:settle .7s cubic-bezier(.2,.8,.2,1) calc(var(--col,0) * 110ms + 750ms) both}
+.mo-graphics.play .wave rect{animation:bar .5s cubic-bezier(.3,.7,.3,1.3) calc(var(--col,0) * 110ms + 400ms + var(--n,0) * 28ms) both}
+.mo-graphics.play .tl::before{animation:line 1s cubic-bezier(.6,0,.2,1) calc(var(--col,0) * 110ms + 450ms) both}
+.mo-graphics.play .tl .nd{animation:nodepop .45s cubic-bezier(.2,.9,.3,1.35) calc(var(--col,0) * 110ms + 450ms + var(--s,0) * 250ms) both}
+
+/* ── Motion · Off, the screenshot frame, and the phone's reduce-motion setting ── */
+.board.mo-off *,.board.mo-off *::before,.board.mo-off *::after{animation:none!important}
+:root.still .board *,:root.still .board *::before,:root.still .board *::after{animation:none!important}
+:root.still .bw.hero .ring{opacity:.32;transform:scale(1.18)}
+:root.still .bw.hero .ring.two{opacity:.14;transform:scale(1.42)}
+@media (prefers-reduced-motion:reduce){.board *,.board *::before,.board *::after{animation:none!important}}
+
+/* option switches */
+.board.off-progress .lvl{display:none}
+.board.off-badges .badge-w,.board.off-badges .badges-tile,.board.off-badges .shelf{display:none}
+.board.off-cheer .cheer,.board.off-cheer .plus{display:none}
+.board.off-mood .opt-mood{display:none}
+</style>
+
+<div class="board play" id="board">
+  <header class="head">
+    <h1>Agentic Kinetic · patient widget <span>· final</span></h1>
+    <p class="lead">The agent decides what is big. What is due now is the large widget, what comes next is a row, and everything else is a small tile. It speaks only through approved widgets, and she talks by holding one button. This is the final set for the build: logo A, brand ring badges and Feedback motion. The mood module and Motion graphics are marked future development: they show where the app is going and are not needed for the first build.</p>
+    <div class="switches" role="group" aria-label="Design options">
+      <span class="grp">Theme</span>
+      <label><input type="radio" name="theme" id="th-device" value="device" checked> Match device</label>
+      <label><input type="radio" name="theme" id="th-light" value="light"> Light</label>
+      <label><input type="radio" name="theme" id="th-dark" value="dark"> Dark</label>
+      <span class="sep" aria-hidden="true"></span>
+      <span class="grp">Options</span>
+      <label><input type="checkbox" id="sw-progress" checked> Progress ring &amp; levels</label>
+      <label><input type="checkbox" id="sw-badges" checked> Milestone badges</label>
+      <label><input type="checkbox" id="sw-cheer" checked> Celebration</label>
+      <label><input type="checkbox" id="sw-mood" checked> Mood module (future development)</label>
+      <span class="sep" aria-hidden="true"></span>
+      <span class="grp">Motion</span>
+      <label><input type="radio" name="motion" id="mo-off" value="off"> Off</label>
+      <label><input type="radio" name="motion" id="mo-feedback" value="feedback" checked> Feedback</label>
+      <label><input type="radio" name="motion" id="mo-graphics" value="graphics"> Motion graphics (future development)</label>
+      <button class="replay" type="button" id="replay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4v3.5H8" style="fill:none;stroke:currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Replay motion</button>
+    </div>
+  </header>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="g-mark" gradientUnits="userSpaceOnUse" x1="6" y1="24" x2="27" y2="8"><stop offset="0" style="stop-color:var(--cyan)"/><stop offset=".55" style="stop-color:var(--violet)"/><stop offset="1" style="stop-color:var(--magenta)"/></linearGradient>
+      <linearGradient id="g-ring" gradientUnits="userSpaceOnUse" x1="4" y1="44" x2="44" y2="4"><stop offset="0" style="stop-color:var(--cyan)"/><stop offset=".55" style="stop-color:var(--violet)"/><stop offset="1" style="stop-color:var(--magenta)"/></linearGradient>
+      <linearGradient id="g-wave" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="320" y2="0"><stop offset="0" style="stop-color:var(--cyan)"/><stop offset=".55" style="stop-color:var(--violet)"/><stop offset="1" style="stop-color:var(--magenta)"/></linearGradient>
+
+      <!-- Brand mark A (32 grid): the kinetic curve, a rise and a decay in one stroke; the dot is the next sample.
+           The stroke and dot read --ak-draw / --ak-dot, so the curve can trace itself on. At rest it is whole. -->
+      <symbol id="mark-a" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" style="fill:var(--tile)"/><path d="M6.5 22.8C9.3 22.8 10.4 8.8 13.3 8.8C16.9 8.8 18.8 17.6 24.6 19.9" pathLength="1" style="fill:none;stroke:url(#g-mark);stroke-dasharray:1 2;stroke-dashoffset:var(--ak-draw,0)" stroke-width="2.7" stroke-linecap="round"/><circle cx="24.8" cy="19.9" r="2.3" style="fill:var(--magenta);transform-box:fill-box;transform-origin:center;transform:scale(var(--ak-dot,1))"/></symbol>
+      <symbol id="mark-mono" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" style="fill:var(--tile)"/><path d="M6.5 22.8C9.3 22.8 10.4 8.8 13.3 8.8C16.9 8.8 18.8 17.6 24.6 19.9" style="fill:none;stroke:#FFFFFF" stroke-width="2.7" stroke-linecap="round"/><circle cx="24.8" cy="19.9" r="2.3" style="fill:#FFFFFF"/></symbol>
+
+      <!-- UI icons (24 grid, 1.9 stroke, round caps) -->
+      <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" style="fill:none;stroke:currentColor" stroke-width="2"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" style="fill:none;stroke:currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-key" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3" style="fill:none;stroke:currentColor" stroke-width="1.9"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M5 8h14M5 16h14" style="fill:none;stroke:currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14" rx="3" style="fill:none;stroke:currentColor" stroke-width="1.9"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+      <symbol id="i-team" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3" style="fill:none;stroke:currentColor" stroke-width="1.9"/><circle cx="17" cy="9.5" r="2.3" style="fill:none;stroke:currentColor" stroke-width="1.9"/><path d="M3.5 19c.7-3 2.8-4.6 5.5-4.6s4.8 1.6 5.5 4.6M14.6 14.9c2.5-.3 4.8 1 5.7 4" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7" pathLength="1" style="fill:none;stroke:currentColor;stroke-dasharray:1 2;stroke-dashoffset:var(--ak-draw,0)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5.5 15.5 12 9 18.5" style="fill:none;stroke:currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3.5C9 7.6 6.5 10.9 6.5 14.2A5.5 5.5 0 0 0 17.5 14.2C17.5 10.9 15 7.6 12 3.5Z" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+      <symbol id="i-batt" viewBox="0 0 24 12"><rect x=".75" y=".75" width="19.5" height="10.5" rx="3" style="fill:none;stroke:currentColor" stroke-width="1.5"/><rect x="2.5" y="2.5" width="14" height="7" rx="1.5" style="fill:currentColor"/><rect x="21.5" y="4" width="1.8" height="4" rx=".9" style="fill:currentColor"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="rail">
+
+    <!-- 1 · NOW -->
+    <div class="col">
+      <section class="screen" aria-label="Screen 1, check-in due now">
+        <div class="status"><span>11:14</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2, 4 of 25 check-ins to level 3"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" style="fill:none;stroke:var(--raised)" stroke-width="5"/><circle class="ringdraw" cx="24" cy="24" r="20" style="fill:none;stroke:url(#g-ring)" stroke-width="5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="105.55"/></svg><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <article class="w now">
+            <div class="eyebrow"><span class="pip"></span>Now · morning dose</div>
+            <h2>How did this morning's dose go?</h2>
+            <p>Every answer counts the same.</p>
+            <div class="answers"><button class="chip" type="button">Took it</button><button class="chip" type="button">Took it late</button><button class="chip" type="button">Missed it</button><button class="chip" type="button">Not sure</button></div>
+          </article>
+          <article class="w row">
+            <span class="ic"><svg><use href="#i-cal"/></svg></span>
+            <div><div class="t1">Booked by your care team</div><div class="t2">Sun 11 Oct · Fingerstick samples</div></div>
+            <svg class="chev"><use href="#i-chev"/></svg>
+          </article>
+          <div class="grid2">
+            <article class="w tile badges-tile">
+              <div class="minis"><span class="bw" data-badge="first" data-size="34" data-rings="0"></span><span class="bw" data-badge="week" data-size="34" data-rings="0"></span><span class="bw lockedb" data-badge="month" data-size="34" data-rings="0"></span></div>
+              <b>Badges</b><small>1 more check-in to First month</small>
+            </article>
+            <article class="w tile">
+              <span class="ic"><svg><use href="#i-team"/></svg></span>
+              <b>Your care team</b><small>Call or message</small>
+            </article>
+          </div>
+        </div>
+        <div class="fab-wrap"><span class="hint">Hold to talk</span><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>1 · Now</b>What is due now is the big widget: one question, four equal answers. Tomorrow's booking is a row; the rest are small tiles. No chat box.</p>
+    </div>
+
+    <!-- 2 · THANKS -->
+    <div class="col">
+      <section class="screen" aria-label="Screen 2, thanks and the next question">
+        <div class="status"><span>11:15</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2, 5 of 25 check-ins to level 3"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" style="fill:none;stroke:var(--raised)" stroke-width="5"/><circle class="ringdraw" cx="24" cy="24" r="20" style="fill:none;stroke:url(#g-ring)" stroke-width="5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="100.53"/></svg><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <div class="done"><span class="ok"><svg><use href="#i-check"/></svg></span><b>Morning dose</b><span>Logged · late</span></div>
+          <article class="w cheer">
+            <svg class="burst" viewBox="0 0 150 104" aria-hidden="true">
+              <circle class="pulse" cx="75" cy="52" r="40" style="fill:none;stroke:var(--cyan)" stroke-width="1.5" opacity=".5"/>
+              <circle class="pulse two" cx="75" cy="52" r="50" style="fill:none;stroke:var(--magenta)" stroke-width="1.5" opacity=".35"/>
+              <circle class="cf" cx="16" cy="40" r="3" style="fill:var(--cyan);--dx:35px;--dy:7px"/>
+              <circle class="cf" cx="134" cy="30" r="3" style="fill:var(--magenta);--dx:-35px;--dy:13px"/>
+              <circle class="cf" cx="128" cy="86" r="2.5" style="fill:var(--violet);--dx:-32px;--dy:-20px"/>
+              <circle class="cf" cx="24" cy="88" r="2.5" style="fill:var(--magenta);--dx:31px;--dy:-22px"/>
+              <circle class="cf" cx="42" cy="10" r="2" style="fill:var(--violet);--dx:20px;--dy:25px"/>
+              <circle class="cf" cx="108" cy="6" r="2" style="fill:var(--cyan);--dx:-20px;--dy:28px"/>
+              <use href="#mark-a" x="51" y="28" width="48" height="48"/>
+            </svg>
+            <h3>Thanks for telling us!</h3>
+            <p>Your care team now has the full picture.</p>
+            <span class="plus">+1 check-in</span>
+          </article>
+          <article class="w now">
+            <div class="eyebrow"><svg><use href="#i-team"/></svg>Your care team asks</div>
+            <h2>Did you start any new medicine this week?</h2>
+            <div class="answers three"><button class="chip" type="button">Yes</button><button class="chip" type="button">No</button><button class="chip" type="button">Not sure</button></div>
+          </article>
+        </div>
+        <div class="fab-wrap"><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>2 · Thanks</b>Her answer shrinks to a done row. The same thanks for every answer, then the next thing moves up and becomes the big widget. <span class="tag">celebration</span><span class="tag">progress</span></p>
+    </div>
+
+    <!-- 3 · MILESTONE -->
+    <div class="col">
+      <section class="screen" aria-label="Screen 3, milestone badge">
+        <div class="status"><span>11:15</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2, 5 of 25 check-ins to level 3"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" style="fill:none;stroke:var(--raised)" stroke-width="5"/><circle class="ringdraw" cx="24" cy="24" r="20" style="fill:none;stroke:url(#g-ring)" stroke-width="5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="100.53"/></svg><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <div class="done"><span class="ok"><svg><use href="#i-check"/></svg></span><b>Morning dose</b><span>Logged · late</span></div>
+          <article class="w now badge-w">
+            <span class="bw hero emb-big" data-badge="month" data-size="112"></span>
+            <div class="eyebrow"><span class="pip"></span>Badge unlocked</div>
+            <h2>First month · 30 check-ins</h2>
+            <p>Thirty honest check-ins. That's a clear picture for your care team.</p>
+            <div class="shelf">
+              <div><span class="bw" data-badge="week" data-size="44" data-rings="0"></span><span>First week</span><small>7</small></div>
+              <div><span class="bw" data-badge="month" data-size="44" data-rings="0"></span><span>First month</span><small>30</small></div>
+              <div><span class="bw lockedb" data-badge="hundred" data-size="44" data-rings="0"></span><span>Hundred club</span><small>100</small></div>
+            </div>
+          </article>
+          <article class="w row">
+            <span class="ic"><svg><use href="#i-team"/></svg></span>
+            <div><div class="t1">Your care team asks</div><div class="t2">1 question waiting</div></div>
+            <svg class="chev"><use href="#i-chev"/></svg>
+          </article>
+        </div>
+        <div class="fab-wrap"><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>3 · Milestone</b>Badges at 7, 30 and 100 check-ins of any kind, each a brand ring with its number. Nothing to lose. The question she has not answered yet folds into a row. <span class="tag">badges</span></p>
+    </div>
+
+    <!-- 4 · VOICE -->
+    <div class="col">
+      <section class="screen" aria-label="Screen 4, she says it instead">
+        <div class="status"><span>11:16</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2, 4 of 25 check-ins to level 3"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" style="fill:none;stroke:var(--raised)" stroke-width="5"/><circle class="ringdraw" cx="24" cy="24" r="20" style="fill:none;stroke:url(#g-ring)" stroke-width="5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="105.55"/></svg><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <article class="w">
+            <div class="eyebrow"><svg><use href="#i-mic"/></svg>You said</div>
+            <svg class="wave" viewBox="0 0 320 34" preserveAspectRatio="none" aria-hidden="true">
+              <g style="fill:url(#g-wave)">
+                <rect x="0" y="13" width="5" height="8" rx="2.5"/><rect x="11" y="9" width="5" height="16" rx="2.5"/><rect x="22" y="4" width="5" height="26" rx="2.5"/><rect x="33" y="10" width="5" height="14" rx="2.5"/><rect x="44" y="6" width="5" height="22" rx="2.5"/><rect x="55" y="12" width="5" height="10" rx="2.5"/><rect x="66" y="2" width="5" height="30" rx="2.5"/><rect x="77" y="8" width="5" height="18" rx="2.5"/><rect x="88" y="11" width="5" height="12" rx="2.5"/><rect x="99" y="5" width="5" height="24" rx="2.5"/><rect x="110" y="9" width="5" height="16" rx="2.5"/><rect x="121" y="13" width="5" height="8" rx="2.5"/><rect x="132" y="7" width="5" height="20" rx="2.5"/><rect x="143" y="3" width="5" height="28" rx="2.5"/><rect x="154" y="10" width="5" height="14" rx="2.5"/><rect x="165" y="6" width="5" height="22" rx="2.5"/><rect x="176" y="12" width="5" height="10" rx="2.5"/><rect x="187" y="8" width="5" height="18" rx="2.5"/><rect x="198" y="4" width="5" height="26" rx="2.5"/><rect x="209" y="11" width="5" height="12" rx="2.5"/><rect x="220" y="7" width="5" height="20" rx="2.5"/><rect x="231" y="13" width="5" height="8" rx="2.5"/><rect x="242" y="9" width="5" height="16" rx="2.5"/><rect x="253" y="5" width="5" height="24" rx="2.5"/><rect x="264" y="11" width="5" height="12" rx="2.5"/><rect x="275" y="8" width="5" height="18" rx="2.5"/><rect x="286" y="13" width="5" height="8" rx="2.5"/><rect x="297" y="10" width="5" height="14" rx="2.5"/><rect x="308" y="14" width="5" height="6" rx="2.5"/>
+              </g>
+            </svg>
+            <p class="say">“I took it late, around eleven, after breakfast.”</p>
+          </article>
+          <article class="w now">
+            <div class="eyebrow"><span class="pip"></span>Here's what I noted</div>
+            <div class="rows">
+              <div class="r"><span>Dose</span><b>Late · about 11:00</b><button type="button">Change</button></div>
+              <div class="r"><span>Food</span><b>After breakfast</b><button type="button">Change</button></div>
+              <div class="r"><span>Typical day?</span><b>Yes</b><button type="button">Change</button></div>
+            </div>
+            <div class="pair"><button class="btn" type="button">Looks right</button><button class="btn ghost" type="button">Say it again</button></div>
+          </article>
+        </div>
+        <div class="fab-wrap"><span class="hint"><svg><use href="#i-key"/></svg>Type instead</span><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>4 · Voice</b>She can say it instead. The agent shows only what it noted, and she confirms or changes each line. Typing is one tap away, never a box on screen.</p>
+    </div>
+
+    <!-- 5 · TIMING + HANDOFF -->
+    <div class="col">
+      <section class="screen" aria-label="Screen 5, sample day tomorrow and a health question">
+        <div class="status"><span>19:40</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Good evening, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2, 6 of 25 check-ins to level 3"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" style="fill:none;stroke:var(--raised)" stroke-width="5"/><circle class="ringdraw" cx="24" cy="24" r="20" style="fill:none;stroke:url(#g-ring)" stroke-width="5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="95.50"/></svg><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <article class="w now">
+            <div class="eyebrow"><svg><use href="#i-drop"/></svg>Tomorrow · booked by your care team</div>
+            <h2>Fingerstick samples · Sun 11 Oct</h2>
+            <div class="tl">
+              <div class="st" style="--s:0"><span class="nd"></span><b>Before dose</b></div>
+              <div class="st" style="--s:1"><span class="nd"></span><b>1 h</b></div>
+              <div class="st" style="--s:2"><span class="nd"></span><b>3 h</b></div>
+              <div class="st" style="--s:3"><span class="nd"></span><b>6 h</b></div>
+            </div>
+            <p>Fasting. I'll walk you through each one.</p>
+          </article>
+          <article class="w">
+            <div class="eyebrow">You asked</div>
+            <p class="say" style="margin:8px 0 12px">“Can I take ibuprofen for my back?”</p>
+            <div class="team-line"><span class="ic"><svg><use href="#i-team"/></svg></span><p>That's one for your care team. I've sent your question to them and they'll reply here.</p></div>
+            <div style="margin-top:14px"><button class="btn ghost" type="button">Call your care team</button></div>
+          </article>
+          <div class="done"><span class="ok"><svg><use href="#i-check"/></svg></span><b>Morning dose</b><span>Logged · late</span></div>
+        </div>
+        <div class="fab-wrap"><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>5 · Timing</b>The evening before, the booked samples become the big widget. A health question is never answered by the app; it goes to her care team.</p>
+    </div>
+
+    <!-- 6 · HARD DAYS (optional) -->
+    <div class="col">
+      <section class="screen" aria-label="Screen 6, optional mood module">
+        <div class="status"><span>18:02</span><i>5G <svg><use href="#i-batt"/></svg></i></div>
+        <header class="hdr">
+          <svg class="mark" role="img" aria-label="Agentic Kinetic"><use href="#mark-a"/></svg>
+          <div class="hello"><b>Hi, Elena</b><span>Saturday 10 October</span></div>
+          <div class="lvl" role="img" aria-label="Level 2, 5 of 25 check-ins to level 3"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" style="fill:none;stroke:var(--raised)" stroke-width="5"/><circle class="ringdraw" cx="24" cy="24" r="20" style="fill:none;stroke:url(#g-ring)" stroke-width="5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="100.53"/></svg><b>L2</b></div>
+          <button class="menu" type="button" aria-label="Menu"><svg><use href="#i-menu"/></svg></button>
+        </header>
+        <div class="stack">
+          <div class="done"><span class="ok"><svg><use href="#i-check"/></svg></span><b>Morning dose</b><span>Logged · late</span></div>
+          <article class="w now opt-mood">
+            <div class="eyebrow"><span class="pip"></span>Only if you want</div>
+            <h3 style="margin-top:8px">How are you today?</h3>
+            <div class="answers three tight"><button class="chip ghost" type="button">Okay</button><button class="chip ghost" type="button">Tired</button><button class="chip sel" type="button" aria-pressed="true">Rough day</button></div>
+            <div class="hr"></div>
+            <h3>Want to name it?</h3>
+            <div class="answers three tight"><button class="chip ghost" type="button">Worn out</button><button class="chip sel" type="button" aria-pressed="true">Fed up</button><button class="chip ghost" type="button">Worried</button></div>
+            <p style="margin-top:14px"><b style="color:var(--ink)">From your care team:</b> “It's hard to do this every day. Thank you for telling us.”</p>
+            <div class="pair"><button class="btn" type="button">Breathe 1 min</button><button class="btn ghost" type="button">Talk to team</button></div>
+            <p class="fine" style="margin-top:12px"><b>Feeling unsafe?</b> Call 999 or 18111, any time.</p>
+          </article>
+          <article class="w row">
+            <span class="ic"><svg><use href="#i-cal"/></svg></span>
+            <div><div class="t1">Booked by your care team</div><div class="t2">Sun 11 Oct · Fingerstick samples</div></div>
+            <svg class="chev"><use href="#i-chev"/></svg>
+          </article>
+        </div>
+        <div class="fab-wrap"><button class="fab" type="button" aria-label="Hold to talk"><span><svg><use href="#i-mic"/></svg></span></button></div>
+        <div class="homebar"></div>
+      </section>
+      <p class="cap"><b>6 · Hard days</b>The mood module, planned for future development and off by default. She tells the app; it never guesses. The words of comfort are her care team's, shown exactly. <span class="tag">future development</span></p>
+    </div>
+
+  </div>
+
+  <div class="identity">
+    <section class="sect" aria-labelledby="h-mark">
+      <h2 id="h-mark">Brand mark · the kinetic curve</h2>
+      <p class="sub">The drug's own rise and fall after a dose, drawn as one line, with the dot as the next sample. It has no face, and it reads at app-icon size and in a 20px header. In Motion graphics the line traces itself on and the dot lands last.</p>
+      <div class="marks">
+        <div class="markopt rec">
+          <div class="sizes"><svg class="s96" role="img" aria-label="Agentic Kinetic mark"><use href="#mark-a"/></svg><svg class="s40" aria-hidden="true"><use href="#mark-a"/></svg><svg class="s20" aria-hidden="true"><use href="#mark-a"/></svg></div>
+          <b>Gradient mark</b>
+          <p>The app icon, the header and the celebration moment. The line carries the full cyan → violet → magenta gradient.</p>
+        </div>
+        <div class="markopt">
+          <div class="lockup"><svg aria-hidden="true"><use href="#mark-a"/></svg>Agentic Kinetic</div>
+          <b>Lockup</b>
+          <p>Poppins 600. The mark sits at 1.6× the cap height, with half a mark of space before the name.</p>
+        </div>
+        <div class="markopt">
+          <div class="sizes"><svg class="s96" role="img" aria-label="One-colour mark"><use href="#mark-mono"/></svg><svg class="s40" aria-hidden="true"><use href="#mark-mono"/></svg><svg class="s20" aria-hidden="true"><use href="#mark-mono"/></svg></div>
+          <b>One-colour</b>
+          <p>For small print, favicons and anywhere a gradient can't be reproduced.</p>
+        </div>
+      </div>
+    </section>
+    <section class="sect" aria-labelledby="h-badges">
+      <h2 id="h-badges">Badges · brand ring</h2>
+      <p class="sub">The mark's gradient circle and soft inner disc, carrying a tick or the milestone number written in one line. Numbers use the deeper end of the brand colours in light mode, so they stay readable on the disc.</p>
+      <div class="badges">
+        <figure><span class="bw" data-badge="first" data-size="84" data-rings="0"></span><figcaption><b>First check-in</b><span>the very first</span></figcaption></figure>
+        <figure><span class="bw" data-badge="week" data-size="84" data-rings="0"></span><figcaption><b>First week</b><span>7 check-ins</span></figcaption></figure>
+        <figure><span class="bw" data-badge="month" data-size="84" data-rings="0"></span><figcaption><b>First month</b><span>30 check-ins</span></figcaption></figure>
+        <figure><span class="bw" data-badge="hundred" data-size="84" data-rings="0"></span><figcaption><b>Hundred club</b><span>100 check-ins</span></figcaption></figure>
+        <figure><span class="bw" data-badge="year" data-size="84" data-rings="0"></span><figcaption><b>One year</b><span>365 check-ins</span></figcaption></figure>
+        <figure><span class="bw" data-badge="level" data-size="84" data-rings="0"></span><figcaption><b>Level up</b><span>every 25 check-ins</span></figcaption></figure>
+      </div>
+      <ul class="rules">
+        <li>Every answer counts, "Missed it" and "Not sure" included.</li>
+        <li>No streaks, leaderboards, on-time bonuses or random rewards.</li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="sect spec" aria-labelledby="h-motion">
+    <h2 id="h-motion">Motion · what moves, and when</h2>
+    <p class="sub">Feedback is the default and is what the first build needs: small motion on the thing that just changed. Motion graphics is future development, one arrival sequence per screen that carries the brand, to add only if there is time. Both play once, nothing loops or runs past five seconds (WCAG 2.2.2), and the phone's reduce-motion setting turns all of it off.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Moment</th><th scope="col">What moves</th><th scope="col">Timing</th><th scope="col">Level</th></tr></thead>
+        <tbody>
+          <tr><td>Answer logged</td><td>The done tick pops in</td><td class="t">0.5 s</td><td><span class="mode fb">Feedback</span></td></tr>
+          <tr><td>Level ring</td><td>The progress arc draws on to her count</td><td class="t">0.9 s</td><td><span class="mode fb">Feedback</span></td></tr>
+          <tr><td>Something new</td><td>The status dot pulses twice</td><td class="t">2 × 1.2 s</td><td><span class="mode fb">Feedback</span></td></tr>
+          <tr><td>Thanks</td><td>Two circles behind the mark breathe twice</td><td class="t">2 × 2.2 s</td><td><span class="mode fb">Feedback</span></td></tr>
+          <tr><td>Badge unlocked</td><td>The badge pops and two rings pulse outward</td><td class="t">0.5 s + 2 × 1.2 s</td><td><span class="mode fb">Feedback</span></td></tr>
+          <tr><td>Screen arrives</td><td>The mark traces the dose curve, and the dot lands as the next sample</td><td class="t">1.1 s</td><td><span class="mode mg">Motion graphics</span></td></tr>
+          <tr><td>Screen arrives</td><td>Widgets rise into place in priority order, the big one first</td><td class="t">0.55 s, 90 ms apart</td><td><span class="mode mg">Motion graphics</span></td></tr>
+          <tr><td>Now widget</td><td>Its gradient edge turns once</td><td class="t">1.6 s</td><td><span class="mode mg">Motion graphics</span></td></tr>
+          <tr><td>Answer logged</td><td>The tick writes itself in one stroke</td><td class="t">0.45 s</td><td><span class="mode mg">Motion graphics</span></td></tr>
+          <tr><td>Thanks</td><td>Confetti dots settle outward from the mark</td><td class="t">0.7 s</td><td><span class="mode mg">Motion graphics</span></td></tr>
+          <tr><td>Badge unlocked</td><td>The ring traces round from the top, then the number writes itself</td><td class="t">1.2 s</td><td><span class="mode mg">Motion graphics</span></td></tr>
+          <tr><td>Voice</td><td>The waveform grows left to right, as she spoke it</td><td class="t">0.5 s, 28 ms apart</td><td><span class="mode mg">Motion graphics</span></td></tr>
+          <tr><td>Sample day</td><td>The timeline draws, then each sample point lands in order</td><td class="t">1 s + 4 × 0.25 s</td><td><span class="mode mg">Motion graphics</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+/* BADGES — brand ring only (June's pick, s15). The four explored styles stay on badge-concepts.html as reference. */
+var AKB = (function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var uid = 0;
+  // Colour of the two unlock pulse rings, one per milestone.
+  var HUES = { cyan: '#22D3EE', blue: '#60A5FA', violet: '#A78BFA', magenta: '#E879F9', spectrum: '#A78BFA', coral: '#FB8B74' };
+  var EVENTS = {
+    first:   { name: 'First check-in', count: 'the very first check-in', hue: 'cyan',     label: '' },
+    week:    { name: 'First week',     count: '7 check-ins',             hue: 'blue',     label: '7' },
+    month:   { name: 'First month',    count: '30 check-ins',            hue: 'violet',   label: '30' },
+    hundred: { name: 'Hundred club',   count: '100 check-ins',           hue: 'magenta',  label: '100' },
+    year:    { name: 'One year',       count: '365 check-ins',           hue: 'spectrum', label: '365' },
+    level:   { name: 'Level up',       count: 'every 25 check-ins',      hue: 'coral',    label: 'L3' }
+  };
+  var CHECK = 'M40 61 53 74 81 45';
+  // Monoline digits on a 10 x 16 box.
+  var DIG = {
+    '0': 'M5 1C8 1 9.5 4 9.5 8S8 15 5 15 .5 12 .5 8 2 1 5 1Z',
+    '1': 'M2.5 4.2 6 1V15',
+    '3': 'M1 2.8C2 1.6 3.4 1 5 1 7.4 1 9 2.4 9 4.4S7.3 7.8 5 7.8C7.8 7.8 9.5 9.3 9.5 11.5 9.5 13.7 7.6 15 5 15 3.1 15 1.6 14.3 .6 12.9',
+    '5': 'M9 1H2.2L1.4 7.2C2.4 6.5 3.6 6.1 5 6.1 7.8 6.1 9.5 7.9 9.5 10.5 9.5 13.2 7.6 15 4.9 15 3.1 15 1.6 14.3 .6 13',
+    '6': 'M8.6 2.1C7.7 1.4 6.5 1 5.2 1 2.3 1 .5 3.8 .5 8.4 .5 12.8 2.3 15 5 15 7.6 15 9.5 13.2 9.5 10.5 9.5 7.9 7.7 6.2 5.2 6.2 3.1 6.2 1.3 7.4 .6 9.4',
+    '7': 'M.8 1H9.2L3.8 15',
+    'L': 'M1.5 1V15H9.5'
+  };
+  function r2(n) { return Math.round(n * 100) / 100; }
+  function el(parent, name, attrs) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    parent.appendChild(e);
+    return e;
+  }
+  function gradient(svg, attrs, tokens) {
+    var id = 'akb' + (++uid);
+    var defs = svg.querySelector('defs') || el(svg, 'defs', {});
+    attrs.id = id;
+    var g = el(defs, 'linearGradient', attrs);
+    ['0', '.55', '1'].forEach(function (offset, i) {
+      el(g, 'stop', { offset: offset, style: 'stop-color:var(' + tokens[i][0] + ',' + tokens[i][1] + ')' });
+    });
+    return 'url(#' + id + ')';
+  }
+  // Number strokes read --ak-num, so in Motion graphics they write themselves on. At rest they are whole.
+  function monoNum(svg, label, stroke, s, sw, cy) {
+    var widths = label.split('').map(function (ch) { return ch === '1' ? 8 : ch === 'L' ? 12 : 13; });
+    var total = widths.reduce(function (a, b) { return a + b; }, 0) - 3;
+    var g = el(svg, 'g', { transform: 'translate(' + r2(60 - total * s / 2) + ' ' + r2(cy - 8 * s) + ') scale(' + s + ')', fill: 'none', stroke: stroke, 'stroke-width': r2(sw / s), 'stroke-linecap': 'round', 'stroke-linejoin': 'round', style: 'stroke-dasharray:1 2;stroke-dashoffset:var(--ak-num,0)' });
+    var x = 0;
+    label.split('').forEach(function (ch, i) { el(g, 'path', { d: DIG[ch], pathLength: '1', transform: 'translate(' + (ch === '1' ? x - 1.5 : x) + ' 0)' }); x += widths[i]; });
+  }
+  function ring(svg, ev) {
+    // The rim starts drawing at 12 o'clock (rotated -90), so its gradient is pre-rotated +90 to keep the approved look.
+    var rim = gradient(svg, { gradientUnits: 'userSpaceOnUse', x1: '8', y1: '8', x2: '112', y2: '112' },
+      [['--cyan', '#22D3EE'], ['--violet', '#8B5CF6'], ['--magenta', '#E554D6']]);
+    var num = gradient(svg, { x1: '0', y1: '1', x2: '1', y2: '0' },
+      [['--num-a', '#0891B2'], ['--num-b', '#7C3AED'], ['--num-c', '#C026D3']]);
+    el(svg, 'circle', { cx: 60, cy: 60, r: 55, pathLength: '1', transform: 'rotate(-90 60 60)', 'stroke-width': 4.7,
+      style: 'fill:var(--surface,#FFFFFF);stroke:' + rim + ';stroke-dasharray:1 2;stroke-dashoffset:var(--ak-draw,0)' });
+    el(svg, 'circle', { cx: 60, cy: 60, r: 41, style: 'fill:var(--raised,#ECE9FF)' });
+    if (!ev.label) {
+      el(svg, 'path', { d: CHECK, pathLength: '1', 'stroke-width': 5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+        style: 'fill:none;stroke:' + num + ';stroke-dasharray:1 2;stroke-dashoffset:var(--ak-num,0)' });
+      return;
+    }
+    var n = ev.label.length;
+    monoNum(svg, ev.label, num, n === 1 ? 2.3 : n === 2 ? 1.9 : 1.45, n === 3 ? 3.8 : 4.4, 61);
+  }
+  function draw(host, evId, size) {
+    var ev = EVENTS[evId];
+    if (!ev) return null;
+    host.textContent = '';
+    host.style.setProperty('--hue', HUES[ev.hue]);
+    if (host.getAttribute('data-rings') !== '0') {
+      var one = document.createElement('span'); one.className = 'ring'; host.appendChild(one);
+      var two = document.createElement('span'); two.className = 'ring two'; host.appendChild(two);
+    }
+    var svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 120 120');
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', size);
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', ev.name + ' badge, ' + ev.count);
+    host.appendChild(svg);
+    ring(svg, ev);
+    return svg;
+  }
+  function hydrate(root) {
+    (root || document).querySelectorAll('[data-badge]').forEach(function (n) {
+      draw(n, n.getAttribute('data-badge'), n.getAttribute('data-size') || '112');
+    });
+  }
+  return { EVENTS: EVENTS, draw: draw, hydrate: hydrate };
+})();
+</script>
+<script>
+(function () {
+  var root = document.documentElement;
+  var board = document.getElementById('board');
+  var flags = (location.hash || '').slice(1).split(',');
+  if (flags.indexOf('still') > -1) root.classList.add('still');
+
+  // Theme: the switch, else the viewer's stamped theme, else the device.
+  var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  var mode = flags.indexOf('dark') > -1 ? 'dark' : (flags.indexOf('light') > -1 ? 'light' : 'device');
+  function resolve() {
+    if (mode !== 'device') return mode;
+    var stamped = root.getAttribute('data-theme');
+    if (stamped === 'dark' || stamped === 'light') return stamped;
+    return mq && mq.matches ? 'dark' : 'light';
+  }
+  function apply() { root.setAttribute('data-ak', resolve()); }
+  var themeRadio = document.getElementById('th-' + mode);
+  if (themeRadio) themeRadio.checked = true;
+  ['th-device', 'th-light', 'th-dark'].forEach(function (id) {
+    var r = document.getElementById(id);
+    if (r) r.addEventListener('change', function () { if (r.checked) { mode = r.value; apply(); } });
+  });
+  if (mq && mq.addEventListener) mq.addEventListener('change', apply);
+  apply();
+
+  // Feature switches.
+  var map = { 'sw-progress': 'off-progress', 'sw-badges': 'off-badges', 'sw-cheer': 'off-cheer', 'sw-mood': 'off-mood' };
+  Object.keys(map).forEach(function (id) {
+    var box = document.getElementById(id);
+    if (box) box.addEventListener('change', function () { board.classList.toggle(map[id], !box.checked); });
+  });
+
+  // Choreography indices: which screen, which widget in the stack, which waveform bar.
+  document.querySelectorAll('.rail > .col').forEach(function (c, i) { c.style.setProperty('--col', i); });
+  document.querySelectorAll('.stack').forEach(function (s) {
+    Array.prototype.forEach.call(s.children, function (c, i) { c.style.setProperty('--k', i); });
+  });
+  document.querySelectorAll('.wave rect').forEach(function (r, i) { r.style.setProperty('--n', i); });
+
+  AKB.hydrate(document);
+
+  // Motion: Off, Feedback, or Motion graphics. Replay restarts whichever is selected.
+  function replay() { board.classList.remove('play'); void board.offsetWidth; board.classList.add('play'); }
+  var motion = flags.indexOf('mg') > -1 ? 'graphics' : (flags.indexOf('off') > -1 ? 'off' : 'feedback');
+  function setMotion(m) {
+    motion = m;
+    board.classList.toggle('mo-off', m === 'off');
+    board.classList.toggle('mo-graphics', m === 'graphics');
+    replay();
+  }
+  ['mo-off', 'mo-feedback', 'mo-graphics'].forEach(function (id) {
+    var r = document.getElementById(id);
+    if (!r) return;
+    if (r.value === motion) r.checked = true;
+    r.addEventListener('change', function () { if (r.checked) setMotion(r.value); });
+  });
+  var rb = document.getElementById('replay');
+  if (rb) rb.addEventListener('click', replay);
+  setMotion(motion);
+})();
+</script>

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "expected_record_counts": {
+    "entries": 41,
+    "foods": 5,
+    "physiological_events": 3,
+    "sources": 7
+  },
+  "subject_drug": "tacrolimus",
+  "status": "DIRECTIONAL REFERENCE — NOT A CLINICAL DECISION TOOL",
+  "disclaimer": "Compiled from the FDA Prograf prescribing information and published pharmacokinetic literature. Agent PK uses this list only to say which DIRECTION a level is likely to move and to trigger a human review. It never estimates a magnitude, never adjusts a dose, and never substitutes for the transplant team's own interaction check.",
+  "direction_key": {
+    "raises": "Reduces clearance or increases absorption. Tacrolimus level goes UP. Toxicity risk.",
+    "lowers": "Increases clearance. Tacrolimus level goes DOWN. Rejection risk.",
+    "additive_harm": "Does not move the tacrolimus level; adds its own harm on top.",
+    "avoid": "Combination normally avoided."
+  },
+  "entries": [
+    { "agent": "ketoconazole", "class": "azole antifungal", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "label" },
+    { "agent": "itraconazole", "class": "azole antifungal", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "label" },
+    { "agent": "voriconazole", "class": "azole antifungal", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "label" },
+    { "agent": "posaconazole", "class": "azole antifungal", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "label" },
+    { "agent": "fluconazole", "class": "azole antifungal", "mechanism": "CYP3A (and P-gp) inhibitor; magnitude strongly dose- and route-dependent", "direction": "raises", "strength": "variable: negligible at prophylactic dose, strong at treatment dose", "evidence": "label + literature", "note": "THE DEMO CASE, chosen deliberately. The azole most likely to be added by a prescriber who is not the transplant team: routine prophylaxis for 2-3 months post-transplant, then ordinary community prescribing for candidiasis. Its own evidence base is the clearest demonstration of why this table gives a DIRECTION and never a magnitude - the same drug spans no detectable effect at 50 mg/day to a 9.1-fold rise at treatment dose. Among the azoles it is the WEAKEST inhibitor, so it is the conservative example, not the dramatic one.", "source_ids": ["fluconazole_prophylaxis_sikora", "fluconazole_treatment_he"]},
+    { "agent": "clarithromycin", "class": "macrolide antibiotic", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "label", "note": "The label records a rapid, sharp rise even after a pre-emptive tacrolimus dose reduction." },
+    { "agent": "erythromycin", "class": "macrolide antibiotic", "mechanism": "CYP3A inhibitor", "direction": "raises", "strength": "moderate", "evidence": "label" },
+    { "agent": "telithromycin", "class": "ketolide antibiotic", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "label" },
+    { "agent": "ritonavir", "class": "antiretroviral / PK booster", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "label" },
+    { "agent": "cobicistat", "class": "PK booster", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "literature" },
+    { "agent": "nelfinavir", "class": "antiretroviral", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "label" },
+    { "agent": "telaprevir", "class": "HCV protease inhibitor", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "label" },
+    { "agent": "boceprevir", "class": "HCV protease inhibitor", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "label" },
+    { "agent": "nefazodone", "class": "antidepressant", "mechanism": "strong CYP3A inhibitor", "direction": "raises", "strength": "strong", "evidence": "literature" },
+    { "agent": "diltiazem", "class": "calcium channel blocker", "mechanism": "CYP3A inhibitor", "direction": "raises", "strength": "moderate", "evidence": "literature", "note": "Sometimes used deliberately to reduce tacrolimus dose requirement. Deliberate is not the same as unnoticed." },
+    { "agent": "verapamil", "class": "calcium channel blocker", "mechanism": "CYP3A inhibitor and P-gp inhibitor", "direction": "raises", "strength": "moderate", "evidence": "literature" },
+    { "agent": "nifedipine", "class": "calcium channel blocker", "mechanism": "CYP3A inhibitor", "direction": "raises", "strength": "weak", "evidence": "literature", "note": "Effect reported to differ by CYP3A5 genotype in Chinese renal transplant patients." },
+    { "agent": "amiodarone", "class": "antiarrhythmic", "mechanism": "CYP3A and P-gp inhibitor", "direction": "raises", "strength": "moderate", "evidence": "literature" },
+    { "agent": "cimetidine", "class": "H2 antagonist", "mechanism": "CYP inhibitor", "direction": "raises", "strength": "weak", "evidence": "label" },
+    { "agent": "aprepitant", "class": "antiemetic", "mechanism": "CYP3A inhibitor", "direction": "raises", "strength": "moderate", "evidence": "literature" },
+    { "agent": "rifampin", "class": "antimycobacterial", "mechanism": "strong CYP3A inducer", "direction": "lowers", "strength": "strong", "evidence": "label", "note": "One of the fastest and largest downward moves. Directly relevant where TB treatment is common." },
+    { "agent": "rifabutin", "class": "antimycobacterial", "mechanism": "strong CYP3A inducer", "direction": "lowers", "strength": "strong", "evidence": "label" },
+    { "agent": "phenytoin", "class": "anticonvulsant", "mechanism": "strong CYP3A inducer", "direction": "lowers", "strength": "strong", "evidence": "label" },
+    { "agent": "carbamazepine", "class": "anticonvulsant", "mechanism": "strong CYP3A inducer", "direction": "lowers", "strength": "strong", "evidence": "label" },
+    { "agent": "phenobarbital", "class": "anticonvulsant", "mechanism": "CYP3A inducer", "direction": "lowers", "strength": "strong", "evidence": "label" },
+    { "agent": "St John's wort", "class": "herbal supplement", "mechanism": "CYP3A and P-gp inducer", "direction": "lowers", "strength": "strong", "evidence": "label", "note": "Bought without a prescription, so it never appears on a medication list unless someone asks." },
+    { "agent": "efavirenz", "class": "antiretroviral", "mechanism": "CYP3A inducer", "direction": "lowers", "strength": "moderate", "evidence": "literature" },
+    { "agent": "nevirapine", "class": "antiretroviral", "mechanism": "CYP3A inducer", "direction": "lowers", "strength": "moderate", "evidence": "literature" },
+    { "agent": "gentamicin", "class": "aminoglycoside antibiotic", "mechanism": "direct nephrotoxicity", "direction": "additive_harm", "strength": "moderate", "evidence": "label" },
+    { "agent": "amikacin", "class": "aminoglycoside antibiotic", "mechanism": "direct nephrotoxicity", "direction": "additive_harm", "strength": "moderate", "evidence": "label" },
+    { "agent": "amphotericin B", "class": "antifungal", "mechanism": "direct nephrotoxicity", "direction": "additive_harm", "strength": "strong", "evidence": "label" },
+    { "agent": "cisplatin", "class": "chemotherapy", "mechanism": "direct nephrotoxicity", "direction": "additive_harm", "strength": "strong", "evidence": "label" },
+    { "agent": "ibuprofen", "class": "NSAID", "mechanism": "reduced renal perfusion, additive nephrotoxicity", "direction": "additive_harm", "strength": "moderate", "evidence": "label", "note": "Sold over the counter. The most likely thing a patient takes without telling anyone." },
+    { "agent": "naproxen", "class": "NSAID", "mechanism": "reduced renal perfusion, additive nephrotoxicity", "direction": "additive_harm", "strength": "moderate", "evidence": "label" },
+    { "agent": "diclofenac", "class": "NSAID", "mechanism": "reduced renal perfusion, additive nephrotoxicity", "direction": "additive_harm", "strength": "moderate", "evidence": "label" },
+    { "agent": "ciclosporin", "class": "calcineurin inhibitor", "mechanism": "synergistic nephrotoxicity, shared metabolism", "direction": "avoid", "strength": "strong", "evidence": "label", "note": "Not given together; the label directs a washout between them." },
+    { "agent": "spironolactone", "class": "potassium-sparing diuretic", "mechanism": "additive hyperkalaemia", "direction": "additive_harm", "strength": "moderate", "evidence": "label" },
+    { "agent": "amiloride", "class": "potassium-sparing diuretic", "mechanism": "additive hyperkalaemia", "direction": "additive_harm", "strength": "moderate", "evidence": "label" },
+    { "agent": "ACE inhibitors and ARBs", "class": "antihypertensive", "mechanism": "additive hyperkalaemia", "direction": "additive_harm", "strength": "moderate", "evidence": "label" },
+    { "agent": "potassium supplements", "class": "supplement", "mechanism": "additive hyperkalaemia", "direction": "additive_harm", "strength": "moderate", "evidence": "label" },
+    { "agent": "live vaccines", "class": "vaccine", "mechanism": "immunosuppressed host", "direction": "avoid", "strength": "strong", "evidence": "label" }
+  ],
+  "foods": [
+    { "item": "grapefruit and grapefruit juice", "mechanism": "CYP3A inhibition", "direction": "raises", "strength": "moderate to strong", "evidence": "label", "note": "The label distinguishes single-strength juice as a moderate CYP3A inhibitor from double-strength as a strong one. Patients are told to avoid it entirely." },
+    { "item": "pomelo", "mechanism": "CYP3A inhibition, same furanocoumarin family as grapefruit", "direction": "raises", "strength": "moderate", "evidence": "literature", "note": "Widely eaten in Hong Kong and southern China, and rarely thought of as a drug." },
+    { "item": "Seville / bitter orange", "mechanism": "CYP3A inhibition", "direction": "raises", "strength": "weak to moderate", "evidence": "literature" },
+    { "item": "star fruit (carambola)", "mechanism": "CYP3A inhibition; also independently nephrotoxic in renal impairment", "direction": "raises", "strength": "weak", "evidence": "literature" },
+    { "item": "high-fat meals", "mechanism": "reduced rate and extent of absorption", "direction": "lowers", "strength": "moderate", "evidence": "label", "note": "The real risk is inconsistency. Taking it with food one week and without the next moves exposure with no dose change." }
+  ],
+  "physiological_events": [
+    { "event": "diarrhoea or gastroenteritis", "mechanism": "damage to intestinal epithelium reduces gut CYP3A4 metabolism and P-glycoprotein efflux, so more drug is absorbed", "direction": "raises", "strength": "moderate to strong", "evidence": "literature", "note": "Counterintuitive and frequently missed. Patients assume a stomach bug means they absorbed less. The opposite is documented." },
+    { "event": "vomiting within one hour of a dose", "mechanism": "dose not delivered", "direction": "lowers", "strength": "variable", "evidence": "practice", "note": "Invisible to a pill count. The tablet is gone from the box either way." },
+    { "event": "changing haematocrit", "mechanism": "tacrolimus binds extensively to erythrocytes, so whole-blood concentration shifts with haematocrit", "direction": "raises", "strength": "moderate", "evidence": "literature", "note": "Haematocrit is a retained covariate in most published population PK models." }
+  ],
+  "sources": [
+    { "id": "fda_prograf", "citation": "PROGRAF (tacrolimus) prescribing information, U.S. Food and Drug Administration.", "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2020/050708s052,050709s044,210115s004lbl.pdf" },
+    { "id": "diarrhoea_pgp", "citation": "Lemahieu et al., CYP3A4 and P-glycoprotein activity and assimilation of tacrolimus in transplant patients with persistent diarrhoea. Am J Transplant 2005.", "url": "https://onlinelibrary.wiley.com/doi/full/10.1111/j.1600-6143.2005.00844.x" },
+    { "id": "cyp3a5_meta", "citation": "CYP3A5 gene polymorphisms and their impact on dosage and trough concentration of tacrolimus among kidney transplant patients: systematic review and meta-analysis. Pharmacogenomics J 2019.", "url": "https://www.nature.com/articles/s41397-019-0144-7" },
+    { "id": "nifedipine_cyp3a5", "citation": "CYP3A5 genotype-dependent drug-drug interaction between tacrolimus and nifedipine in Chinese renal transplant patients.", "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8287726/" },
+    { "id": "popk_review", "citation": "A review of population pharmacokinetic models and dosing algorithms assessing the influence of CYP3A5 genotype and other clinical covariates on tacrolimus pharmacokinetics.", "url": "https://pubmed.ncbi.nlm.nih.gov/42477302/" },
+    { "id": "fluconazole_prophylaxis_sikora", "citation": "Sikora MB, Truax C, Lee S, Kenyon N, Smith L, Corbett J, Shihab FS. Low-dose fluconazole prophylaxis in kidney transplant recipients receiving tacrolimus. Clin Transplant 2012;26(5):E555-60. PMID 23061766. Prophylactic 50 mg/day oral: mean tacrolimus trough unchanged on vs one week after stopping (11.69 +/- 3.18 vs 11.15 +/- 3.69 ng/mL, p = 0.145, n = 103).", "url": "https://doi.org/10.1111/ctr.12024" },
+    { "id": "fluconazole_treatment_he", "citation": "He J, Yu Y, Yin C, et al. Clinically significant drug-drug interaction between tacrolimus and fluconazole in stable renal transplant recipient and literature review. J Clin Pharm Ther 2020;45(2):264-269. PMID 31756280. Treatment dose for Candida albicans oesophagitis: 9.1-fold rise in dose-normalised trough, 87% dose reduction required, still 26% lower 161 days after stopping; oral affected more than intravenous. SINGLE CASE REPORT plus review - cited for the range the literature spans, never as an expected value for any patient.", "url": "https://doi.org/10.1111/jcpt.13075" }
+  ]
+}
