@@ -1,4 +1,5 @@
 <img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/d6d06622-7e64-43b7-a1f5-b630129627dc" />
+<img width="2750" height="1536" alt="Agentic Kinetic Agent" src="https://github.com/user-attachments/assets/d4997a2e-f245-4bb9-8c7a-b4b8a1482e88" />
 
 Address: 3/F, Core A, 3, Cyberport, 100 Cyberport Rd, Pok Fu Lam, Hong Kong Island, Hong Kong. Bus routes 30X, 42C, 73, 73P, 107P, or 970. Minibus routes 10, 10P, 58, 58M, 69, 69A, or 69X serve the venue.
 From Tai Wai ~1.5hrs:
