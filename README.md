@@ -32,17 +32,17 @@ A. DESCRIPTION [JUNE] (Markdown or plain text is acceptable)
 Describe your project focusing on how it delivers a functional agent within its chosen environment. Explain the problem it solves and how the agent’s presence in that specific context makes it meaningfully more useful than a standalone chatbot. Highlight the innovation and how the environment shapes the agent’s core workflow.
 Detail the technical execution, including specific technologies, frameworks, and libraries used. Explain how the agent provides clear value and an intuitive, effective experience for users. Your description must be at least 25 words long (longer is welcome) to help judges understand your project’s alignment with all criteria.
 
---> Draft (not yet reviewed/rewritten & we should check if we can insert graphics): https://docs.google.com/document/d/11ASTIhSkijvsFJ0LT0wCAxCvcbre9J-0jRI006_mZQI/edit?tab=t.0#heading=h.squ8onl9p2oc
-
+TL;DR (Exec Summary) + Would be useful for Project Intro & to point to the relevant links to what the judges should read & why they should care & how this fits their judging criteria.
+Ivan to test so I know what this field holds. If I can drop a SVG Image I will as it's a powerful start to the submission right below the title.
 
 B. TOOLS (just click this last): What of the following were used to create your product or were particularly helpful during the hackathon? 
 [IVAN: Track these and describe them as you go.]
 
 C. VIDEO [JUNE]:  Optional: 2-minute YouTube or Loom video link. Helps judges understand your project and appears on winners page. Video creation guide »
 Important: please limit your video to 2 minutes. Longer videos may deduct points.
-YouTube must be Unlisted/Public. Loom must be shareable.
---> Draft (not yet reviewed): https://docs.google.com/document/d/1vgqtbevU2osvBTpvFypzk0X0MrnOupzq5YbtKSz2r7c/edit?tab=t.0#heading=h.d98uxddf71a3
+YouTube must be Unlisted/Public. Loom must be shareable. I'll need to work on YouTube (better marketing).
 
+--> Draft (not yet reviewed): https://docs.google.com/document/d/1vgqtbevU2osvBTpvFypzk0X0MrnOupzq5YbtKSz2r7c/edit?tab=t.0#heading=h.d98uxddf71a3
 
 D. TEAM CONTRIBUTIONS: Describe their role on the team and their contributions (tools used, specific components built, etc.)
 Ivan:
@@ -52,16 +52,16 @@ June:
 E. ADDITIONAL LINKS:
 Provide other project related links here such as GitHub repositories, project website, etc. This will be showcased on the winners page and entries list and are helpful for judging. 
 
-1. https://github.com/meolord29/Agentic_Kinetic. Title: Agentic_Kinetic. Description: TBD
-2. https:// Title & Description - Should we do a project website/Visual imagery is good? --> Draft (not yet reviewed/rewritten): https://docs.google.com/document/d/1uHZ9Y7Yjq9hVPHIO1eZ2TaoMmesDhNG8s4CyxvZny_I/edit?tab=t.0#heading=h.jwc35sloqfuz
-3. (same as above) --> Not sure about this powerpoint unless it's very visual but we may want to do a video: https://docs.google.com/presentation/d/1mOu_S_HuGJ7VmLbSBwwPBFuU9zt0-vck8D6lbTyohi4/edit?slide=id.ak_s12#slide=id.ak_s12
+1. Agentic Kinetic Repo (Need a description): https://github.com/meolord29/Agentic_Kinetic. (README needs to direct them to key sections of the Repo - link to them, e.g. the patient/clincian views below)
+2. Agentic Kinetic Patient Widget: (Need a description) https://claude.ai/code/artifact/6dcbc400-1d4f-496b-8c1e-223ce5869b57 - Should we just keep this as my Claude Artifact?
+3. Agentic Kinetic Clinician Dashboard: (Need a description): https://claude.ai/code/artifact/8cc495cc-a61f-478f-9127-9628277a8e4f - Should we just keep this as my Claude Artifact?
+4. Add Rendered Images of the app for the patient & doctor with example questions showing the UX to the Repo.
+5. Working Agent: Live agent. Host on Google Cloud Run?
+6. Optional: Actual doctor dashboard, built with CopilotKit and hosted on Google Cloud Run?.
+7. Backgrounder. This is terrible & will be completely redonehttps://docs.google.com/presentation/d/1mOu_S_HuGJ7VmLbSBwwPBFuU9zt0-vck8D6lbTyohi4/edit?slide=id.ak_s12#slide=id.ak_s12
 
-Link options for a website:
-1. Add content to this repo = simplest.  We could try to render images of the app for the patient & the doctor with example questions to show the UX.
-2. A one-page site with the story, video, screenshots and links — no live agent. Host on Google Cloud Run?
-3. Optional: Actual doctor dashboard, built with CopilotKit and hosted on Google Cloud Run, with a short intro section (story, video, links). Best evidence for 'working agent' and uses two sponsors for real but this takes extra time.
+Bakcgrounder must drive Visual communication so I'm going to do it slide by slide to fill in the gaps - branding is done, now the video storytelling is the next branding element I need to pull together then I can add content that fills in the background distinct from the video and the dashboards & the app:
 
-Visual ideas:
 Here is a structured, highly scannable layout for a presentation slide or website graphic. It visualizes the continuous feedback loop between the patient's gamified routine and the clinician's automated dashboard.
 
 ========================================================================================
@@ -116,6 +116,9 @@ Here is a structured, highly scannable layout for a presentation slide or websit
 - What the Agent Asks:"Did anyone recommend a common painkiller like ibuprofen (Advil/Motrin) or naproxen (Aleve) for an ache or fever?"
 - The Biological Logic: Over-the-counter NSAIDs directly constrict the blood vessels feeding the kidney filtering units. Because tacrolimus already does this at high doses, combining the two creates a compound chokehold on the organ. It cuts off blood flow so severely that it can cause sudden, acute kidney injury.
 - The Insight for the Doctor: This triggers an absolute red-flag alert. The agent informs the doctor: "Patient has taken an NSAID. High risk of immediate blood vessel constriction and a spike in creatinine levels." The doctor can instantly send a pre-authored message through the agent telling the patient: "Stop taking the ibuprofen immediately. Switch to Tylenol, which is safe for your kidney."
+
+Guardrails slide - The reason it's designed the way it is.
+Gamificiation - the thought process behind the design of the UX.
 
 How It Appears on the Clinician Dashboard
 Instead of a generic notification saying "Elena started a new drug," the agent synthesizes the answers to these four questions into a clean, actionable summary:
