@@ -15,7 +15,7 @@ export const storage = createMMKV({ id: "kinetic.default" });
 const QUEUE_KEY = "kinetic.queue.v1";
 const SNAPSHOT_KEY = "kinetic.snapshot.v1";
 
-export type Endpoint = "/me/checkins" | "/me/answers" | "/me/reminders/ack";
+export type Endpoint = "/me/checkins" | "/me/answers" | "/me/reminders/ack" | "/me/handoffs";
 
 export interface QueueItem {
   eventId: string;

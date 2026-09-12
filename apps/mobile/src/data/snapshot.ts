@@ -58,6 +58,26 @@ function optimisticApply(context: PatientContextSummary, action: Action): Patien
       return { ...context, due: { ...context.due, teamQuestion: { waiting: false, text: null } } };
     case "answer_temperature":
       return { ...context, due: { ...context.due, temperature: { due: false, reason: null } } };
+    case "answer_vomit":
+      return { ...context, due: { ...context.due, vomitCheck: { waiting: false } } };
+    case "log_symptoms": {
+      // Workflow-08 §5: symptoms never touch checkins; the vomit/fever chains
+      // open optimistically and are re-derived server-side at flush time.
+      const opensVomit = action.labels.some((l) => l === "Vomiting" || l === "Nausea");
+      const opensTemp = action.labels.some((l) => l === "Fever" || l === "Flu-like");
+      return {
+        ...context,
+        due: {
+          ...context.due,
+          vomitCheck: { waiting: opensVomit },
+          temperature: opensTemp ? { due: true, reason: "sick_day" } : context.due.temperature,
+        },
+      };
+    }
+    case "send_handoff":
+      return { ...context, pins: { ...context.pins, handoff: true } };
+    case "share_diary":
+      return { ...context, pins: { ...context.pins, diaryShared: true } };
     case "ack_reminder":
       return {
         ...context,
@@ -76,6 +96,22 @@ function toQueueItem(action: Action, eventId: string): Omit<QueueItem, "queuedAt
       return { eventId, endpoint: "/me/answers", payload: { kind: "question", value: action.value, eventId } };
     case "answer_temperature":
       return { eventId, endpoint: "/me/answers", payload: { kind: "temperature", value: action.value, eventId } };
+    case "answer_vomit":
+      return { eventId, endpoint: "/me/answers", payload: { kind: "vomit", value: action.value, eventId } };
+    case "log_symptoms":
+      return {
+        eventId,
+        endpoint: "/me/answers",
+        payload: { kind: "symptoms", labels: action.labels, transcript: action.transcript, eventId },
+      };
+    case "share_diary":
+      return {
+        eventId,
+        endpoint: "/me/answers",
+        payload: { kind: "diary", text: action.text, noted: action.noted, eventId },
+      };
+    case "send_handoff":
+      return { eventId, endpoint: "/me/handoffs", payload: { text: action.text, eventId } };
     case "ack_reminder":
       return { eventId, endpoint: "/me/reminders/ack", reminderId: action.id, payload: { eventId } };
     default:
@@ -88,9 +124,30 @@ async function callEndpoint(item: QueueItem): Promise<unknown> {
     case "/me/checkins":
       return api.checkin(item.payload.answer as string, item.eventId);
     case "/me/answers":
-      return item.payload.kind === "question"
-        ? api.answerQuestion(item.payload.value as string, item.eventId)
-        : api.answerTemperature(item.payload.value as string, item.eventId);
+      switch (item.payload.kind as string) {
+        case "question":
+          return api.answerQuestion(item.payload.value as string, item.eventId);
+        case "temperature":
+          return api.answerTemperature(item.payload.value as string, item.eventId);
+        case "vomit":
+          return api.answerVomit(item.payload.value as string, item.eventId);
+        case "symptoms":
+          return api.confirmSymptoms(
+            item.payload.labels as string[],
+            item.payload.transcript as string | undefined,
+            item.eventId,
+          );
+        case "diary":
+          return api.shareDiary(
+            item.payload.text as string,
+            (item.payload.noted as string[]) ?? [],
+            item.eventId,
+          );
+        default:
+          throw new Error(`unknown answers kind: ${item.payload.kind}`);
+      }
+    case "/me/handoffs":
+      return api.sendHandoff(item.payload.text as string, item.payload.transcript as string | undefined, item.eventId);
     case "/me/reminders/ack":
       return api.ackReminder(item.reminderId!, item.eventId);
   }

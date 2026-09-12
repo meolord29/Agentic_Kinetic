@@ -62,8 +62,10 @@ services:
       DATABASE_URL: postgres://kinetic_agent:${DB_PASSWORD}@db:5432/kinetic
       PORT: "8200"
       # P0: model provider via env (BYOK per-request header arrives in P1+)
+      # P3 router: all LLM requests route to MODEL_ID (§6.2, user decision)
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       MODEL_ID: ${MODEL_ID}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
     ports:
       - "127.0.0.1:8200:8200"
     volumes:

@@ -213,7 +213,69 @@ function BadgeCelebrationCard({ tile, dispatch }: TileProps<"BadgeCelebrationCar
   );
 }
 
-// -- probe fallback for the 8 not-yet-wired components (P3/P4) ----------------
+// -- P3 chain renderers (workflows 05/07/08/12) --------------------------------
+
+function TemperatureCard({ tile, dispatch }: TileProps<"TemperatureCard">) {
+  return (
+    <Card tile={tile}>
+      <Eyebrow label={tile.props.reason === "sick_day" ? "Now · feeling sick" : "Now · temperature"} />
+      <H2 size={18}>{"What's your temperature?"}</H2>
+      <Body>{"Every answer counts the same."}</Body>
+      <View style={styles.chipGrid}>
+        {tile.chips.map((c) => (
+          <Chip key={c.label} label={c.label} onPress={() => dispatch(c.action)} />
+        ))}
+      </View>
+    </Card>
+  );
+}
+
+function VomitCheckCard({ tile, dispatch }: TileProps<"VomitCheckCard">) {
+  return (
+    <Card tile={tile}>
+      <Eyebrow label="Now · feeling sick" />
+      <H2 size={18}>Did you vomit within an hour of your dose?</H2>
+      <View style={styles.chipGrid}>
+        {tile.chips.map((c) => (
+          <Chip key={c.label} label={c.label} onPress={() => dispatch(c.action)} />
+        ))}
+      </View>
+    </Card>
+  );
+}
+
+function HandoffCard({ tile }: TileProps<"HandoffCard">) {
+  return (
+    <Card tile={tile}>
+      <Eyebrow label="You asked" />
+      {/* VERBATIM pull-quote — never paraphrased (workflow-07 §6) */}
+      <Text style={styles.quote}>“{tile.props.q}”</Text>
+      <Body>{COPY.handoffTeamLine}</Body>
+      <View style={styles.receiptRow}>
+        <View style={styles.doneDot} />
+        <Text style={styles.receiptText}>{tile.props.receipt}</Text>
+        <Text style={styles.receiptTag}>TO CARE TEAM</Text>
+      </View>
+    </Card>
+  );
+}
+
+function DiarySharedCard({ tile }: TileProps<"DiarySharedCard">) {
+  return (
+    <Card tile={tile}>
+      <Eyebrow label="Your diary" />
+      {/* VERBATIM pull-quote — never summarized out of existence (workflow-12 §6) */}
+      <Text style={styles.quote}>“{tile.props.text}”</Text>
+      <View style={styles.receiptRow}>
+        <View style={styles.doneDot} />
+        <Text style={styles.receiptText}>{tile.props.receipt}</Text>
+        <Text style={styles.receiptTag}>DIARY</Text>
+      </View>
+    </Card>
+  );
+}
+
+// -- probe fallback for the 4 not-yet-wired components (P4) -------------------
 
 function ProbeTile({ tile, dispatch }: { tile: Tile; dispatch: Dispatch }) {
   return (
@@ -252,13 +314,14 @@ export const registry: Registry = {
   CareTeamSquare,
   ReminderStrip,
   BadgeCelebrationCard,
-  // probe cards until their workflows land (P3/P4)
-  TemperatureCard: ProbeTile,
+  // real renderings (P3 voice chains)
+  TemperatureCard,
+  VomitCheckCard,
+  HandoffCard,
+  DiarySharedCard,
+  // probe cards until their workflows land (P4)
   SamplePrepCard: ProbeTile,
-  VomitCheckCard: ProbeTile,
   NewMedCard: ProbeTile,
-  HandoffCard: ProbeTile,
-  DiarySharedCard: ProbeTile,
   BookedRow: ProbeTile,
 };
 
@@ -309,6 +372,10 @@ const styles = StyleSheet.create({
   stripRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
   stripLabel: { color: colors.ink, fontSize: 13, fontWeight: "700", flexShrink: 1 },
   stripStatus: { color: colors.muted, fontSize: 12, marginLeft: "auto" },
+  quote: { color: colors.ink, fontSize: 15, lineHeight: 21, fontWeight: "600", fontStyle: "italic" },
+  receiptRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: "auto" },
+  receiptText: { color: colors.muted, fontSize: 11, fontWeight: "600", flexShrink: 1 },
+  receiptTag: { color: colors.violet, fontSize: 9, fontWeight: "800", marginLeft: "auto" },
   doneDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.done },
   infoDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.cyan },
   squareBody: { alignItems: "center", justifyContent: "center", gap: 8, flex: 1 },

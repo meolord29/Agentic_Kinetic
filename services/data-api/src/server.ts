@@ -1,10 +1,10 @@
 import Fastify from "fastify";
 import { z } from "zod";
-import { BADGE_THRESHOLDS } from "@kinetic/ui-schema";
+import { BADGE_THRESHOLDS, SYMPTOM_LABELS } from "@kinetic/ui-schema";
 import { createSnapshotStore, DEMO_USER_ID } from "@kinetic/snapshot";
 
 /**
- * data-api (P1) — the app-facing REST surface (§7). No user auth by design
+ * data-api (P1+P3) — the app-facing REST surface (§7). No user auth by design
  * (§3.1): every request is attributed to the fixed demo user, the loopback
  * binding is the boundary, and each endpoint declares its returned fields —
  * one audit row per request, written by the same helper (§3.4).
@@ -13,6 +13,8 @@ import { createSnapshotStore, DEMO_USER_ID } from "@kinetic/snapshot";
  * the client see byte-identical context. The ONLY path that increments
  * `checkins` is POST /me/checkins, inside one transaction with the
  * badge-threshold eval (§7.3); retries dedup on client_event_id (§5.6).
+ * P3: sick-day/diary/handoff commits NEVER touch checkins (workflows
+ * 08/12 §6 — no +1, no badges while she feels unwell).
  */
 
 const store = createSnapshotStore({ connectionString: process.env.DATABASE_URL ?? "", max: 5 });
@@ -26,6 +28,8 @@ const CheckinBody = z.object({
   doseAt: z.string().datetime().optional(),
 });
 
+const KNOWN_LABELS = SYMPTOM_LABELS as unknown as readonly string[];
+
 const AnswerBody = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("question"),
@@ -37,7 +41,30 @@ const AnswerBody = z.discriminatedUnion("kind", [
     value: z.enum(["v36_5", "v37_0", "v37_5", "v38_plus", "not_measured"]),
     eventId: z.string().uuid(),
   }),
+  z.object({
+    kind: z.literal("vomit"),
+    value: z.enum(["within_hour", "later", "didnt_take"]),
+    eventId: z.string().uuid(),
+  }),
+  z.object({
+    kind: z.literal("symptoms"),
+    labels: z.array(z.enum(SYMPTOM_LABELS as unknown as [string, ...string[]])).min(1).max(9),
+    transcript: z.string().max(2000).optional(),
+    eventId: z.string().uuid(),
+  }),
+  z.object({
+    kind: z.literal("diary"),
+    text: z.string().min(1).max(2000),
+    noted: z.array(z.string()).max(9).default([]),
+    eventId: z.string().uuid(),
+  }),
 ]);
+
+const HandoffBody = z.object({
+  text: z.string().min(1).max(500),
+  transcript: z.string().max(2000).optional(),
+  eventId: z.string().uuid(),
+});
 
 // -- audit (§3.4): one row per request, fields declared per endpoint ----------
 
@@ -117,7 +144,8 @@ app.post("/me/checkins", async (req, reply) => {
 app.post("/me/answers", async (req, reply) => {
   const parsed = AnswerBody.safeParse(req.body);
   if (!parsed.success) return reply.code(400).send({ error: "invalid body", issues: parsed.error.issues });
-  const { kind, value, eventId } = parsed.data;
+  const body = parsed.data;
+  const { kind, eventId } = body;
 
   if (kind === "question") {
     // Idempotent by the status machine (§7.3): waiting → answered, monotonic.
@@ -128,10 +156,98 @@ app.post("/me/answers", async (req, reply) => {
        SET status = 'answered', answer = $2, answered_at = now()
        WHERE user_id = $1 AND status = 'waiting'
        RETURNING id::text`,
-      [DEMO_USER_ID, value],
+      [DEMO_USER_ID, body.value],
     );
     await audit("answers.create", ["kind", "value"], `question answer ${eventId}`);
     return { status: r.rowCount ? "ok" : "noop", kind };
+  }
+
+  if (kind === "vomit") {
+    const r = await store.query(
+      `INSERT INTO app.vomit_answers (user_id, answer, client_event_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (client_event_id) DO NOTHING RETURNING id::text`,
+      [DEMO_USER_ID, body.value, eventId],
+    );
+    await audit("answers.create", ["kind", "value"], `vomit-check answer ${eventId}`);
+    return { status: r.rowCount ? "ok" : "deduped", kind };
+  }
+
+  if (kind === "symptoms") {
+    // Workflow-08 confirm ("Looks right"): log the labels, store the verbatim
+    // transcript as a voice note, and derive the scripted chains server-side —
+    // fever/flu-like opens a sick-day temperature request (workflow-05); the
+    // vomit check simply waits while a Nausea/Vomiting log is unanswered.
+    // Chain triggers come from the CONFIRMED labels, never from free text.
+      const client = await store.connect();
+      let fresh = false;
+      try {
+        await client.query("BEGIN");
+        const ins = await client.query(
+          `INSERT INTO app.symptom_logs (user_id, labels, client_event_id)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (client_event_id) DO NOTHING RETURNING id::text`,
+          [DEMO_USER_ID, body.labels, eventId],
+        );
+        fresh = (ins.rowCount ?? 0) > 0;
+        if (body.transcript) {
+          await client.query(
+            `INSERT INTO app.voice_notes (user_id, kind, transcript, noted, client_event_id)
+             VALUES ($1, 'sick', $2, $3::jsonb, $4)
+             ON CONFLICT (client_event_id) DO NOTHING`,
+            [DEMO_USER_ID, body.transcript, JSON.stringify(body.labels), `${eventId}-note`],
+          );
+        }
+        if (body.labels.some((l) => l === "Fever" || l === "Flu-like")) {
+          const open = await client.query(
+            `SELECT 1 FROM app.temperature_requests
+             WHERE user_id = $1 AND fulfilled_at IS NULL AND cancelled_at IS NULL LIMIT 1`,
+            [DEMO_USER_ID],
+          );
+          if (open.rowCount === 0) {
+            await client.query(
+              `INSERT INTO app.temperature_requests (user_id, reason) VALUES ($1, 'sick_day')`,
+              [DEMO_USER_ID],
+            );
+          }
+        }
+        await client.query("COMMIT");
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
+      }
+      await audit("answers.create", ["kind", "labels"], `sick-day symptom confirm ${eventId}`);
+      return { status: fresh ? "ok" : "deduped", kind };
+    }
+
+  if (kind === "diary") {
+    // Workflow-12: share VERBATIM; never a check-in (no gamification_state touch).
+    const client = await store.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `INSERT INTO app.diary_entries (user_id, text, noted, client_event_id)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (client_event_id) DO NOTHING`,
+        [DEMO_USER_ID, body.text, body.noted, eventId],
+      );
+      await client.query(
+        `INSERT INTO app.voice_notes (user_id, kind, transcript, noted, client_event_id)
+         VALUES ($1, 'diary', $2, $3::jsonb, $4)
+         ON CONFLICT (client_event_id) DO NOTHING`,
+        [DEMO_USER_ID, body.text, JSON.stringify(body.noted), `${eventId}-note`],
+      );
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+    await audit("answers.create", ["kind", "noted"], `diary share ${eventId}`);
+    return { status: "ok", kind };
   }
 
   // temperature: record the reading, fulfill the open request if one exists.
@@ -147,13 +263,46 @@ app.post("/me/answers", async (req, reply) => {
     `INSERT INTO app.temperature_readings (user_id, bucket, reason, client_event_id)
      VALUES ($1, $2, $3, $4)
      ON CONFLICT (client_event_id) DO NOTHING`,
-    [DEMO_USER_ID, value, reason, eventId],
+    [DEMO_USER_ID, body.value, reason, eventId],
   );
   if (openRow) {
     await store.query(`UPDATE app.temperature_requests SET fulfilled_at = now() WHERE id = $1`, [openRow.id]);
   }
   await audit("answers.create", ["kind", "value", "reason"], `temperature answer ${eventId}`);
   return { status: "ok", kind };
+});
+
+app.post("/me/handoffs", async (req, reply) => {
+  const parsed = HandoffBody.safeParse(req.body);
+  if (!parsed.success) return reply.code(400).send({ error: "invalid body", issues: parsed.error.issues });
+  const { text, transcript, eventId } = parsed.data;
+  // Workflow-07/11: the patient's words are relayed VERBATIM — no rewriting.
+  const client = await store.connect();
+  try {
+    await client.query("BEGIN");
+    const ins = await client.query(
+      `INSERT INTO app.handoffs (user_id, question, client_event_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (client_event_id) DO NOTHING RETURNING id::text`,
+      [DEMO_USER_ID, text, eventId],
+    );
+    if (transcript) {
+      await client.query(
+        `INSERT INTO app.voice_notes (user_id, kind, transcript, client_event_id)
+         VALUES ($1, 'health', $2, $3)
+         ON CONFLICT (client_event_id) DO NOTHING`,
+        [DEMO_USER_ID, transcript, `${eventId}-note`],
+      );
+    }
+    await client.query("COMMIT");
+    await audit("handoffs.create", ["text"], `care-team handoff ${eventId}`);
+    return { status: ins.rowCount ? "ok" : "deduped" };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 });
 
 app.post("/me/reminders/:id/ack", async (req, reply) => {
@@ -169,10 +318,16 @@ app.post("/me/reminders/:id/ack", async (req, reply) => {
 
 // -- dev-only demo harness (§5.5): reseed the demo user into a scenario state --
 // Loopback-bound local demo (§3.1); every reseed writes one audit row like any
-// other request. Scenarios cover the P2 demo walk: morning, question, badge, clear.
+// other request. Scenarios cover the P2 demo walk (morning, question, badge,
+// clear) and the P3 voice chains (health/sick/diary — workflows 07/08/12).
 
-const SCENARIOS = ["morning", "question", "badge", "clear"] as const;
+const SCENARIOS = ["morning", "question", "badge", "clear", "health", "sick", "diary"] as const;
 const QUESTION_VERBATIM = "Did you start any new medicine this week?";
+const SICK_SAID = "I feel nauseous, I've been sleeping most of the morning, and I think I have a fever.";
+const SICK_LABELS = ["Nausea", "Tired", "Fever"];
+const DIARY_SAID =
+  "It's been a rough couple of days. I felt dizzy after my morning pill on Tuesday, I started taking a herbal supplement my friend gave me, and I haven't been sleeping well.";
+const DIARY_NOTED = ["Dizzy", "Tired"];
 
 app.post("/dev/scenario/:name", async (req, reply) => {
   const { name } = req.params as { name: string };
@@ -180,7 +335,7 @@ app.post("/dev/scenario/:name", async (req, reply) => {
     return reply.code(400).send({ error: `unknown scenario — one of ${SCENARIOS.join(", ")}` });
   }
   const checkins = name === "badge" ? 99 : 31;
-  const doseDone = name === "question" || name === "clear"; // logged 2h ago → outside the plus window
+  const doseDone = name !== "morning"; // logged 2h ago → outside the plus window
 
   const client = await store.connect();
   try {
@@ -215,6 +370,38 @@ app.post("/dev/scenario/:name", async (req, reply) => {
       `UPDATE app.reminders SET acked_at = now() WHERE user_id = $1 AND acked_at IS NULL`,
       [DEMO_USER_ID],
     );
+    // P3 chains: close open handoffs/diary pins; resolve a waiting vomit check
+    // (fresh answer closes the chain); age symptom logs and diary entries out
+    // of the today/24 h derivation windows so every scenario starts clean.
+    await client.query(
+      `UPDATE app.handoffs SET replied_at = now()
+       WHERE user_id = $1 AND replied_at IS NULL`,
+      [DEMO_USER_ID],
+    );
+    await client.query(
+      // Aged 2 h back — inside one transaction `now()` is constant, so a
+      // fresh symptom log (same transaction) must be strictly later than
+      // this answer for the vomit-waiting derivation to see it (§7.2).
+      `INSERT INTO app.vomit_answers (user_id, answer, answered_at, client_event_id)
+       VALUES ($1, 'later', now() - interval '2 hours', 'seed-vomit-clear')
+       ON CONFLICT (client_event_id) DO UPDATE SET answered_at = now() - interval '2 hours'`,
+      [DEMO_USER_ID],
+    );
+    await client.query(
+      `UPDATE app.symptom_logs SET logged_at = logged_at - interval '1 day'
+       WHERE user_id = $1 AND logged_at > current_date`,
+      [DEMO_USER_ID],
+    );
+    await client.query(
+      `UPDATE app.diary_entries SET created_at = created_at - interval '1 day'
+       WHERE user_id = $1 AND created_at > now() - interval '24 hours'`,
+      [DEMO_USER_ID],
+    );
+    await client.query(
+      `UPDATE app.voice_notes SET logged_at = logged_at - interval '1 day'
+       WHERE user_id = $1 AND logged_at > now() - interval '5 minutes'`,
+      [DEMO_USER_ID],
+    );
     await client.query(
       `INSERT INTO app.gamification_state (user_id, checkins) VALUES ($1, $2)
        ON CONFLICT (user_id) DO UPDATE SET checkins = $2, updated_at = now()`,
@@ -236,6 +423,43 @@ app.post("/dev/scenario/:name", async (req, reply) => {
         [DEMO_USER_ID, QUESTION_VERBATIM],
       );
     }
+    if (name === "sick") {
+      // Workflow-08 post-confirm state (as if the voice note was just confirmed):
+      // symptom log fresh (thanks flash, no +1) · vomit check waiting · sick-day
+      // temperature request open (fires after the vomit answer, §08 flow 4→5).
+      await client.query(
+        `INSERT INTO app.symptom_logs (user_id, labels, client_event_id)
+         VALUES ($1, $2, 'seed-sick')
+         ON CONFLICT (client_event_id) DO UPDATE SET logged_at = now()`,
+        [DEMO_USER_ID, SICK_LABELS],
+      );
+      await client.query(
+        `INSERT INTO app.voice_notes (user_id, kind, transcript, noted, client_event_id)
+         VALUES ($1, 'sick', $2, $3::jsonb, 'seed-sick-note')
+         ON CONFLICT (client_event_id) DO UPDATE SET logged_at = now()`,
+        [DEMO_USER_ID, SICK_SAID, JSON.stringify(SICK_LABELS)],
+      );
+      await client.query(
+        `INSERT INTO app.temperature_requests (user_id, reason) VALUES ($1, 'sick_day')`,
+        [DEMO_USER_ID],
+      );
+    }
+    if (name === "diary") {
+      await client.query(
+        `INSERT INTO app.diary_entries (user_id, text, noted, client_event_id)
+         VALUES ($1, $2, $3, 'seed-diary')
+         ON CONFLICT (client_event_id) DO UPDATE SET created_at = now()`,
+        [DEMO_USER_ID, DIARY_SAID, DIARY_NOTED],
+      );
+      await client.query(
+        `INSERT INTO app.voice_notes (user_id, kind, transcript, noted, client_event_id)
+         VALUES ($1, 'diary', $2, $3::jsonb, 'seed-diary-note')
+         ON CONFLICT (client_event_id) DO UPDATE SET logged_at = now()`,
+        [DEMO_USER_ID, DIARY_SAID, JSON.stringify(DIARY_NOTED)],
+      );
+    }
+    // `health` seeds nothing extra: the handoff is created by the voice flow
+    // itself (workflow-07) — hold-to-talk → confirm → POST /me/handoffs.
     await client.query("COMMIT");
     await audit("scenario.seed", ["name", "checkins"], `dev scenario reseed: ${name}`);
     return { status: "ok", scenario: name, checkins };

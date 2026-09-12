@@ -15,6 +15,9 @@ docker compose --env-file "$REPO_ROOT/deploy/.env" -f "$REPO_ROOT/deploy/docker-
 curl -fsS http://localhost:8080/healthz >/dev/null && echo "data-api /healthz green"
 curl -fsS http://localhost:8200/healthz >/dev/null && echo "runtime  /healthz green"
 
+echo "== 1.5/5 whisper model (P3 voice; no-op when already fetched) =="
+"$REPO_ROOT/scripts/fetch-whisper-model.sh"
+
 echo "== 2/5 adb daemon (first-boot rule: adb before emulator) =="
 adb devices
 

@@ -76,11 +76,25 @@ export const api = {
   answerTemperature(value: string, eventId: string): Promise<{ status: string }> {
     return jsonFetch(`${DATA_API_URL}/me/answers`, post({ kind: "temperature", value, eventId }), 8000);
   },
+  answerVomit(value: string, eventId: string): Promise<{ status: string }> {
+    return jsonFetch(`${DATA_API_URL}/me/answers`, post({ kind: "vomit", value, eventId }), 8000);
+  },
+  confirmSymptoms(labels: string[], transcript: string | undefined, eventId: string): Promise<{ status: string }> {
+    return jsonFetch(`${DATA_API_URL}/me/answers`, post({ kind: "symptoms", labels, transcript, eventId }), 8000);
+  },
+  shareDiary(text: string, noted: string[], eventId: string): Promise<{ status: string }> {
+    return jsonFetch(`${DATA_API_URL}/me/answers`, post({ kind: "diary", text, noted, eventId }), 8000);
+  },
+  sendHandoff(text: string, transcript: string | undefined, eventId: string): Promise<{ status: string }> {
+    return jsonFetch(`${DATA_API_URL}/me/handoffs`, post({ text, transcript, eventId }), 8000);
+  },
   ackReminder(id: string, eventId: string): Promise<{ status: string }> {
     return jsonFetch(`${DATA_API_URL}/me/reminders/${id}/ack`, post({ eventId }), 8000);
   },
   // Dev-only demo harness (§5.5): reseed the backend into a scenario state.
-  scenario(name: "morning" | "question" | "badge" | "clear"): Promise<{ status: string }> {
+  scenario(
+    name: "morning" | "question" | "badge" | "clear" | "health" | "sick" | "diary",
+  ): Promise<{ status: string }> {
     return jsonFetch(`${DATA_API_URL}/dev/scenario/${name}`, post({}), 8000);
   },
 };

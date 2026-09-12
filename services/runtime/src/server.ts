@@ -6,6 +6,7 @@ import { EventType, type BaseEvent } from "@ag-ui/core";
 import { HomePlan, allClearPlan, validatePlan } from "@kinetic/ui-schema";
 import { getData, healthz, close as closeDb } from "./db.js";
 import { buildPlan } from "./planner.js";
+import { routerAgent } from "./router.js";
 
 const PORT = Number(process.env.PORT ?? 8200);
 const DETERMINISTIC = process.env.PLANNER_MODE !== "llm"; // P0: deterministic-first
@@ -57,7 +58,7 @@ const uiAgent = new BuiltInAgent({
 } as ConstructorParameters<typeof BuiltInAgent>[0]);
 
 const runtime = new CopilotRuntime({
-  agents: { ui_agent: uiAgent },
+  agents: { ui_agent: uiAgent, router: routerAgent },
 });
 
 const listener = createCopilotNodeListener({
@@ -83,7 +84,9 @@ const server = createServer((req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`[runtime] listening on :${PORT} (agent endpoint: /api/copilotkit, planner: ${DETERMINISTIC ? "deterministic" : "llm"})`);
+  console.log(
+    `[runtime] listening on :${PORT} (agent endpoint: /api/copilotkit, planner: ${DETERMINISTIC ? "deterministic" : "llm"}, router: ${process.env.MODEL_ID ? process.env.MODEL_ID : "unconfigured"})`,
+  );
 });
 
 async function shutdown() {

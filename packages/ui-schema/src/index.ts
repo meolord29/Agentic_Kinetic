@@ -49,6 +49,18 @@ export const Action = z.discriminatedUnion("type", [
     value: z.enum(["same_time", "different_time", "not_sure"]),
   }),
   z.object({ type: z.literal("answer_vomit"), value: z.enum(["within_hour", "later", "didnt_take"]) }),
+  /** P3 voice commits — emitted by the client ONLY after "Looks right" (confirm-before-act). */
+  z.object({
+    type: z.literal("log_symptoms"),
+    labels: z.array(z.string()).min(1).max(9),
+    transcript: z.string().max(2000), // VERBATIM — chain triggers re-derived server-side from it
+  }),
+  z.object({ type: z.literal("send_handoff"), text: z.string().min(1).max(500) }), // VERBATIM question/request
+  z.object({
+    type: z.literal("share_diary"),
+    text: z.string().min(1).max(2000), // VERBATIM entry
+    noted: z.array(z.string()).max(9).default([]),
+  }),
   z.object({ type: z.literal("ack_reminder"), id: z.string() }),
   z.object({ type: z.literal("confirm_voice_note") }),
   z.object({ type: z.literal("dismiss_celebration") }),
@@ -425,4 +437,46 @@ export const COPY = {
   allClearTitle: "Nothing else is due today",
   allClearBody: "Your care team now has the full picture.",
   bookedLabel: "Booked by your care team",
+  handoffTeamLine: "That's one for your care team. I've sent your question to them and they'll reply here.",
+  handoffReceipt: "Question sent to your care team · just now",
+  diaryReceipt: "Shared with your care team · just now",
+  privacyLine: "Only the words are kept. The voice itself is never analysed.",
+  releaseToSend: "Release to send",
+  listeningEyebrow: "Listening",
+  youSaidEyebrow: "You said",
+  notedEyebrow: "Here's what I noted",
+  looksRight: "Looks right",
+  sayItAgain: "Say it again",
+  typedRequestPlaceholder: "or type a request",
 } as const;
+
+/**
+ * The closed symptom-label vocabulary (workflow-08 §1). The router may only
+ * note these labels; the data-api rejects anything else so the chain triggers
+ * (vomit/fever) stay deterministic.
+ */
+export const SYMPTOM_LABELS = [
+  "Vomiting",
+  "Nausea",
+  "Fever",
+  "Flu-like",
+  "Headache",
+  "Dizzy",
+  "Stomach upset",
+  "Tired",
+  "Pain",
+] as const;
+export type SymptomLabel = (typeof SYMPTOM_LABELS)[number];
+
+/** Workflow-11 command routing ids (the router's workflow field values). */
+export const COMMAND_WORKFLOWS = [
+  "tour",
+  "dose",
+  "temperature",
+  "samples",
+  "badges",
+  "diary",
+  "call",
+  "message",
+] as const;
+export type CommandWorkflow = (typeof COMMAND_WORKFLOWS)[number];

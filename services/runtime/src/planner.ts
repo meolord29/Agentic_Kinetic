@@ -2,7 +2,9 @@ import {
   BADGE_THRESHOLDS,
   COPY,
   LAYOUT_1x2,
+  LAYOUT_1x4,
   LAYOUT_2x2,
+  LAYOUT_2x3,
   LAYOUT_2x5,
   LAYOUT_STRIP,
   allClearPlan,
@@ -14,16 +16,25 @@ import {
 import type { KineticData } from "@kinetic/snapshot";
 
 /**
- * Deterministic-first planner (P0/P1). The doc's settled posture is
- * "deterministic data, generative layout" — for P0 the layout is composed
+ * Deterministic-first planner (P0–P3). The doc's settled posture is
+ * "deterministic data, generative layout" — the layout is composed
  * deterministically from the snapshot and pushed through the SAME §4.6
- * validators an LLM plan would face. The LLM composer joins in a later phase
- * behind this identical contract.
+ * validators an LLM plan would face. The router (P3) classifies transcripts;
+ * this planner composes the chains they trigger.
  *
- * Reward facts (`recentDoseAnswer`, `unlockPending`) are server-side
- * derivations from DB timestamps (§5.6) — the client can never claim them.
+ * Reward facts (`recentDoseAnswer`, `recentVoiceShare`, `unlockPending`) are
+ * server-side derivations from DB timestamps (§5.6) — the client can never
+ * claim them. One question at a time (§4.6): dose → vomit → temperature.
  */
-export function buildPlan({ snapshot, recentDoseAnswer, badgeDefs }: KineticData): HomePlan {
+export function buildPlan({
+  snapshot,
+  recentDoseAnswer,
+  recentVoiceShare,
+  badgeDefs,
+  latestSymptoms,
+  openHandoff,
+  openDiary,
+}: KineticData): HomePlan {
   const planId = `plan-${Date.now()}`;
   const header = {
     greeting: snapshot.user.daypart === "evening" ? `Good evening, ${snapshot.user.displayName}` : `Hi, ${snapshot.user.displayName}`,
@@ -61,7 +72,7 @@ export function buildPlan({ snapshot, recentDoseAnswer, badgeDefs }: KineticData
     tiles.push({
       component: "DosePromptCard",
       id: "dose",
-      layout: { cols: 2, rows: 3 },
+      layout: LAYOUT_2x3,
       tone: "hot",
       props: { headline: "Time for your morning dose", reassurance: COPY.reassurance },
       chips: [
@@ -83,6 +94,41 @@ export function buildPlan({ snapshot, recentDoseAnswer, badgeDefs }: KineticData
     });
   }
 
+  // Workflow-08 chain, step 4 — the vomit check outranks the temperature card
+  // (weight 76 > 75): one question at a time, the re-plan sequences the rest.
+  if (due.vomitCheck.waiting && due.dose.status !== "due") {
+    tiles.push({
+      component: "VomitCheckCard",
+      id: "vomit-check",
+      layout: LAYOUT_2x3,
+      tone: "hot",
+      props: {},
+      chips: [
+        { label: "Within the hour", action: { type: "answer_vomit", value: "within_hour" } },
+        { label: "Later", action: { type: "answer_vomit", value: "later" } },
+        { label: "Didn't take it", action: { type: "answer_vomit", value: "didnt_take" } },
+      ],
+    });
+  }
+
+  // Workflow-05 (sick-day reason arrives from the P3 symptom confirm).
+  if (due.temperature.due && !due.vomitCheck.waiting && due.dose.status !== "due") {
+    tiles.push({
+      component: "TemperatureCard",
+      id: "temperature",
+      layout: LAYOUT_1x4,
+      tone: "hot",
+      props: { reason: due.temperature.reason ?? "scheduled" },
+      chips: [
+        { label: "36.5 °C", action: { type: "answer_temperature", value: "v36_5" } },
+        { label: "37.0 °C", action: { type: "answer_temperature", value: "v37_0" } },
+        { label: "37.5 °C", action: { type: "answer_temperature", value: "v37_5" } },
+        { label: "38 °C +", action: { type: "answer_temperature", value: "v38_plus" } },
+        { label: "Didn't measure", action: { type: "answer_temperature", value: "not_measured" } },
+      ],
+    });
+  }
+
   if (due.dose.status !== "due" && due.teamQuestion.waiting && due.teamQuestion.text) {
     tiles.push({
       component: "TeamQuestionCard",
@@ -98,8 +144,8 @@ export function buildPlan({ snapshot, recentDoseAnswer, badgeDefs }: KineticData
     });
   }
 
-  // The plus lives only inside the dose-answer window (§4.6-4) and never on a
-  // celebration day (§4.6: celebration suppresses thanks).
+  // The dose-answer plus lives only inside the dose-answer window (§4.6-4) and
+  // never on a celebration day (§4.6: celebration suppresses thanks).
   if (due.dose.status === "done" && recentDoseAnswer && !unlock) {
     const { nextBadge } = snapshot.progress;
     tiles.push({
@@ -116,20 +162,64 @@ export function buildPlan({ snapshot, recentDoseAnswer, badgeDefs }: KineticData
     });
   }
 
-  if (due.temperature.due) {
+  // Sick-day notes and diary shares (workflows 08/12): thanks flash WITHOUT
+  // the plus — voice shares are never check-ins, and never on a celebration
+  // day. The flash stacks above the chained follow-up (weights 90 > 76).
+  if (recentVoiceShare && !recentDoseAnswer && !unlock) {
+    const { nextBadge } = snapshot.progress;
     tiles.push({
-      component: "TemperatureCard",
-      id: "temperature",
-      layout: { cols: 1, rows: 4 },
-      tone: "hot",
-      props: { reason: due.temperature.reason ?? "scheduled" },
-      chips: [
-        { label: "36.5 °C", action: { type: "answer_temperature", value: "v36_5" } },
-        { label: "37.0 °C", action: { type: "answer_temperature", value: "v37_0" } },
-        { label: "37.5 °C", action: { type: "answer_temperature", value: "v37_5" } },
-        { label: "38 °C +", action: { type: "answer_temperature", value: "v38_plus" } },
-        { label: "Didn't measure", action: { type: "answer_temperature", value: "not_measured" } },
-      ],
+      component: "ThanksCard",
+      id: "thanks-voice",
+      layout: LAYOUT_2x2,
+      tone: "good",
+      props: {
+        plus: false,
+        progressText: nextBadge
+          ? `${nextBadge.remaining} more check-in${nextBadge.remaining > 1 ? "s" : ""} to your next badge`
+          : "Every check-in counts",
+      },
+    });
+  }
+
+  if (latestSymptoms.length > 0) {
+    tiles.push({
+      component: "DoneRow",
+      id: "done-symptoms",
+      layout: LAYOUT_STRIP,
+      tone: "done",
+      props: { label: "How you feel", status: latestSymptoms.join(" · ") },
+    });
+    const hadVomitChain = latestSymptoms.some((l) => l === "Vomiting" || l === "Nausea");
+    if (hadVomitChain && !due.vomitCheck.waiting) {
+      tiles.push({
+        component: "DoneRow",
+        id: "done-vomit",
+        layout: LAYOUT_STRIP,
+        tone: "done",
+        props: { label: "Feeling sick", status: "Answered" },
+      });
+    }
+  }
+
+  // Workflow-07: the question is pinned VERBATIM until the care team replies.
+  if (openHandoff) {
+    tiles.push({
+      component: "HandoffCard",
+      id: "handoff",
+      layout: LAYOUT_2x3,
+      tone: "high",
+      props: { q: openHandoff, receipt: COPY.handoffReceipt }, // q VERBATIM from the DB row
+    });
+  }
+
+  // Workflow-12: the entry stays pinned (24 h window) with its receipt.
+  if (openDiary) {
+    tiles.push({
+      component: "DiarySharedCard",
+      id: "diary",
+      layout: LAYOUT_2x3,
+      tone: "high",
+      props: { text: openDiary, receipt: COPY.diaryReceipt }, // text VERBATIM from the DB row
     });
   }
 
@@ -179,13 +269,18 @@ export function buildPlan({ snapshot, recentDoseAnswer, badgeDefs }: KineticData
 
   // Workflow-09 all-clear: nothing due anywhere (prototype reg weight −1).
   // Done rows coexist with the all-clear card ("All logged") — they are not
-  // due items, matching the prototype's `when` exactly.
+  // due items, matching the prototype's `when` exactly. Pinned handoff/diary
+  // cards suppress it (workflow-12 §2).
   const nothingDue =
     due.dose.status !== "due" &&
     !due.teamQuestion.waiting &&
     !due.temperature.due &&
+    !due.vomitCheck.waiting &&
     !(due.nextSample.booked && due.nextSample.tomorrow) &&
     !recentDoseAnswer &&
+    !recentVoiceShare &&
+    !openHandoff &&
+    !openDiary &&
     !unlock;
 
   if (nothingDue) {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius } from "@kinetic/design-tokens";
 import { api, ApiError } from "../data/api";
+import { useVoiceFixture } from "../voice/fixture";
 
 /**
  * ScenarioDrawer (§5.5 dev harness) — reseeds the local data-api into a demo
@@ -9,13 +10,16 @@ import { api, ApiError } from "../data/api";
  * live scenario switching, no psql.
  */
 
-export type ScenarioName = "morning" | "question" | "badge" | "clear";
+export type ScenarioName = "morning" | "question" | "badge" | "clear" | "health" | "sick" | "diary";
 
 const SCENARIOS: { name: ScenarioName; label: string }[] = [
   { name: "morning", label: "Morning dose (31 · dose due)" },
   { name: "question", label: "Care-team question" },
   { name: "badge", label: "Badge day (99 → tap dose)" },
   { name: "clear", label: "All clear" },
+  { name: "health", label: "Voice · health question (hold FAB)" },
+  { name: "sick", label: "Sick day · symptom chains" },
+  { name: "diary", label: "Diary entry shared" },
 ];
 
 export function ScenarioDrawer({
@@ -28,7 +32,9 @@ export function ScenarioDrawer({
   onSeeded: (name: ScenarioName) => void;
 }) {
   const [busy, setBusy] = useState<ScenarioName | null>(null);
+  const [fixtureBusy, setFixtureBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const runFluFixture = useVoiceFixture((s) => s.runFluFixture);
 
   const seed = async (name: ScenarioName) => {
     setBusy(name);
@@ -58,6 +64,23 @@ export function ScenarioDrawer({
               )}
             </Pressable>
           ))}
+          <Pressable
+            style={[styles.row, styles.fixtureRow]}
+            disabled={fixtureBusy || runFluFixture === null}
+            onPress={() => {
+              setFixtureBusy(true);
+              void runFluFixture?.().finally(() => {
+                setFixtureBusy(false);
+                onClose();
+              });
+            }}
+          >
+            {fixtureBusy ? (
+              <ActivityIndicator size="small" color={colors.violet} />
+            ) : (
+              <Text style={[styles.rowText, styles.fixtureText]}>🎙 Demo audio · "I have a flu" (on-device whisper)</Text>
+            )}
+          </Pressable>
           {error !== null && <Text style={styles.error} numberOfLines={2}>{error}</Text>}
           <Pressable style={[styles.row, styles.cancel]} onPress={onClose}>
             <Text style={styles.rowText}>Close</Text>
@@ -88,6 +111,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cancel: { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.line, marginTop: 4 },
+  fixtureRow: { backgroundColor: colors.violet, marginTop: 4 },
+  fixtureText: { color: colors.btnInk },
   rowText: { color: colors.ink, fontSize: 13, fontWeight: "600" },
   error: { color: "#B3402E", fontSize: 11 },
 });

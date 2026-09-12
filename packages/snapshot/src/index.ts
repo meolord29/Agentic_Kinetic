@@ -1,6 +1,7 @@
 import { Pool, type PoolConfig } from "pg";
 import {
   PatientContextSummary,
+  SYMPTOM_LABELS,
   type PatientContextSummary as PatientContextSummaryType,
 } from "@kinetic/ui-schema";
 
@@ -32,6 +33,14 @@ export interface KineticData {
   snapshot: PatientContextSummaryType;
   recentDoseAnswer: boolean;
   badgeDefs: BadgeDef[];
+  /** P3 chains — latest confirmed symptom labels (workflow-08), empty when none logged today. */
+  latestSymptoms: string[];
+  /** True within one plan of a sick-day/diary share (drives ThanksCard with plus:false). */
+  recentVoiceShare: boolean;
+  /** Pinned care-team handoff question (workflow-07), verbatim; null when answered/none. */
+  openHandoff: string | null;
+  /** Latest shared diary entry text (workflow-12), verbatim; null when older than 24 h. */
+  openDiary: string | null;
 }
 
 function daypartNow(timezone: string): "morning" | "evening" {
@@ -59,7 +68,7 @@ export function createSnapshotStore(config: { connectionString: string; max?: nu
   async function getData(): Promise<KineticData> {
     const userId = DEMO_USER_ID;
 
-    const [userRes, stateRes, questionRes, tempRes, bookingRes, reminderRes, doseTodayRes, recentDoseRes, unlockRes, badgeDefsRes] =
+    const [userRes, stateRes, questionRes, tempRes, bookingRes, reminderRes, doseTodayRes, recentDoseRes, unlockRes, badgeDefsRes, latestSymptomRes, recentSymptomRes, vomitWaitingRes, recentDiaryRes, diaryRes, handoffRes] =
       await Promise.all([
         pool.query(
           `SELECT display_name, language, timezone, registered_at FROM app.users WHERE id = $1`,
@@ -104,6 +113,49 @@ export function createSnapshotStore(config: { connectionString: string; max?: nu
           [userId],
         ),
         pool.query(`SELECT n, label, copy FROM app.badge_defs ORDER BY n ASC`),
+        pool.query(
+          `SELECT labels FROM app.symptom_logs
+           WHERE user_id = $1 AND logged_at > current_date
+           ORDER BY logged_at DESC LIMIT 1`,
+          [userId],
+        ),
+        pool.query(
+          `SELECT 1 FROM app.symptom_logs
+           WHERE user_id = $1 AND logged_at > now() - interval '5 minutes' LIMIT 1`,
+          [userId],
+        ),
+        // Workflow-08 chain: a confirmed Nausea/Vomiting log waits for the vomit
+        // check until a later answer resolves it. Symptom logs validated against
+        // SYMPTOM_LABELS at write time, so the label set is trusted here.
+        pool.query(
+          `SELECT EXISTS (
+             SELECT 1 FROM app.symptom_logs s
+             WHERE s.user_id = $1
+               AND s.labels && $2::text[]
+               AND s.logged_at > COALESCE(
+                 (SELECT max(answered_at) FROM app.vomit_answers WHERE user_id = $1),
+                 to_timestamp(0)
+               )
+           ) AS waiting`,
+          [userId, ["Vomiting", "Nausea"]],
+        ),
+        pool.query(
+          `SELECT 1 FROM app.diary_entries
+           WHERE user_id = $1 AND created_at > now() - interval '5 minutes' LIMIT 1`,
+          [userId],
+        ),
+        pool.query(
+          `SELECT text FROM app.diary_entries
+           WHERE user_id = $1 AND created_at > now() - interval '24 hours'
+           ORDER BY created_at DESC LIMIT 1`,
+          [userId],
+        ),
+        pool.query(
+          `SELECT question FROM app.handoffs
+           WHERE user_id = $1 AND replied_at IS NULL
+           ORDER BY created_at DESC LIMIT 1`,
+          [userId],
+        ),
       ]);
 
     const user = userRes.rows[0];
@@ -121,6 +173,16 @@ export function createSnapshotStore(config: { connectionString: string; max?: nu
       | { test_name: string; for_date: string | Date; fasting: boolean }
       | undefined;
     const daypart = daypartNow(user.timezone);
+
+    // P3 voice-chain facts. Symptom labels are stored validated (SYMPTOM_LABELS
+    // checked at write time) — filtered again here so an old row predating the
+    // vocabulary can never leak into a plan.
+    const knownLabels = new Set<string>(SYMPTOM_LABELS);
+    const latestSymptoms = (latestSymptomRes.rows[0]?.labels as string[] | undefined ?? []).filter((l) =>
+      knownLabels.has(l),
+    );
+    const openHandoff = (handoffRes.rows[0]?.question as string | undefined) ?? null;
+    const openDiary = (diaryRes.rows[0]?.text as string | undefined) ?? null;
 
     const snapshot = PatientContextSummary.parse({
       generatedAt: new Date().toISOString(),
@@ -159,14 +221,14 @@ export function createSnapshotStore(config: { connectionString: string; max?: nu
           text: questionRes.rows[0]?.text ?? null, // VERBATIM
         },
         medWatch: { active: false, step: null },
-        vomitCheck: { waiting: false },
+        vomitCheck: { waiting: vomitWaitingRes.rows[0]?.waiting === true },
         reminders: (reminderRes.rows as { id: string; kind: string; text: string }[]).map((r) => ({
           id: r.id,
           kind: r.kind as "night_before_prep" | "checkin_nudge" | "booking_reminder",
           text: r.text,
         })),
       },
-      pins: { handoff: false, diaryShared: false },
+      pins: { handoff: openHandoff !== null, diaryShared: openDiary !== null },
       tour: { completed: true, active: false },
     });
 
@@ -175,6 +237,11 @@ export function createSnapshotStore(config: { connectionString: string; max?: nu
       // §4.6-4 window: "within one plan of a dose answer"
       recentDoseAnswer: recentDoseRes.rowCount === 1,
       badgeDefs,
+      latestSymptoms,
+      // Sick-day notes and diary shares thank with plus:false (never a check-in)
+      recentVoiceShare: recentSymptomRes.rowCount === 1 || recentDiaryRes.rowCount === 1,
+      openHandoff,
+      openDiary,
     };
   }
 
