@@ -552,6 +552,53 @@ pipeline is identical — only the recorder differs. If whisper can't
 initialize, the app **hides the mic FAB by design** and the typed-request path
 stays available.
 
+### 8.8 How the UI is dynamic — CopilotKit generative UI inside a closed registry
+
+When whisper turns speech into text, the text does not drive hardcoded if/else
+UI. The agent decides what appears, and CopilotKit is the pipe that makes that
+safe:
+
+    transcript ──► router agent (LLM, runtime :8200)
+                      │  classifies: dose / health / sick / diary / command
+                      ▼
+    compose_overlay tool call ──(AG-UI / SSE)──► the app
+                      │  zod-validated against packages/ui-schema
+                      ▼
+    closed registry renders the widget ──► "You said" popover
+                      │  [Looks right] [Say it again]
+                      ▼
+    confirm → typed action → data-api → ui_agent re-plan
+                      ▼
+    compose_home tool call → registry renders the next widgets
+    (vomit check, temperature card, done rows …)
+
+The value of CopilotKit here: the **agent dynamically composes the UI for the
+moment** — every re-plan, chain and confirmation is decided server-side per
+state — but it composes **from a closed, validated selection**, never
+free-form. Widgets are a fixed set of components (`packages/ui-schema` →
+`apps/mobile/src/plan/registry.tsx`); buttons carry a fixed action vocabulary
+(`Action` in the same schema); both ends validate every plan/overlay before it
+can reach pixels. So the UI is generative where it pays off (what to show,
+when, with which options) and deterministic where it must be (what can exist
+at all). A hallucinated widget, button or clinical string is rejected by
+validation and falls back to a safe screen — never rendered.
+
+Where to look:
+
+| Piece | File |
+|---|---|
+| LLM classification → `compose_overlay` emission | `services/runtime/src/router.ts` |
+| Frontend tool registration + client-side validation | `apps/mobile/src/agent/useComposeOverlay.ts` |
+| Overlay state | `apps/mobile/src/plan/overlay.ts` |
+| The clickable widget ("Looks right" / "Say it again") | `apps/mobile/src/voice/VoiceLayer.tsx` (`ResultPop`) |
+| The closed component/action vocabulary | `packages/ui-schema/src/index.ts` |
+| Home re-plan widgets (chains) | `services/runtime/src/planner.ts` + `apps/mobile/src/plan/registry.tsx` |
+
+Developer takeaway: adding a new dynamic widget = add its zod Tile/Action in
+`packages/ui-schema` → add a registry renderer → emit it from the planner or
+router. Everything else (validation, fallback, audit, offline queue) already
+applies.
+
 ---
 
 ## 9. End-to-end proof checklist
