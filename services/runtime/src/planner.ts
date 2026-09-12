@@ -1,24 +1,29 @@
 import {
+  BADGE_THRESHOLDS,
   COPY,
   LAYOUT_1x2,
   LAYOUT_2x2,
+  LAYOUT_2x5,
   LAYOUT_STRIP,
   allClearPlan,
   validatePlan,
   type HomePlan,
-  type PatientContextSummary,
   type PlanSnapshot,
   type Tile,
 } from "@kinetic/ui-schema";
+import type { KineticData } from "@kinetic/snapshot";
 
 /**
- * Deterministic-first planner (P0). The doc's settled posture is
+ * Deterministic-first planner (P0/P1). The doc's settled posture is
  * "deterministic data, generative layout" — for P0 the layout is composed
  * deterministically from the snapshot and pushed through the SAME §4.6
  * validators an LLM plan would face. The LLM composer joins in a later phase
  * behind this identical contract.
+ *
+ * Reward facts (`recentDoseAnswer`, `unlockPending`) are server-side
+ * derivations from DB timestamps (§5.6) — the client can never claim them.
  */
-export function buildPlan(snapshot: PatientContextSummary, recentDoseAnswer = false): HomePlan {
+export function buildPlan({ snapshot, recentDoseAnswer, badgeDefs }: KineticData): HomePlan {
   const planId = `plan-${Date.now()}`;
   const header = {
     greeting: snapshot.user.daypart === "evening" ? `Good evening, ${snapshot.user.displayName}` : `Hi, ${snapshot.user.displayName}`,
@@ -29,6 +34,44 @@ export function buildPlan(snapshot: PatientContextSummary, recentDoseAnswer = fa
 
   const tiles: Tile[] = [];
   const due = snapshot.due;
+  const unlock = snapshot.progress.unlockPending;
+
+  // Badge day (workflow-06): the celebration takes the hot slot. The validator
+  // suppresses ThanksCard while a celebration shows — gate it here too.
+  if (unlock) {
+    const def = badgeDefs.find((d) => d.n === unlock.n);
+    tiles.push({
+      component: "BadgeCelebrationCard",
+      id: `badge-${unlock.n}`,
+      layout: LAYOUT_2x5,
+      tone: "hot",
+      props: {
+        n: unlock.n,
+        label: unlock.label,
+        copy: def?.copy ?? "That is a clear picture for your care team.",
+        shelf: BADGE_THRESHOLDS.map((n) => ({ n, earned: snapshot.progress.checkins >= n })),
+      },
+    });
+  }
+
+  if (due.dose.status === "due") {
+    // Workflow-01: the dose question takes the hot slot (§4.6: one question at
+    // a time — while the dose is due, the team question waits for the next
+    // re-plan; the flush loop re-plans moments after the answer anyway).
+    tiles.push({
+      component: "DosePromptCard",
+      id: "dose",
+      layout: { cols: 2, rows: 3 },
+      tone: "hot",
+      props: { headline: "Time for your morning dose", reassurance: COPY.reassurance },
+      chips: [
+        { label: "Taken", action: { type: "answer_dose", value: "taken" } },
+        { label: "Later", action: { type: "answer_dose", value: "late" } },
+        { label: "Skipped it", action: { type: "answer_dose", value: "missed" } },
+        { label: "Not sure", action: { type: "answer_dose", value: "not_sure" } },
+      ],
+    });
+  }
 
   if (due.dose.status === "done") {
     tiles.push({
@@ -40,7 +83,7 @@ export function buildPlan(snapshot: PatientContextSummary, recentDoseAnswer = fa
     });
   }
 
-  if (due.teamQuestion.waiting && due.teamQuestion.text) {
+  if (due.dose.status !== "due" && due.teamQuestion.waiting && due.teamQuestion.text) {
     tiles.push({
       component: "TeamQuestionCard",
       id: "team-question",
@@ -55,7 +98,9 @@ export function buildPlan(snapshot: PatientContextSummary, recentDoseAnswer = fa
     });
   }
 
-  if (due.dose.status === "done" && recentDoseAnswer) {
+  // The plus lives only inside the dose-answer window (§4.6-4) and never on a
+  // celebration day (§4.6: celebration suppresses thanks).
+  if (due.dose.status === "done" && recentDoseAnswer && !unlock) {
     const { nextBadge } = snapshot.progress;
     tiles.push({
       component: "ThanksCard",
@@ -138,6 +183,7 @@ export function buildPlan(snapshot: PatientContextSummary, recentDoseAnswer = fa
     !due.temperature.due &&
     !(due.nextSample.booked && due.nextSample.tomorrow) &&
     !recentDoseAnswer &&
+    !unlock &&
     tiles.every((t): boolean => t.component === "BadgesSquare" || t.component === "CareTeamSquare");
 
   if (nothingDue) {

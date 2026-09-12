@@ -13,10 +13,12 @@
     "@kinetic/design-tokens": "*",
     "@kinetic/ui-schema": "*",
     "expo": "~57.0.22",
+    "expo-crypto": "~57.0.3",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-get-random-values": "~1.11.0",
+    "react-native-mmkv": "^4.3.2",
     "zustand": "^5.0.2"
   },
   "devDependencies": {

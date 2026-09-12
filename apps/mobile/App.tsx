@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
 import { colors } from "@kinetic/design-tokens";
 import { useComposeHome } from "./src/agent/useComposeHome";
+import { usePatientContext } from "./src/agent/usePatientContext";
 import { RUNTIME_URL } from "./src/config/serverConfig";
 import ProbeHome from "./src/screens/ProbeHome";
 
@@ -27,8 +28,10 @@ export default function App() {
 }
 
 function Root() {
-  // Register compose_home exactly once (§5.1 ledger: once per agent).
+  // Register compose_home exactly once (§5.1 ledger: once per agent) and feed
+  // the up-channel context (§4.3).
   useComposeHome();
+  usePatientContext();
   return <ProbeHome />;
 }
 

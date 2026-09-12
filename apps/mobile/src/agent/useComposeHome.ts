@@ -17,12 +17,17 @@ export function useComposeHome() {
       description: "Compose the patient home screen from a validated HomePlan.",
       agentId: "ui_agent",
       parameters: HomePlan,
+      // §5.1 ledger: the plan is terminal — a compose_home result must never
+      // request a follow-up run (recursive re-plan loop guard).
+      followUp: false,
       handler: async (plan: ComposeHomeArgs) => {
         const parsed = parsePlan(plan);
         if (!parsed.ok) {
+          console.warn("[compose] REJECTED:", parsed.error);
           usePlanStore.getState().fail(parsed.error);
           return "rejected: plan failed ui-schema validation";
         }
+        console.log("[compose] commit", parsed.plan.planId, parsed.plan.tiles.length, "tiles");
         usePlanStore.getState().commit(parsed.plan);
         return "rendered";
       },

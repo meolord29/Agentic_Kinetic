@@ -1,24 +1,30 @@
 import { useAgent, useCopilotKit } from "@copilotkit/react-native/headless";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, ToastAndroid, View, useWindowDimensions } from "react-native";
 import { colors, grid, radius, toneBackground, toneBorder } from "@kinetic/design-tokens";
 import type { Action, HomePlan, Tile } from "@kinetic/ui-schema";
 import { usePlanStore } from "../plan/store";
+import { dispatchAction, useSnapshotLifecycle, useSnapshotStore } from "../data/snapshot";
 
 type RunState = "idle" | "running" | "ok" | "error";
 
 /**
- * P0 probe screen: grounds the on-emulator exit proof. Renders the last
- * committed plan from the real ui_agent round-trip over 10.0.2.2:8200.
- * The full 17-component registry is P2 (§5.3) — tiles render as
- * tone-tinted probe cards with the closed Action bus wired to toasts.
+ * P1 probe screen: the §4.7 plan loop, end to end —
+ *   chip tap → dispatchAction (optimistic + §5.6 queue) → runAgent
+ *   → compose_home → ui-schema gate → commit → bento re-render.
+ * The full 17-component registry is P2 — tiles render as tone-tinted cards.
  */
 export default function ProbeHome() {
+  useSnapshotLifecycle();
+
   const { copilotkit } = useCopilotKit();
   const { agent, isReady } = useAgent({ agentId: "ui_agent" });
   const plan = usePlanStore((s) => s.plan);
   const committedAt = usePlanStore((s) => s.committedAt);
   const parseError = usePlanStore((s) => s.parseError);
+  const connectivity = useSnapshotStore((s) => s.connectivity);
+  const queued = useSnapshotStore((s) => s.queued);
+  const planNonce = useSnapshotStore((s) => s.planNonce);
   const [runState, setRunState] = useState<RunState>("idle");
   const [runMs, setRunMs] = useState<number | null>(null);
   const [runs, setRuns] = useState(0);
@@ -27,42 +33,62 @@ export default function ProbeHome() {
     setRunState("running");
     const t0 = Date.now();
     try {
+      // v2 note: yield a macrotask so a just-registered agent context commits
+      // before the run reads it (CopilotKitRN ledger §5.1).
+      await new Promise((r) => setTimeout(r, 30));
+      console.log("[run] start");
       await copilotkit.runAgent({ agent });
       setRunMs(Date.now() - t0);
       setRuns((n) => n + 1);
       setRunState("ok");
+      console.log("[run] ok", Date.now() - t0, "ms");
     } catch (err) {
       setRunState("error");
       console.warn("[probe] runAgent failed:", err);
     }
   }, [copilotkit, agent]);
 
-  useEffect(() => {
-    if (isReady) void run();
-  }, [isReady, run]);
+  const runRef = useRef(run);
+  runRef.current = run;
 
-  const dispatch = useCallback((action: Action) => {
-    // Closed action vocabulary (§4.5) — P0 probe logs the bus event; the
-    // registry + data-api writes consume it in P1+.
+  useEffect(() => {
+    if (isReady) void runRef.current();
+  }, [isReady, planNonce]);
+
+  const onChip = useCallback((action: Action) => {
     console.log("[action]", JSON.stringify(action));
     ToastAndroid.show(JSON.stringify(action), ToastAndroid.SHORT);
+    dispatchAction(action);
   }, []);
+
+  const statusLine =
+    connectivity === "online"
+      ? `ui_agent · ${runState}${runMs !== null ? ` · ${runMs}ms` : ""} · run #${runs}`
+      : connectivity === "offline"
+        ? `reconnecting…${queued > 0 ? ` · ${queued} queued` : ""}`
+        : "connecting…";
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.statusRow}>
-        <Text style={[styles.statusText, runState === "error" && styles.statusTextError]}>
-          ui_agent · {runState}
-          {runMs !== null ? ` · ${runMs}ms` : ""} · run #{runs}
+        <Text
+          style={[
+            styles.statusText,
+            (runState === "error" || connectivity === "offline") && styles.statusTextWarn,
+          ]}
+        >
+          {statusLine}
         </Text>
-        <Pressable style={styles.replanBtn} onPress={() => void run()}>
+        <Pressable style={styles.replanBtn} onPress={() => dispatchAction({ type: "toast", message: "Re-plan requested" })}>
           <Text style={styles.replanText}>Re-plan</Text>
         </Pressable>
       </View>
       {parseError !== null && <Text style={styles.errorText}>rejected: {parseError}</Text>}
-      {plan ? <PlanBody plan={plan} committedAt={committedAt} dispatch={dispatch} /> : (
+      {plan ? (
+        <PlanBody plan={plan} committedAt={committedAt} dispatch={onChip} />
+      ) : (
         <Text style={styles.muted}>
-          {runState === "error" ? "Runtime unreachable — check compose stack." : "Waiting for the first compose_home…"}
+          {connectivity === "offline" ? "Backend unreachable — will sync automatically." : "Waiting for the first compose_home…"}
         </Text>
       )}
     </ScrollView>
@@ -79,10 +105,7 @@ function PlanBody({
   dispatch: (action: Action) => void;
 }) {
   const { width } = useWindowDimensions();
-  const colWidth = useMemo(
-    () => (width - 2 * grid.paddingH - grid.gutter) / 2,
-    [width],
-  );
+  const colWidth = (width - 2 * grid.paddingH - grid.gutter) / 2;
 
   return (
     <>
@@ -139,11 +162,7 @@ function ProbeTile({
       {"chips" in tile && tile.chips.length > 0 && (
         <View style={styles.chipRow}>
           {tile.chips.map((chip) => (
-            <Pressable
-              key={chip.label}
-              style={styles.chip}
-              onPress={() => dispatch(chip.action)}
-            >
+            <Pressable key={chip.label} style={styles.chip} onPress={() => dispatch(chip.action)}>
               <Text style={styles.chipText}>{chip.label}</Text>
             </Pressable>
           ))}
@@ -168,8 +187,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.ground },
   content: { paddingTop: 48, paddingBottom: 32, paddingHorizontal: grid.paddingH, gap: 10 },
   statusRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  statusText: { color: colors.chromeInk, fontSize: 12, fontWeight: "600" },
-  statusTextError: { color: "#B3402E" },
+  statusText: { color: colors.chromeInk, fontSize: 12, fontWeight: "600", flexShrink: 1 },
+  statusTextWarn: { color: "#B3402E" },
   replanBtn: {
     backgroundColor: colors.btn,
     borderRadius: radius.chip,

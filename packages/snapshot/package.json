@@ -1,0 +1,14 @@
+{
+  "name": "@kinetic/snapshot",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@kinetic/ui-schema": "*",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
+  }
+}

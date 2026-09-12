@@ -4,7 +4,7 @@ import { CopilotRuntime, BuiltInAgent } from "@copilotkit/runtime/v2";
 import { createCopilotNodeListener } from "@copilotkit/runtime/v2/node";
 import { EventType, type BaseEvent } from "@ag-ui/core";
 import { HomePlan, allClearPlan, validatePlan } from "@kinetic/ui-schema";
-import { getSnapshot, healthz, close as closeDb } from "./db.js";
+import { getData, healthz, close as closeDb } from "./db.js";
 import { buildPlan } from "./planner.js";
 
 const PORT = Number(process.env.PORT ?? 8200);
@@ -24,10 +24,10 @@ const uiAgent = new BuiltInAgent({
     let violations: string[] = [];
 
     try {
-      const snapshot = await getSnapshot();
-      plan = buildPlan(snapshot);
+      const data = await getData();
+      plan = buildPlan(data);
       if (process.env.PLANNER_DEBUG === "1") {
-        console.log("[ui_agent] snapshot:", JSON.stringify(snapshot.due));
+        console.log("[ui_agent] snapshot:", JSON.stringify(data.snapshot.due));
       }
     } catch (err) {
       console.error("[ui_agent] snapshot failed — all-clear fallback:", err);
