@@ -1,47 +1,6 @@
-<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/d6d06622-7e64-43b7-a1f5-b630129627dc" />
 <img width="2750" height="1536" alt="Agentic Kinetic Agent" src="https://github.com/user-attachments/assets/d4997a2e-f245-4bb9-8c7a-b4b8a1482e88" />
-
-Exa - AITAGENTCHAT
-Invite your agent. Agent. Human. Email. Workspace (demo). Create an account & sign up to workspace. Existing or separate - Ambiguous account.
-
-
-From the Portal, this is exactly everything we need to submit:
-
-A. DESCRIPTION [JUNE] (Markdown or plain text is acceptable)
-Describe your project focusing on how it delivers a functional agent within its chosen environment. Explain the problem it solves and how the agent’s presence in that specific context makes it meaningfully more useful than a standalone chatbot. Highlight the innovation and how the environment shapes the agent’s core workflow.
-Detail the technical execution, including specific technologies, frameworks, and libraries used. Explain how the agent provides clear value and an intuitive, effective experience for users. Your description must be at least 25 words long (longer is welcome) to help judges understand your project’s alignment with all criteria.
-
-TL;DR (Exec Summary) + Would be useful for Project Intro & to point to the relevant links to what the judges should read & why they should care & how this fits their judging criteria.
-Ivan to test so I know what this field holds. If I can drop a SVG Image I will as it's a powerful start to the submission right below the title.
-
-B. TOOLS (just click this last): What of the following were used to create your product or were particularly helpful during the hackathon? 
-[IVAN: Track these and describe them as you go.]
-
-C. VIDEO [JUNE]:  Optional: 2-minute YouTube or Loom video link. Helps judges understand your project and appears on winners page. Video creation guide »
-Important: please limit your video to 2 minutes. Longer videos may deduct points.
-YouTube must be Unlisted/Public. Loom must be shareable. I'll need to work on YouTube (better marketing).
-
---> Draft (not yet reviewed): https://docs.google.com/document/d/1vgqtbevU2osvBTpvFypzk0X0MrnOupzq5YbtKSz2r7c/edit?tab=t.0#heading=h.d98uxddf71a3
-
-D. TEAM CONTRIBUTIONS: Describe their role on the team and their contributions (tools used, specific components built, etc.)
-Ivan:
-June:
-
-
-E. ADDITIONAL LINKS:
-Provide other project related links here such as GitHub repositories, project website, etc. This will be showcased on the winners page and entries list and are helpful for judging. 
-
-1. Agentic Kinetic Repo (Need a description): https://github.com/meolord29/Agentic_Kinetic. (README needs to direct them to key sections of the Repo - link to them, e.g. the patient/clincian views below)
-2. Agentic Kinetic Patient Widget: (Need a description) https://claude.ai/code/artifact/6dcbc400-1d4f-496b-8c1e-223ce5869b57 - Should we just keep this as my Claude Artifact?
-3. Agentic Kinetic Clinician Dashboard: (Need a description): https://claude.ai/code/artifact/8cc495cc-a61f-478f-9127-9628277a8e4f - Should we just keep this as my Claude Artifact?
-4. Add Rendered Images of the app for the patient & doctor with example questions showing the UX to the Repo.
-5. Working Agent: Live agent. Host on Google Cloud Run?
-6. Optional: Actual doctor dashboard, built with CopilotKit and hosted on Google Cloud Run?.
-7. Backgrounder. This is terrible & will be completely redonehttps://docs.google.com/presentation/d/1mOu_S_HuGJ7VmLbSBwwPBFuU9zt0-vck8D6lbTyohi4/edit?slide=id.ak_s12#slide=id.ak_s12
-
-Bakcgrounder must drive Visual communication so I'm going to do it slide by slide to fill in the gaps - branding is done, now the video storytelling is the next branding element I need to pull together then I can add content that fills in the background distinct from the video and the dashboards & the app:
-
-Here is a structured, highly scannable layout for a presentation slide or website graphic. It visualizes the continuous feedback loop between the patient's gamified routine and the clinician's automated dashboard.
+Agentic Kinetic Patient Widget: https://claude.ai/code/artifact/6dcbc400-1d4f-496b-8c1e-223ce5869b57
+Agentic Kinetic Clinician Dashboard: https://claude.ai/code/artifact/8cc495cc-a61f-478f-9127-9628277a8e4f - Should we just keep this as my Claude Artifact?
 
 ========================================================================================
              THE AUTONOMOUS FEEDBACK LOOP: FROM HOME LOGISTICS TO CLINICAL ACTION
@@ -150,35 +109,3 @@ For healthcare executives, your software is an administrative and financial reli
 +-----------------------------------------------------------------------------------+
 
 
-F. PRIOR WORK:
-Please describe any prior work, code, designs, or other work your team is building upon so that judges know what was created during the hackathon and what was created prior to the hackathon (if any). e.g. Our project starts with a RAG pipeline I built for my research lab.
-
-I'll write the blurb about scientific research referring to scientific papers read:
-https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2024.1456565/full
-https://pmc.ncbi.nlm.nih.gov/articles/PMC11062183/
-
-G. SOCIAL MEDIA POSTS:
-Post about your project on social media, then paste at least one post URL below so your entry can be marked complete. 
-Sponsor Handles & Hashtags
-Share your project on social media! Paste the URL of your public post into the submission form.
-Tag the following accounts:
-    @AITinkerers
-    @OpenAI
-    @CopilotKit
-    @openrouter
-    @exaailabs
-    @auth0
-    @ambiguousio
-    @triggerdotdev
-    @mozillaAI
-    @googlecloud
-Include the hashtag #AgentsEverywhere.
-For LinkedIn, use the company names: AI Tinkerers, OpenAI, CopilotKit, OpenRouter, Exa, Auth0, Ambiguous AI, Trigger.dev, Mozilla.ai, Google Cloud.
-Paste links to your post(s) below: 
-Example posts. Generate, copy, post to socials and paste the links above.
-Twitter: Content will appear here
-LinkedIn: Content will appear here
-
-Social Media Post URL 1 [LinkedIn Post - Image to match the Repo Image for instant recognition from the Post to the Repo, see above] - should be about the patient benefit
-Social Media Post URL 2 [LinkedIn Post - Image Doctor scrolling through the App with stats showing] - focus on benefits to doctors, an agent to help save lives
-Social Media Post URL 3 [LinkedIn Post - Image focusing on the Tech Stack - use the logos rendered for the companies?] - Focus on the Agentic architecture
