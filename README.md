@@ -1,4 +1,6 @@
 <img width="2750" height="1536" alt="Agentic Kinetic Agent" src="https://github.com/user-attachments/assets/d4997a2e-f245-4bb9-8c7a-b4b8a1482e88" />
+
+Backgrounder: https://claude.ai/code/artifact/13f575e3-1846-41a0-b195-6e8839eb92b9
 Agentic Kinetic Patient Widget: https://claude.ai/code/artifact/6dcbc400-1d4f-496b-8c1e-223ce5869b57
 Agentic Kinetic Clinician Dashboard: https://claude.ai/code/artifact/8cc495cc-a61f-478f-9127-9628277a8e4f - Should we just keep this as my Claude Artifact?
 
