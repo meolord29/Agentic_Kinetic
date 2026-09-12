@@ -7,7 +7,9 @@
 > **Target stack:** React Native (Android `.apk`) · CopilotKit React Native (`@copilotkit/react-native/headless` ≥ 1.64.0)
 > · CopilotKit Runtime v2 agents in TypeScript · **Auth0** user authentication + delegated authorization
 > (Auth0 for AI Agents) · **Postgres 16 in Docker** reached with the agent service's *own* least-privilege role.
-> **Local-first:** the whole backend is one `docker compose up` on a laptop; the phone and laptop share a hotspot.
+> **On-device STT:** `whisper.rn` (whisper.cpp binding), `ggml-base` multilingual model bundled in the APK (§5.4).
+> **Local-first:** the whole backend is one `docker compose up`; the app runs in an Android emulator **on the
+> same Ubuntu machine** and reaches it via the emulator's `10.0.2.2` host alias — a single-box demo, no LAN setup.
 >
 > **Governing requirement:** the UI is *agentic UI* — every screen the user sees is **described by a UI Agent**
 > as data (a plan), rendered by a fixed component registry, and acted on through a closed action vocabulary.
@@ -30,74 +32,59 @@ The patient app is a **projection**: it displays her own data and her clinician'
 | P6 | **Verbatim relay** (workflows 03/07/12) | Clinician questions, user quotes and diary entries are stored and rendered verbatim; the agent may add nothing around them except fixed copy. |
 | P7 | **Audit everything, minimum necessary** (monitoring-25 #24, #25) | Every read/write at the Data API logs actor, purpose and fields returned. Consent scopes are tested at the moment of use. |
 | P8 | **AI disclosure** (monitoring-25 #5) | "This app uses AI" ships in the menu; the agent never poses as a clinician; care-team content is labelled as theirs. |
-| P9 | **Local-first, demo-portable** | The entire backend is a laptop + `docker compose up`; the only cloud dependency is Auth0. The demo works on a hotspot with no other infrastructure. The server being unreachable must never block a check-in (offline queue). |
+| P9 | **Local-first, single-box demo** | The entire backend is one `docker compose up` on the demo laptop, and the app runs in an Android emulator **on that same machine** (`10.0.2.2`) — no LAN, hotspot, or second device anywhere in the demo path. The server being unreachable must never block a check-in (offline queue). |
 
 ---
 
 ## 2. System topology
 
 ```text
-                  ┌─────────────────────────────────────────┐
-                  │     Auth0 tenant (cloud)                │
-                  │   Universal Login · API · JWKS · PKCE   │
-                  └────────────────────┬────────────────────┘
-                                       │ PKCE · kinetic:// redirect scheme
-                                       ▼
+                ┌─────────────────────────────────────────┐
+                │     Auth0 tenant (cloud)                │
+                │   Universal Login · API · JWKS · PKCE   │
+                └────────────────────┬────────────────────┘
+                                     │ PKCE · kinetic:// (Custom Tab inside the emulator)
+                                     ▼
 
- ┌────────────────────────────────────────────────────────────────────────┐
- │ ANDROID DEVICE (.apk) — on the shared hotspot                          │
- │ ┌─────────────────────────────────────────────────────────────────┐    │
- │ │ React Native app (Expo prebuild)                                │    │
- │ │ · agentic bento home (plan → registry)                          │    │
- │ │ · offline queue (§5.6)                                          │    │
- │ └─────────────────────────────────────────────────────────────────┘    │
- │ ┌───────────────────────┐    ┌──────────────────────────┐              │
- │ │ notifee               │    │ STT (bring-your-own)     │              │
- │ │ local notifications   │    │                          │              │
- │ └───────────────────────┘    └──────────────────────────┘              │
- │                                                                        │
- └──────┬───────────────────────────────────────────┬─────────────────────┘
-        │ HTTP :8200                                │ HTTP :8080
-        │ SSE · Bearer user token                   │ REST · Bearer user token
-        ▼                                           ▼
- ┌────────────────────────────────────────────────────────────────────────┐
- │ LAPTOP — docker compose (same hotspot)                                 │
- │ ┌─────────────────────────────────────────────────────────────────┐    │
- │ │ runtime :8200                                                   │    │
- │ │ CopilotKit Runtime v2 · /api/copilotkit (SSE)                   │    │
- │ │ ├─ ui_agent  (UI planner)                                       │    │
- │ │ └─ router    (voice/typed intents)                              │    │
- │ │ JWKS verify ◄── Auth0 (cloud)                                   │    │
- │ │ model calls ──► OpenRouter / model provider (BYOK)              │    │
- │ └────────────────────────────────┬────────────────────────────────┘    │
- │                                  │ tool calls                          │
- │                                  │ delegated user access token         │
- │                                  ▼                                     │
- │ ┌────────────────────────────────┬────────────────────────────────┐    │
- │ │ data-api :8080 · Fastify                                        │    │
- │ │ REST · node-cron sweep · audit · JWKS verify ◄── Auth0 (cloud)  │    │
- │ └─────────────────────────────────────────────────────────────────┘    │
- │                                  │ kinetic_agent role                  │
- │                                  ▼ least privilege · no DDL            │
- │ ┌─────────────────────────────────────────────────────────────────┐    │
- │ │ Postgres 16 (db) — INTERNAL ONLY                                │    │
- │ │ volume · init.sql · no ports published                          │    │
- │ └─────────────────────────────────────────────────────────────────┘    │
- └────────────────────────────────────────────────────────────────────────┘
+ ┌────────────────────────────────────────────────────────────────────────────┐
+ │ ONE UBUNTU LAPTOP — the whole demo runs on this machine                    │
+ │                                                                            │
+ │  ┌── docker compose ──────────────────────┐   ┌── Android emulator ──────┐ │
+ │  │ runtime :8200  CopilotKit Runtime v2   │◄──┤ release .apk installed   │ │
+ │  │   /api/copilotkit (SSE)                │   │ CopilotKitProvider       │ │
+ │  │   ├─ ui_agent  (UI planner)            │   │ runtimeUrl               │ │
+ │  │   └─ router    (voice/typed intents)   │   │  http://10.0.2.2:8200    │ │
+ │  │   JWKS verify ◄── Auth0 (cloud)        │   │                          │ │
+ │  │   model calls ──► OpenRouter (BYOK)    │   │ whisper.rn STT           │ │
+ │  │                                        │   │ (on-device; mic = laptop │ │
+ │  │   ▲ tool calls · delegated user token  │   │  mic passthrough)        │ │
+ │  │   │                                    │   │ notifee local notifs     │ │
+ │  │ data-api :8080 ◄── REST 10.0.2.2:8080 ─┼───┤ offline queue (§5.6)     │ │
+ │  │   Fastify · node-cron sweep · audit    │   └──────────────────────────┘ │
+ │  │   JWKS verify ◄── Auth0 (cloud)        │                                │
+ │  │     │                                  │                                │
+ │  │     │ kinetic_agent role · least priv. │                                │
+ │  │     ▼                                  │                                │
+ │  │ Postgres 16 (db) — INTERNAL ONLY       │                                │
+ │  │   volume · init.sql · no ports         │                                │
+ │  └────────────────────────────────────────┘                                │
+ │  ports bind 127.0.0.1 only — nothing leaves this machine                   │
+ └────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.1 Stack decisions (settled)
 
 | Concern | Decision | Rationale |
 |---|---|---|
-| Mobile shell | Expo SDK + prebuild, Android target, `.apk` via `eas build -p android --profile preview` or local Gradle | Config plugins manage dev cleartext/permissions safely; headless CopilotKit needs no native peers; bare-RN escape hatch stays open |
+| Mobile shell | Expo SDK + prebuild, Android target, `.apk` via **local Gradle release build** (whisper.rn requires the NDK toolchain anyway) → installed straight into the demo AVD | Config plugins manage cleartext/permissions safely; headless CopilotKit needs no native peers; bare-RN escape hatch stays open |
 | CopilotKit client | `@copilotkit/react-native/headless` **≥ 1.64.0** only | Provider + hooks with zero native peer deps (no `expo-document-picker` / `@gorhom/bottom-sheet` pull-in) |
 | Agent framework | TypeScript + CopilotKit Runtime v2 (`CopilotRuntime` + agents + `defineTool`) — **user decision** | One language, one deployable; Auth0 AI JS SDK support |
 | Database | **Postgres 16 in Docker** (`db` compose service) — **user decision** | Workflow data is strongly relational and enum-typed (check-in answers, temperature buckets, question approval states); needs transactions for the `logDose → checkins+1 → badge threshold` invariant; local = zero cloud ops for the demo |
 | Service hosting | **Full docker-compose**: `db` + `data-api` + `runtime` — **user decision** | One command up; bind-mounted source + `tsx watch` keeps the dev loop fast; reproducible on any laptop |
-| Connectivity | Laptop and phone on the **same hotspot**; app → laptop LAN IP over HTTP | No USB tethering or cloud required in the demo path; `adb reverse` and emulator aliases stay as fallbacks (§9.4) |
+| Connectivity | App and backend on the **same machine**: emulator → `10.0.2.2` (host-loopback alias) over HTTP; compose ports bind `127.0.0.1` only | Zero network setup and zero external exposure; `adb reverse` stays as a debugging fallback (§9.4) |
 | Identity | Auth0 (Universal Login, first-party API audience, JWKS) — **user decision** | Auth0 for AI Agents: user auth + delegated authorization to first-party APIs; works from any network because redirects use the `kinetic://` app scheme |
-| Push/nudges | **Local notifications** (notifee) scheduled on-device from synced reminders; FCM payload shapes documented as future swap-in | Zero Firebase setup; works fully on the hotspot (§8) |
+| Push/nudges | **Local notifications** (notifee) scheduled on-device from synced reminders; FCM payload shapes documented as future swap-in | Zero Firebase setup; works fully on the single-box demo (§8) |
+| STT | **`whisper.rn`** (whisper.cpp binding) — `ggml-base` multilingual **bundled in the `.apk`** — **user decision** | Fully on-device: audio never leaves the device (the strongest form of the privacy line), no cloud-STT proxy and no Google SpeechRecognizer dependency, transcription works even with the backend down. Realtime streaming (VAD) is a documented v2 upgrade (§5.4) |
 | i18n | `en` + `zh-Hant` strings from the contract (monitoring-25 #22) | Care plan carries both languages; copy constants are keyed, not hardcoded |
 
 ---
@@ -140,8 +127,8 @@ component (and no user) ever uses.
 - `react-native-auth0`, PKCE, refresh-token rotation; tokens live in Android Keystore via the SDK's secure storage.
 - Auth0 **API** `kinetic-data-api` registered with scopes mirroring consent: `care:read`, `care:write`,
   `research_deid:read` (granted only when `consent.deidentifiedResearch = on`).
-- Redirects use the custom app scheme (`kinetic://login-callback`) — works identically on the hotspot, USB, or a
-  future hosted deployment; the Auth0 tenant's **Allowed Callback URLs** list the scheme, not a server address.
+- Redirects use the custom app scheme (`kinetic://login-callback`) — works identically in the emulator and in
+  any future hosted deployment; the Auth0 tenant's **Allowed Callback URLs** list the scheme, not a server address.
 - Access-token lifetime short (tighten to 1 h); rotation handled by the SDK; the CopilotKit header set is
   refreshed through React state (see §5.1).
 - Re-entry path matches prototype `scr-access`: Face ID / biometric prompt (BiometricPrompt) unlocks the
@@ -177,8 +164,8 @@ The `data-api` container owns the database identity. Nobody else has one:
   edit `.env` + `docker compose up -d db data-api`.
 - **The `runtime` container has no `DATABASE_URL`** — its only data path is `http://data-api:8080` on the
   internal compose network. A compromised runtime or leaked model key reaches zero tables.
-- **`db` publishes no ports** — SQL is unreachable from the hotspot, the phone, or the laptop's localhost;
-  only the compose network can connect.
+- **`db` publishes no ports** — SQL is unreachable from the emulator, the loopback, or anything outside the
+  compose network; only the compose network can connect.
 - **Cloud escape hatch:** this role-based design ports unchanged to hosted Postgres (Cloud SQL IAM database
   authentication swaps the credential mechanism; roles/grants carry over). See §9.5.
 
@@ -196,7 +183,7 @@ The `data-api` container owns the database identity. Nobody else has one:
   The Data API middleware writes one row per request from the decoded JWT + endpoint field manifest.
 - The de-identified research path reads through a separate projection endpoint that strips identifiers
   before rows leave Postgres; the training path never sees identifiable data.
-- Transport on the hotspot is plain HTTP by design (dev/demo); the JWKS-verified token, scoped role and audit
+- Transport on the demo machine is plain HTTP by design (dev/demo); the JWKS-verified token, scoped role and audit
   trail are the controls that matter. §9.5 notes TLS termination for any future hosted run.
 
 ---
@@ -218,8 +205,9 @@ instructions, and **mirrored as executable validators** (§4.6) so a prompt miss
 
 ### 4.2 The UI Description Contract (`packages/ui-schema`)
 
-One zod schema is the single contract shared by the server (tool emission + validation) and the client
-(frontend-tool parameters + double-check). Zod ≥ 3.24 satisfies CopilotKit's Standard Schema requirement.
+One zod schema package is the single contract shared by the server (tool emission + validation) and the client
+(frontend-tool parameters + double-check): `HomePlan` travels **down**, `PatientContextSummary` travels **up**
+(§4.3). Zod ≥ 3.24 satisfies CopilotKit's Standard Schema requirement.
 
 ```ts
 import { z } from "zod";
@@ -272,7 +260,8 @@ export const Tile = z.discriminatedUnion("component", [
              props: z.object({ when: z.string(), stops: z.array(z.string()).length(4), notes: z.string() }) }),
   z.object({ component: z.literal("VomitCheckCard"),     id: z.string(), layout: z.literal(LAYOUT_2x3), tone: z.literal("hot"), chips: z.array(Chip).length(3) }),
   z.object({ component: z.literal("NewMedCard"),         id: z.string(), layout: Layout, tone: z.literal("hot"),
-             props: z.object({ step: z.union([z.literal(1), z.literal(2)]) }) }),
+             props: z.object({ step: z.union([z.literal(1), z.literal(2)]) }),
+             chips: z.array(Chip).length(3) }),   // step 1 → answer_med_start · step 2 → answer_med_timing (§4.5 registry: 3/3)
   z.object({ component: z.literal("HandoffCard"),        id: z.string(), layout: z.literal(LAYOUT_2x3), tone: z.literal("high"),
              props: z.object({ q: z.string(), receipt: z.string() }) }),          // q VERBATIM
   z.object({ component: z.literal("DiarySharedCard"),    id: z.string(), layout: z.literal(LAYOUT_2x3), tone: z.literal("high"),
@@ -313,6 +302,66 @@ export const HomePlan = z.object({
   }),
   tiles: z.array(Tile).max(14),
   overlays: z.array(Overlay).max(1).default([]),
+});
+
+// The UP-channel contract (§4.3): what the client registers via `useAgentContext`, refreshed on every
+// snapshot change. §4.6-3 admissibility is checked against this shape — a tile referencing a fact absent
+// here fails validation, so the planner cannot conjure care facts the patient state doesn't carry.
+export const PatientContextSummary = z.object({
+  generatedAt: z.string(),                                  // ISO 8601
+  user: z.object({
+    displayName: z.string(),
+    daypart: z.enum(["morning", "evening"]),
+    dateLabel: z.string(),
+    language: z.enum(["en", "zh-Hant"]),
+    registered: z.boolean(),                                // workflow-00 gate for the onboarding stacks
+  }),
+  consent: z.object({
+    deidentifiedResearch: z.boolean(),                      // gates `research_deid:read`; own_care is always on
+  }),
+  progress: z.object({
+    checkins: z.number().int().min(0),
+    level: z.number().int().min(1),
+    levelPct: z.number().min(0).max(100),
+    nextBadge: z.object({ n: z.number(), label: z.string(), remaining: z.number().int() }).nullable(),
+    unlockPending: z.object({ n: z.number(), label: z.string() }).nullable(), // celebration awaiting dismissal
+  }),
+  due: z.object({
+    dose: z.discriminatedUnion("status", [
+      z.object({ status: z.literal("due") }),
+      z.object({ status: z.literal("done"), answer: z.enum(["taken", "late", "missed", "not_sure"]) }),
+    ]),
+    nextSample: z.object({
+      booked: z.boolean(),
+      when: z.string().nullable(),                          // "Sun 11 Oct"
+      tomorrow: z.boolean(),                                // derived: for_date = current_date + 1
+      test: z.string().nullable(),                          // "Fingerstick samples"
+      fasting: z.boolean().nullable(),
+    }),
+    temperature: z.object({
+      due: z.boolean(),
+      reason: z.enum(["scheduled", "sick_day"]).nullable(),
+    }),
+    teamQuestion: z.object({
+      waiting: z.boolean(),
+      text: z.string().nullable(),                          // VERBATIM — only present while waiting
+    }),
+    medWatch: z.object({
+      active: z.boolean(),
+      step: z.union([z.literal(1), z.literal(2)]).nullable(),
+    }),
+    vomitCheck: z.object({ waiting: z.boolean() }),
+    reminders: z.array(z.object({
+      id: z.string(),
+      text: z.string(),
+      kind: z.enum(["night_before_prep", "checkin_nudge", "booking_reminder"]),
+    })),
+  }),
+  pins: z.object({
+    handoff: z.boolean(),                                   // HandoffCard admissibility
+    diaryShared: z.boolean(),                               // DiarySharedCard admissibility
+  }),
+  tour: z.object({ completed: z.boolean(), active: z.boolean() }),
 });
 ```
 
@@ -473,9 +522,9 @@ valid plan plus a quiet "reconnecting" state; check-in chips still work through 
 | Failure | Behaviour |
 |---|---|
 | `compose_home` fails validation | all-clear fallback plan + `KnowledgeInspector` flags the violation (dev); server logs plan + violation |
-| Runtime unreachable (laptop off, hotspot dropped) | last valid plan stays; check-ins queue offline (§5.6); banner retries with backoff |
+| Runtime unreachable (compose stopped/crashed) | last valid plan stays; check-ins queue offline (§5.6); banner retries with backoff |
 | Model provider error/timeout | Runtime returns agent error → `onError` → fallback plan; reminders already synced stay scheduled on-device |
-| STT absent (de-Googled ROM) | mic FAB hides, typed-input path remains (deterministic guard, per RN docs) |
+| whisper.rn init/transcribe failure (unsupported ROM, OOM on low-end devices) | mic FAB hides, typed-input path remains (deterministic guard); one context re-init retry, then permanent fallback |
 
 ---
 
@@ -494,7 +543,24 @@ valid plan plus a quiet "reconnecting" state; check-in chips still work through 
 | Cloud props (`publicApiKey`/`licenseToken`) unsupported | self-hosted `runtimeUrl` only — by design here |
 | No Inspector, no `@copilotkit/voice`, no `threadId` on `useAgent` | §5.5 dev harness; §5.4 own STT; thread scoping deferred (backend threads table ready) |
 | Register frontend tools **once per agent** | tool registration isolated in `src/agent/tools.ts`, mounted at App root |
-| Android blocks cleartext HTTP in release builds | demo `.apk` flavor allows plaintext **scoped to the dev LAN** via network-security-config (§9.4); any future hosted build drops it (TLS) |
+| Android blocks cleartext HTTP in release builds | demo `.apk` flavor allows plaintext **scoped to `10.0.2.2` (demo loopback)** via network-security-config (§9.4); any future hosted build drops it (TLS) |
+| `whisper.rn` is a native module (whisper.cpp + NDK) | Expo **prebuild** required (no Expo Go); proguard rule `-keep class com.rnwhisper.** { *; }`; model `.bin` bundled via Metro `assetExts` (§5.4) |
+| `whisper.rn` under Jest | `whisper.rn/jest-mock` in unit/CI tests; release-build verification in the emulator is the P3 exit gate (§13) |
+
+#### 5.1.1 Why the CopilotKit quickstart wizard is not part of this build
+
+The `npx copilotkit onboard` quickstart scaffolds a **Next.js web app with built-in agents** — it cannot
+scaffold React Native, and `@copilotkit/react-core`'s UI components do not run in RN. The CopilotKit Runtime
+itself is a Node server and **cannot run on-device**; it stays in the `runtime` container (§6) and the app
+embeds only the headless client. Every quickstart step has a direct RN equivalent already specified here:
+
+| Quickstart wizard step | RN equivalent in this architecture |
+|---|---|
+| Next.js app scaffold | `apps/mobile` Expo prebuild (§5.3) |
+| `CopilotRuntime` + built-in agent framework | `services/runtime` (§6.1): `ui_agent` + `router` as `BuiltInAgent` instances |
+| `<CopilotKit runtimeUrl>` chat provider | `<CopilotKitProvider runtimeUrl headers={state}>` with token rotation (§5.1) |
+| Chat UI / `useCopilotChat` | **none — headless by design (P1)**: `useFrontendTool` composes the plan, `useAgentContext` feeds state (§4.3–4.4) |
+| Cloud-hosted playground testing | self-hosted only; verification via `copilotkit verify --round-trip` + on-device `KnowledgeInspector` (§9.4) |
 
 ### 5.2 Navigation — trail stack, not tabs
 
@@ -527,9 +593,14 @@ apps/mobile/
     screens/                   # Welcome · Consent · Access · Permissions · Home · Milestone · Settings · Lock
     components/                # the 17 registry components + Header/FabWrap/VoicePop/TourLayer/Toast/Sheet
     voice/
-      useHoldToTalk.ts         # record → STT → confirm-before-commit (privacy line always shown)
+      whisper.ts               # whisper.rn context lifecycle: lazy init on first hold-to-talk, release on
+                               #   background, bundled ggml-base model path, transcribe/cancel wrappers (§5.4)
+      useHoldToTalk.ts         # record → on-device transcribe → confirm-before-commit (privacy line always shown)
+    config/
+      model.ts                 # OPENROUTER_MODEL constant → x-model-id header (§9.3); single source of truth
     data/
-      serverConfig.ts          # server address pairing (§9.4): LAN IP store, QR scan, /healthz probe
+      serverConfig.ts          # backend address (§9.4): `http://10.0.2.2` default in the demo flavor,
+                               #   Settings override, /healthz probe
       api.ts                   # typed REST client (user token, retry, offline queue §5.6)
       snapshot.ts
       reminders.ts             # reminder sync → notifee scheduling (§8)
@@ -539,21 +610,37 @@ apps/mobile/
       KnowledgeInspector.tsx   # agent-knowledge panel: context sent · plan received · violations
 ```
 
-### 5.4 Voice pipeline (bring-your-own STT)
+### 5.4 Voice pipeline — on-device STT with `whisper.rn` (D4 resolved)
 
-`@copilotkit/voice` is not adapted for React Native, so:
+`@copilotkit/voice` is not adapted for React Native, and the cloud-STT proxy option is dropped: speech
+recognition runs **entirely on the device** (emulator or handset) via `whisper.rn` (whisper.cpp). Settled choices:
+
+- **Model**: `ggml-base` multilingual (~148 MB f16; quantized `ggml-base-q5_1` ~80 MB is the fallback if APK
+  size bites) — better accuracy than tiny, zh-Hant-capable, matching the app's `en` + `zh-Hant` stance —
+  **bundled in the `.apk`** via Metro `assetExts: ["bin"]`; no first-run download, works fully offline.
+- **Recorder**: `react-native-audio-record` → mono 16 kHz 16-bit PCM → WAV (whisper.cpp's required format).
+
+Pipeline:
 
 1. Hold FAB (66 px) → `Listening` state: wave bars, **Release to send**, privacy line
-   ("Only the words are kept. The voice itself is never analysed."), plus the *typed request* field
-   (always-available redundant input, monitoring-25 #23).
-2. Release → recording buffer sent to STT (on-device SpeechRecognizer when present; cloud STT via a
-   thin proxy on `data-api` otherwise) → **audio buffer discarded immediately**; only the transcript
-   persists (it becomes `voice_notes.transcript`).
+   ("Only the words are kept. The voice itself is never analysed." — now literally true: audio never leaves
+   the device), plus the *typed request* field (always-available redundant input, monitoring-25 #23).
+2. Release → `whisperContext.transcribe(wavPath, { language })` → **WAV deleted immediately**; only the
+   transcript persists (it becomes `voice_notes.transcript`). The whisper context is lazily initialised on
+   the first hold-to-talk (avoids startup cost) and released on background; in-flight runs are cancellable
+   (`{ stop, promise }`) for **Say it again**.
 3. Transcript = message to the `router` agent → deterministic keyword classifier first
    (`parseSymptoms` / `extractDiary` / `COMMAND_RULES` ported verbatim from the prototype), LLM fallback only
    for misses → `compose_overlay(voiceResult)` → **Looks right** commits via typed Data API calls;
    **Say it again** re-records. No commit before confirmation (workflows 07/08/12).
 4. A deterministic **Send** control always ends the turn (never silence detection only).
+
+Notes: whisper.rn's realtime `RealtimeTranscriber` (streaming + Silero VAD) is a documented v2 upgrade path —
+batch transcription on release is the v1 contract for prototype parity. Under Jest,
+`whisper.rn/jest-mock` stands in; the P3 exit test is the **release build in the emulator** — whisper.cpp runs
+natively on x86_64 (no ARM translation needed), and `ggml-base` f16 transcription is accepted slower
+in-emulator (comfortably fast on real hardware). Because STT is on-device, voice capture and transcription
+work with the backend down — only the *router turn and plan* need the runtime.
 
 ### 5.5 Dev harness (replaces the RN-missing Inspector)
 
@@ -567,18 +654,52 @@ The prototype's demo panel ships as a debug-only drawer:
 
 ### 5.6 Offline queue (local-server requirement)
 
-The server lives on a laptop that can close, sleep, or leave the hotspot. The client therefore treats the
-`data-api` as an eventually-reachable authority:
+The backend lives in compose on the same machine — it can be stopped, crashed, or restarted at any moment.
+The client therefore treats the `data-api` as an eventually-reachable authority:
 
 - **Check-ins and confirmations** (dose, temperature, symptoms, med-watch, question answers, diary, handoffs)
   enqueue locally (MMKV/SQLite) with a client `eventId` (UUID) the moment the user commits them — the UI
   advances immediately on optimistic state (the prototype's instant re-plan).
+- **Preference writes** (consent toggles, language, server-address pairing receipt) enqueue the same way with
+  `eventId` dedup; the server re-applies them in order at flush time so consent history stays append-only.
 - A flush loop retries with backoff; the server deduplicates on `eventId` (unique index) so retries are safe.
 - Optimistic entries are visually indistinguishable, but `KnowledgeInspector` (dev) marks "queued · not yet
   acked". Badge thresholds and chains are **recomputed server-side at flush time** from the event's timestamp,
   so the reward invariants (§4.6-4) hold even for late-synced answers.
 - The plan store keeps the **last valid plan**; a quiet "reconnecting" chip appears on Home. No tile ever
   prompts the user to "try again" — the queue is the app's job, not hers.
+
+### 5.7 RN rendering & build ledger (prototype → device realities)
+
+The prototype is browser CSS. This ledger names every construct with no direct RN equivalent and the settled
+translation — review PRs against it, don't rediscover it:
+
+| Prototype construct | RN translation |
+|---|---|
+| Bento grid (CSS grid: `grid-auto-rows: 82px`, `grid-column/row: span n`, `dense` flow) | Custom span-aware grid component: fixed 82 px row unit + 12 px gutter, each tile sized absolutely from its plan `layout.cols/rows`; stack order = plan order. `FlatList numColumns` is insufficient (cannot span rows) — the home is a bounded plan (≤ 14 tiles) so a plain mapped `ScrollView` grid is correct |
+| `conic-gradient` level ring + animated `@property --p` | `react-native-svg` circle with `SweepGradient` + Reanimated-animated stroke dash; `header.levelPct` drives it |
+| Keyframe animations (`enter`, `pop`, `ringpulse`, 45 ms stagger) | Reanimated entering animations; reduced-motion preference renders statically (mirrors the prototype's media query) |
+| `backdrop-filter` blur (lock-screen notifs) | skipped — flat translucent surface; cosmetic only |
+| Google Fonts CDN (Poppins/Manrope) | `.ttf` assets bundled via `expo-font`, loaded at App root; `--display`/`--sans` become named fonts in `packages/design-tokens` |
+| `text-wrap: balance` | unsupported; copy constants are already short (≤ 2 lines at 390 px) |
+| `localStorage` (OpenRouter token, Settings) | MMKV — encrypted instance for token + server address |
+| Fixed 390×844 phone frame | full-screen device; `react-native-safe-area-context` insets + edge-to-edge status bar |
+
+Build & packaging ledger — the `.apk` checklist (none optional by P5):
+
+| Item | Decision |
+|---|---|
+| App identity | `applicationId ai.kinetic.patient` (placeholder — confirm before P0) · `versionCode` bumped per build · display name "Agentic Kinetic" |
+| Signing | local keystore generated once into `deploy/android-keystore.*` (gitignored), wired via Gradle; `eas.json` `preview` profile builds the `.apk` — no store submission in scope |
+| Icon / splash | adaptive icon from the `mark-a` gradient mark; splash = ground color + mark (`expo-splash-screen`) |
+| Manifest permissions | `RECORD_AUDIO` (runtime-prompted via the wf-00 permissions screen) · `POST_NOTIFICATIONS` (Android 13+ runtime prompt — the permissions screen's notification row) · `RECEIVE_BOOT_COMPLETED` (notifee re-schedules synced reminders after reboot) · `INTERNET` |
+| Auth0 manifest placeholder | `appAuthRedirectScheme=kinetic` (config plugin) — enables the `kinetic://login-callback` redirect (§3.1) |
+| Cleartext | demo flavor `network-security-config` scoped to `10.0.2.2` (loopback) (§9.4); hosted flavor omits it |
+| `call_care_team` action | `Linking.openURL("tel:…")` from `care_team_members.phone`; empty number → honest toast ("No direct line stored — I'll pass a message instead") + handoff suggestion. Never a silent no-op |
+| Background sync (§8) | `expo-background-task` (WorkManager) 60-min periodic sync, best-effort; foreground sync remains primary (no FCM limitation documented in §8) |
+| Lock overlay trigger | app resume with an expired/absent local session, or manual lock from the menu sheet. (The prototype's tap-the-clock lock is a demo affordance and does not ship) |
+| i18n | `i18n-js` + `en`/`zh-Hant` JSON catalogs in `packages/ui-schema` (keys mirror the copy constants); language from `users.language` |
+| Monorepo tooling | npm workspaces + TypeScript project references; single `tsconfig.base.json`; all four workspaces consume `packages/ui-schema` |
 
 ---
 
@@ -605,7 +726,8 @@ createServer(
 ).listen(Number(process.env.PORT ?? 8200));
 ```
 
-- Runs as the `runtime` compose service (bind-mounted source + `tsx watch`); publishes `8200` on the LAN.
+- Runs as the `runtime` compose service (bind-mounted source + `tsx watch`); publishes `8200` on loopback
+  (`127.0.0.1:8200`) — the emulator reaches it via `10.0.2.2`.
 - JWKS verification middleware rejects requests without a valid user token (the provider's `headers` carries it).
 - `AsyncLocalStorage` exposes `currentUser.token` to every tool handler — request-scoped delegated auth (§3.2).
 - All outbound Data-API calls go to `DATA_API_URL` (`http://data-api:8080` on the compose network).
@@ -621,6 +743,9 @@ createServer(
 
 Both are `BuiltInAgent` instances (or thin custom agents) with `maxSteps` bounded (planner ≤ 4, router ≤ 3) so
 runs can't linger (RN run-lifecycle guidance: gate overlays on the *falling edge* of `isRunning`).
+
+STT is fully client-side (§5.4): the runtime receives transcripts, never audio — there is no STT proxy on
+`data-api`, and no model secret exists on the backend for speech.
 
 ### 6.3 Server tools (`defineTool`, executed inside the Runtime, calling the Data API)
 
@@ -720,8 +845,8 @@ audit_log        (id, actor_type user|agent|clinician|system, actor_id,
 ## 8. Reminders and nudges (local-first)
 
 ```text
-    SERVER (laptop · compose)                           DEVICE (Android · same hotspot)
-    ═════════════════════════                           ═══════════════════════════
+    BACKEND (compose · same machine)                          APP (Android emulator · 10.0.2.2)
+    ═══════════════════════════════                           ══════════════════════════════════
         │ node-cron (every 5 min) · compute-due sweep:        │
         │   · dose window by daypart      · booking tomorrow  │
         │   · reminder fire times         · stale sweep →     │
@@ -729,7 +854,7 @@ audit_log        (id, actor_type user|agent|clinician|system, actor_id,
         ├───reminders rows (fire_at · text · kind)───────────►│
         │                                                     │
         │◄══device sync · GET /me/snapshot════════════════════┤
-        │   (app open · resume · hourly bg on hotspot)        │
+        │   (app open · resume · hourly bg sync)              │
         ╟══reminders with future fire_at═════════════════════╝│
         │                                                     │
                                                     ┌────────────────────────────────────────────────┐
@@ -752,14 +877,68 @@ audit_log        (id, actor_type user|agent|clinician|system, actor_id,
      actions; an action enqueues the check-in immediately (offline queue) and deep-links home.
   2. *Passive FYI* — "Samples tomorrow · Booked by your care team · Fingerstick. Fasting." → deep link.
 - **Honest limitation (accepted):** without FCM, a notification only fires if the device has synced the
-  upcoming reminder (app opened while on the hotspot, or hourly background sync). The demo path — phone on the
-  hotspot with the app backgrounded — works. FCM remains the future swap for anywhere-push: `data-api` already
-  computes the payloads; adding a Firebase project later replaces the notifee scheduler, not the API (§9.5).
+  upcoming reminder (app opened with the backend up, or hourly background sync). The demo path — emulator
+  kept running with the app backgrounded — works. FCM remains the future swap for anywhere-push: `data-api`
+  already computes the payloads; adding a Firebase project later replaces the notifee scheduler, not the API (§9.5).
 - **Stale sweep**: `missing_after_hours` marks are clinician-side only; the patient surface never re-asks.
 
 ---
 
 ## 9. Local-first deployment and networking
+
+### 9.0 Demo-laptop bootstrap (Ubuntu)
+
+The demo machine is a single Ubuntu laptop — everything (backend compose stack, emulator, app) runs on it.
+Baseline already present and verified on the current demo laptop (`anton`): Docker 29.7.2 + Compose v5.5.0,
+Node 22.22.1, git, 20 cores, 26 GB RAM, 652 GB disk, KVM-capable CPU with `/dev/kvm` present,
+emulator 37.1.11 — **first AVD boot completed in ~24 s**. One-time setup:
+
+| # | What | Command |
+|---|---|---|
+| 1 | KVM access for the user (emulator acceleration — without it the emulator refuses or crawls) | `sudo usermod -aG kvm $USER` → re-login (`egrep -c '(vmx\|svm)' /proc/cpuinfo` ≥ 1, `ls -l /dev/kvm`) |
+| 2 | JDK 17 (Gradle requirement) | `sudo apt install openjdk-17-jdk` |
+| 3 | Android cmdline-tools (no full Android Studio needed) | unzip `commandlinetools-linux` → `~/Android/Sdk/cmdline-tools/latest`; export `ANDROID_HOME=~/Android/Sdk`; add `platform-tools` + `emulator` to PATH |
+| 4 | SDK packages — **NDK + CMake required**: whisper.rn builds whisper.cpp from source on Android | `sdkmanager --licenses` then `sdkmanager "platform-tools" "emulator" "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973" "cmake;3.22.1" "system-images;android-35;google_apis;x86_64"` |
+| 5 | AVD | `avdmanager create avd -n kinetic -k "system-images;android-35;google_apis;x86_64" -d pixel_7` |
+
+Android Studio is an optional GUI alternative for steps 3–5; the CLI path is sufficient. Budget ~12 GB disk
+for SDK + system image; the bundled `ggml-base` model adds ~148 MB to the `.apk`. AVD caveat: Auth0 Universal
+Login opens a Custom Tab — verify a browser is present in the AVD image (install a lightweight browser `.apk`
+into the emulator if not).
+
+**First-boot verification & known warnings** (all observed on the demo laptop's live boot — this table is the
+bootstrap success check):
+
+**Boot-order rule — the adb server must be running before the emulator starts.** Launch order:
+`adb devices` (auto-starts the daemon on `:5037`) → `emulator -avd kinetic -no-metrics` → `adb devices`
+again must list `emulator-5554 device`. Starting the emulator first logs
+`ERROR: Unable to connect to adb daemon on port: 5037`, and install/screencap/logcat all fail until a server
+is started.
+
+| Warning observed | Verdict / action |
+|---|---|
+| Metrics-collection prompt banner | launch with `-no-metrics` — silences the one-time usage-data prompt permanently |
+| `Your GPU drivers may have a bug. Switching to software rendering` (llvmpipe + swangle) | **accepted** — the demo UI is simple and whisper is CPU-bound; try `-gpu host` later only if the desktop feels sluggish |
+| `Could not find the Qt platform plugin "wayland"` | cosmetic — falls back to xcb; the window opens normally |
+| `Failed to load snapshot 'default_boot'` on first boot | harmless first-boot noise; a snapshot is written on clean shutdown |
+| `Increasing RAM size to 2560MB` · boot in ~24 s · `Saving last run QEMU version` | normal behavior — treat as the success signature |
+| `The emulator now requires a signed jwt token for gRPC access` | note only — not on the demo path |
+
+**Demo runtime walkthrough — what talks to what, in order:**
+
+1. `deploy/demo.sh` → `docker compose up` (db → migrations → data-api → runtime; both `/healthz` green).
+2. `demo.sh` then runs `adb devices` (starts the adb daemon — §9.0 first-boot rule) and boots the AVD:
+   `emulator -avd kinetic -no-metrics`; the seeded release `.apk` is already installed. The script exports
+   `ANDROID_HOME` and PATH itself and uses absolute `$ANDROID_HOME` tool paths — it never relies on the
+   caller's shell environment.
+3. App → Auth0 (cloud): PKCE login in a Custom Tab, `kinetic://` callback caught by the emulator → tokens in
+   Android Keystore.
+4. App → `http://10.0.2.2:8200/api/copilotkit` (SSE; Bearer token + `x-model-key` + `x-model-id`):
+   `useAgentContext` registers state up, `compose_home` / `compose_overlay` deliver plans down.
+5. Runtime agent tools → `http://data-api:8080` on the internal compose network → Postgres as `kinetic_agent`.
+6. Chip taps / confirmations → REST to `http://10.0.2.2:8080` → offline queue if compose is down (§5.6).
+7. Hold-to-talk → recorded on the emulator (laptop mic passthrough) → whisper.rn transcribes **on-device** →
+   transcript to the router agent. Notifications fire in the emulator tray via notifee.
 
 ### 9.1 Full compose stack
 
@@ -775,7 +954,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d    # creates kinetic_agent (§3.3) + seed helper
-    # no ports — SQL is unreachable from the hotspot/localhost
+    # no ports — SQL is unreachable from outside the compose network
 
   migrations:
     build: ../services/data-api
@@ -794,7 +973,7 @@ services:
       AUTH0_AUDIENCE: kinetic-data-api
       PORT: 8080
     ports:
-      - "8080:8080"                               # published to the LAN (hotspot)
+      - "127.0.0.1:8080:8080"                     # loopback only — the emulator reaches it via 10.0.2.2
     volumes:
       - ../services/data-api:/app
 
@@ -807,7 +986,7 @@ services:
       AUTH0_AUDIENCE: kinetic-data-api
       PORT: 8200
     ports:
-      - "8200:8200"                               # published to the LAN (hotspot)
+      - "127.0.0.1:8200:8200"                     # loopback only — the emulator reaches it via 10.0.2.2
     volumes:
       - ../services/runtime:/app
 
@@ -828,21 +1007,23 @@ GRANT INSERT ON app.audit_log TO kinetic_agent;               -- audit is append
 ```
 
 - `deploy/.env` (gitignored; `.env.example` committed): `DB_PASSWORD`, `MIGRATOR_PASSWORD`,
-  `AUTH0_TENANT`, `LAN_IP` (convenience default for docs/scripts).
-- One command: `docker compose --env-file .env up --build`. Rebuild-on-change is avoided by bind mounts +
-  `tsx watch`; a fresh laptop clone → demo in ~5 minutes (image pulls dominate).
+  `AUTH0_TENANT`.
+- One command: `docker compose --env-file .env up --build` (or `deploy/demo.sh` for the full demo flow,
+  §9.0). Rebuild-on-change is avoided by bind mounts + `tsx watch`; a fresh laptop clone → demo in ~5 minutes
+  (image pulls dominate).
 
 ### 9.2 Environment matrix
 
 | | demo/dev (the product of this doc) | future hosted (§9.5) |
 |---|---|---|
-| Where | laptop, full compose | Cloud Run ×2 + managed Postgres |
-| Device network | shared hotspot → `http://<LAN_IP>` | internet → HTTPS domain |
+| Where | one Ubuntu laptop: compose + Android emulator (§9.0) | Cloud Run ×2 + managed Postgres |
+| App delivery | seeded release `.apk` installed in the demo AVD | internet → HTTPS domain |
+| Device network | emulator loopback → `http://10.0.2.2` | internet → HTTPS domain |
 | Model auth | **BYOK** OpenRouter token from Settings (primary); env key optional | central key in Secret Manager |
-| Auth0 | dev tenant, `kinetic://` callbacks | prod tenant, same scheme |
+| Auth0 | dev tenant, `kinetic://` callbacks (Custom Tab in emulator) | prod tenant, same scheme |
 | DB credential | `kinetic_agent` role, `.env` | same role model; IAM DB auth optional upgrade |
 | Push | notifee local (synced) | FCM |
-| Cleartext | allowed, scoped to LAN (dev flavor) | TLS only |
+| Cleartext | allowed, scoped to `10.0.2.2` (demo flavor) | TLS only |
 
 ### 9.3 Model provider — OpenRouter BYOK is the primary posture
 
@@ -853,30 +1034,38 @@ screen) — the local architecture keeps that pattern as the default:
 |---|---|---|---|
 | **(b) BYOK — primary** | Settings-screen token sent per request (`x-model-key` header); runtime builds the model instance per run; base URL `https://openrouter.ai/api/v1` | demo/dev | **keyless backend** — no model secret exists on the laptop at all; each demo attendee brings their own key; matches the prototype screen exactly |
 | (a) central env key | `OPENAI_BASE_URL` + `OPENAI_API_KEY` env on the runtime container | CI, scripted tests, users without a key | identical code path, env fallback only |
-| (c) both *(implemented)* | header overrides env when present | — | runtime agent factory reads `x-model-key` → per-request model; env otherwise |
+| (c) both *(implemented)* | header overrides env when present | — | runtime agent factory reads `x-model-key` + `x-model-id` → per-request model+model-id; env otherwise |
+
+**Model selection** follows the same header scheme: the app pins the model id once in
+`apps/mobile/src/config/model.ts` (`export const OPENROUTER_MODEL = "…"` — value TBD, single source of truth)
+and sends it as an `x-model-id` header alongside `x-model-key`. The runtime agent factory resolves the model
+as `x-model-id` header → `MODEL_ID` env → built-in default. OpenRouter model strings pass through unchanged
+(`provider/model` form).
 
 **Resolved decision** (was pending in v1): local-first makes BYOK the sensible default; the central-key
 discussion moves with the hosted appendix (§9.5).
 
-### 9.4 Device networking (settled — the hotspot topology)
+### 9.4 Same-machine demo networking (settled — emulator loopback)
 
-| Path | Runtime URL on device | When |
+| Path | Runtime URL in the app | When |
 |---|---|---|
-| **Hotspot LAN — primary** | `http://<laptop-LAN-IP>:8200/api/copilotkit` (data-api `:8080`) | the demo path: laptop + phone on the same hotspot |
-| USB fallback | `adb reverse tcp:8200 tcp:8200` + `tcp:8080` → `localhost` | no hotspot / firewall-lab environments |
-| Emulator | `10.0.2.2` (Android alias for host loopback) | dev without hardware |
+| **Emulator loopback — primary** | `http://10.0.2.2:8200/api/copilotkit` (data-api `:8080`) | the demo path: `10.0.2.2` is the emulator's alias for the host's loopback, so the app reaches the compose ports with zero network setup |
+| `adb reverse` fallback | `adb reverse tcp:8200 tcp:8200` + `tcp:8080` → `localhost` | debugging, or if a build resolves `localhost` directly |
 
-- **Server pairing** lives in the app (extends the prototype's Settings screen): a **"Server address"** field
-  storing `http://<ip>` (both ports derived), an optional **QR code** on the laptop (`deploy` prints a QR with
-  the LAN IP after compose-up) so pairing is one scan, and a **`/healthz` probe** on both services that the
-  pairing flow requires to pass before saving.
+- **Server pairing collapses to a default**: `serverConfig.ts` ships `http://10.0.2.2` in the demo flavor; the
+  Settings address field remains as an override, gated by the **`/healthz` probe** on both services before it
+  saves. No QR codes, no mDNS, no IP drift — the backend never leaves the machine.
 - **Cleartext HTTP**: the demo `.apk` flavor ships a `network-security-config` allowing plaintext **only for
-  the dev LAN** (or, pragmatically for a hackathon build, `usesCleartextTraffic: true` in the demo flavor —
-  never in a hosted build). No iOS work exists (Android-only target).
-- **IP drift** (hotspot re-assigns addresses): the QR re-scan is one tap; mDNS discovery (`kinetic.local`) is a
-  noted future convenience, not a dependency.
+  `10.0.2.2`** — never in a hosted build. No iOS work exists (Android-only target).
+- **Compose ports bind `127.0.0.1` only** (§9.1) — nothing outside the laptop can reach db, data-api, or
+  runtime; `db` still publishes no ports at all.
+- **Emulator notes**: KVM acceleration required (§9.0); **start the adb server before the emulator** (§9.0
+  first-boot rule — `adb devices` first, then `emulator -avd kinetic -no-metrics`); the emulator mic is the
+  laptop mic (hold-to-talk passthrough); `kinetic://` deep links and notification taps work inside the
+  emulator; whisper.cpp runs natively on x86_64 — no ARM translation involved; software rendering (llvmpipe)
+  on the demo laptop is accepted (§14 R2).
 - **Verification ladder** (per CopilotKit RN docs, no browser/Inspector exists):
-  1. `npx copilotkit verify --round-trip --runtime-url http://<LAN_IP>:8200/api/copilotkit --agent ui_agent`
+  1. `npx copilotkit verify --round-trip --runtime-url http://10.0.2.2:8200/api/copilotkit --agent ui_agent`
   2. on-device screencap (`adb exec-out screencap -p`) + `adb logcat -d -s ReactNativeJS:E` clean
   3. grounding check via `KnowledgeInspector`: plan references ⊆ snapshot facts
 
@@ -892,7 +1081,7 @@ The service boundaries are drawn so hosting is a re-plumb, not a rewrite:
 | `.env` secrets | Secret Manager |
 | node-cron + notifee | Cloud Scheduler + FCM (payload shapes already computed, §8) |
 | BYOK OpenRouter | central key in Secret Manager (or keep BYOK) |
-| cleartext LAN | TLS termination, ATS/cleartext flags removed from the hosted flavor |
+| cleartext loopback | TLS termination; cleartext flags removed from the hosted flavor |
 
 ---
 
@@ -922,15 +1111,16 @@ The service boundaries are drawn so hosting is a re-plumb, not a rewrite:
 |---|---|---|
 | Contract | fixture snapshot → expected `HomePlan`; invalid plans → fallback | jest, `packages/ui-schema` golden files from the prototype's 11 scenarios |
 | Invariants | §4.6 property tests (one-hot-question, weights order, badge thresholds, verbatim diffs) | fast-check property runs |
-| Runtime | `npx copilotkit verify --round-trip --runtime-url http://<LAN_IP>:8200/api/copilotkit --agent ui_agent` | CopilotKit CLI (CI gate) |
+| Runtime | `npx copilotkit verify --round-trip --runtime-url http://10.0.2.2:8200/api/copilotkit --agent ui_agent` | CopilotKit CLI (CI gate) |
 | Planner | prompt + validators: each scenario yields the workflow's documented stack plan | jest against mock `get_due_items` |
+| Voice | fixture WAV → `whisper.rn/jest-mock` transcript → expected router classification; release-build hold-to-talk in the emulator → "You said" confirm (P3 gate) | jest mock + adb |
 | Data API | JWT `aud` enforcement, consent-scope tests, field-manifest minimums, audit-row assertions, tx badge test, `eventId` dedup | supertest against the compose `data-api` |
 | DB roles | `kinetic_agent` cannot DDL, cannot delete `audit_log`, cannot read ungranted schemas; `migrations` job idempotent | psql smoke script in CI |
-| Compose | fresh-clone boot: `docker compose up` → both `/healthz` green → QR prints LAN IP | CI smoke (docker available) |
-| Device | screencap per scenario + `adb logcat -d -s ReactNativeJS:E` clean, over the hotspot path | adb (CI: emulator matrix; LAN path manual) |
+| Compose | fresh-clone boot: `docker compose up` → both `/healthz` green → `demo.sh` boots the AVD (§9.0) | CI smoke (docker available) |
+| Emulator | screencap per scenario + `adb logcat -d -s ReactNativeJS:E` clean, against the compose backend via `10.0.2.2` | adb (emulator matrix is the primary and CI path) |
 | Grounding | KnowledgeInspector diff: plan references ⊆ snapshot facts | on-device dev harness |
-| Offline | airplane-mode check-in → queued → flush on reconnect → badge/chain correctness at sync time | jest + device manual |
-| Security | `.env` gitignored, no `DATABASE_URL` in the runtime container env, LAN reachability of `db` **fails** | compose config checks |
+| Offline | emulator network-off check-in → queued → flush on reconnect → badge/chain correctness at sync time | jest + emulator manual |
+| Security | `.env` gitignored, no `DATABASE_URL` in the runtime container env, external reachability of `db` **fails**, compose ports bound to `127.0.0.1` | compose config checks |
 
 ---
 
@@ -946,8 +1136,9 @@ Agentic_Kinetic/
   deploy/
     docker-compose.yml         db + migrations + data-api + runtime   ← §9.1
     db/init/                   01-roles.sql (kinetic_agent) + seed
-    .env.example               DB_PASSWORD · MIGRATOR_PASSWORD · AUTH0_TENANT · LAN_IP
-    qr.sh                      prints pairing QR (LAN IP) after compose-up
+    .env.example               DB_PASSWORD · MIGRATOR_PASSWORD · AUTH0_TENANT
+    demo.sh                    compose up → adb daemon → boot AVD → install .apk → seed scenario (§9.0);
+                               self-contained: exports ANDROID_HOME/PATH, absolute tool paths
   plan-phone-app/              this doc, workflows/, prototype/
 ```
 
@@ -957,12 +1148,12 @@ Agentic_Kinetic/
 
 | Phase | Ships | Exit proof |
 |---|---|---|
-| **P0** skeleton | monorepo, tokens, ui-schema, **compose stack (`db` + roles + migrations) up on the laptop**, runtime + data-api containers green, `verify --round-trip`, Metro/polyfill wiring, QR pairing script | `docker compose up` → both `/healthz` green; round-trip green from laptop |
-| **P1** data + identity | Data API + audit + offline dedup, Auth0 user auth + delegated tool calls, server-address pairing in-app | phone on hotspot: chip tap → audit row + snapshot change; airplane-mode tap flushes later |
-| **P2** core loop | ui_agent planner + compose_home + registry; workflows 01, 09, done rows, sub tiles | morning → answer → thanks → all-clear, on device over the hotspot |
-| **P3** voice + router | hold-to-talk, STT, router agent, workflows 07/08/11/12 chains | sick-day voice → confirmed symptoms → vomit+temp chain |
+| **P0** skeleton | monorepo, tokens, ui-schema, **compose stack (`db` + roles + migrations) up**, runtime + data-api containers green, `verify --round-trip`, Metro/polyfill wiring, AVD bootstrap (`demo.sh` skeleton) | `docker compose up` → both `/healthz` green; round-trip green via `10.0.2.2` from the emulator |
+| **P1** data + identity | Data API + audit + offline dedup, Auth0 user auth + delegated tool calls, server-address default (`10.0.2.2`) + `/healthz` probe | release build in emulator: chip tap → audit row + snapshot change; network-off tap flushes later |
+| **P2** core loop | ui_agent planner + compose_home + registry; workflows 01, 09, done rows, sub tiles | morning → answer → thanks → all-clear, in the emulator against the compose backend (`10.0.2.2`) |
+| **P3** voice + router | hold-to-talk with on-device `whisper.rn` transcription, router agent, workflows 07/08/11/12 chains | sick-day voice transcribed **on-device** → confirmed symptoms → vomit+temp chain; STT path proven airplane-mode (no network needed for transcription) |
 | **P4** growth surfaces | workflows 02/03/04/05 scheduling, 06 badges, 10 tour, **reminder sync + notifee local notifications** | badge day celebration; evening-before takeover; lock-screen-style local notification logs a dose |
-| **P5** polish + demo kit | seeded `.apk`, scenario drawer tuning, 11-scenario walkthrough, optional hosted appendix exercised once | demo script runs end-to-end from a cold laptop + phone on a hotspot; §11 table green |
+| **P5** polish + demo kit | seeded release `.apk` in the demo AVD, scenario drawer tuning, 11-scenario walkthrough, optional hosted appendix exercised once | demo script runs end-to-end from a cold laptop: `docker compose up` → AVD boot → seeded `.apk`; §11 table green |
 
 ---
 
@@ -971,12 +1162,12 @@ Agentic_Kinetic/
 | # | Item | Status |
 |---|---|---|
 | D1 | ~~Model provider & OpenRouter posture~~ — **resolved**: BYOK primary (Settings screen token, `x-model-key`), env key fallback | decided (§9.3) |
-| D2 | ~~Device connectivity~~ — **resolved**: hotspot LAN primary; `adb reverse` + emulator fallbacks; QR + server-address pairing | decided (§9.4) |
+| D2 | ~~Device connectivity~~ — **resolved**: same-machine emulator (`10.0.2.2` loopback) primary; `adb reverse` fallback; single-box demo, no LAN/hotspot (§9.4) | decided (updated for the emulator pivot) |
 | D3 | Notifications — **default: local (notifee) now, FCM shapes preserved for swap-in** | confirm at P4 |
-| D4 | STT provider (on-device vs cloud proxy) — decide in P3 with device-mix data | open |
-| R1 | **Laptop/hotspot unreachable** — top operational risk of local-first: mitigated by offline queue + last-valid-plan + server-side reward recompute (§5.6, §7.3) | mitigated |
-| R2 | **Hotspot IP drift** — QR re-pair one tap; `/healthz`-gated; mDNS noted as future convenience | mitigated |
-| R3 | Cleartext HTTP on the demo `.apk` — scoped network-security-config; acceptable for a research-prototype build; removed in any hosted flavor | accepted |
+| D4 | ~~STT provider (on-device vs cloud proxy)~~ — **resolved**: `whisper.rn` (whisper.cpp) fully on-device, `ggml-base` multilingual bundled in the APK; cloud proxy dropped (§5.4) | decided |
+| R1 | **Backend unreachable** (compose stopped/crashed) — top operational risk of local-first: mitigated by offline queue + last-valid-plan + server-side reward recompute (§5.6, §7.3) | mitigated |
+| R2 | **Emulator constraints** — KVM acceleration required (§9.0); adb server must start before the emulator (§9.0 first-boot rule); whisper.cpp runs natively on x86_64 (no ARM translation); `ggml-base` f16 transcription accepted slower in-emulator; AVD needs a browser present for Auth0 Custom Tabs (§9.0); demo-laptop GPU driver falls back to software rendering (llvmpipe) — accepted, whisper is CPU-bound (§9.0) | accepted |
+| R3 | Cleartext HTTP on the demo `.apk` — network-security-config scoped to `10.0.2.2` loopback only; acceptable for a research-prototype build; removed in any hosted flavor | accepted |
 | R4 | CopilotKit RN fast-moving (`useRenderTool` shim removal, threads pending) — pin versions; ledger §5.1 in CI | mitigated |
 | R5 | LLM planner drift — validators make violations invisible to users and loud in dev | mitigated |
 | R6 | Notification delivery depends on a recent sync (no FCM) — documented limitation (§8); demo path unaffected | accepted |
