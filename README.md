@@ -1,8 +1,6 @@
 <img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/d6d06622-7e64-43b7-a1f5-b630129627dc" />
 <img width="2750" height="1536" alt="Agentic Kinetic Agent" src="https://github.com/user-attachments/assets/d4997a2e-f245-4bb9-8c7a-b4b8a1482e88" />
 
-
-
 Exa - AITAGENTCHAT
 Invite your agent. Agent. Human. Email. Workspace (demo). Create an account & sign up to workspace. Existing or separate - Ambiguous account.
 
