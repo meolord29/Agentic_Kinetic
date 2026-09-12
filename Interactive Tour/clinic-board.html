@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Agentic Kinetic · Clinic Board v2 · agentic</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --chrome:#EAE3D2; --chrome-ink:#1F3229; --chrome-muted:#5F6D60; --chrome-line:#D8CFB8; --chrome-card:#F6F2E7;
+  --ground:#F6F2E7; --glow-a:rgba(95,180,214,.18); --glow-b:rgba(226,196,136,.16);
+  --surface:#FFFDF8; --raised:#EFE9DA; --line:#E3DAC6;
+  --ink:#1F3229; --muted:#5F6D60;
+  --btn:#1E7A54; --btn-ink:#FFFFFF;
+  --cyan:#5FB4D6; --violet:#52B584; --magenta:#E2C488;
+  --accent-text:#1D6E96;
+  --done:#1E7A54; --done-tint:#E3F5EE;
+  --tile:#1F3229;
+  --frame:#D8CFB8;
+  --alert:#B3402A; --alert-tint:rgba(179,64,42,.09);
+  --band:rgba(30,122,84,.10);
+  --display:"Poppins",ui-sans-serif,system-ui,sans-serif;
+  --sans:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--chrome);color:var(--chrome-ink);font-family:var(--sans);min-height:100svh;padding:12px 20px 50px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+
+.topbar{max-width:1480px;margin:0 auto 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.topbar .mark{width:36px;height:36px;border:0;background:none;padding:0;flex:none}
+.topbar .mark svg{width:36px;height:36px;display:block}
+.topbar .tt b{display:block;font:600 16px/1.2 var(--display);color:var(--ink)}
+.topbar .tt span{font-size:12px;color:var(--chrome-muted)}
+.status-chip{display:inline-flex;align-items:center;gap:7px;font:600 12px var(--display);border-radius:999px;padding:7px 13px;background:var(--chrome-card);border:1px solid var(--chrome-line);color:var(--ink)}
+.status-chip .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+.status-chip.hot{border-color:transparent;background:linear-gradient(var(--chrome-card),var(--chrome-card)) padding-box,linear-gradient(125deg,var(--cyan),var(--violet) 55%,var(--magenta)) border-box}
+.status-chip.hot .dot{background:conic-gradient(from 210deg,var(--cyan),var(--violet),var(--magenta),var(--cyan))}
+.ai-chip{display:inline-flex;align-items:center;gap:6px;font:600 11.5px var(--display);color:var(--chrome-ink);background:var(--chrome-card);border:1px solid var(--chrome-line);border-radius:999px;padding:7px 12px}
+.ai-chip svg{width:14px;height:14px}
+.seg{display:inline-flex;background:var(--chrome-card);border:1px solid var(--chrome-line);border-radius:999px;padding:3px;margin-left:auto}
+.seg button{border:0;background:none;font:600 12px var(--display);color:var(--chrome-muted);border-radius:999px;padding:6px 12px}
+.seg button.on{background:var(--tile);color:#fff}
+.swchip{display:inline-flex;align-items:center;gap:6px;font:600 11.5px var(--display);color:var(--chrome-muted);background:var(--chrome-card);border:1px solid var(--chrome-line);border-radius:999px;padding:7px 12px}
+.swchip.on{color:var(--btn);border-color:rgba(30,122,84,.5);background:var(--done-tint)}
+.btn2{min-height:40px;border-radius:12px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);font:600 13px var(--display);padding:0 15px}
+.btn2.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+
+.drawer{position:sticky;top:12px;align-self:start;display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px;overflow:auto;max-height:calc(100svh - 24px)}
+body.demo-closed .drawer{display:none}
+
+.wrap{max-width:1480px;margin:0 auto;display:grid;grid-template-columns:292px minmax(0,1fr) 340px;gap:18px;align-items:start}
+@media (max-width:1240px){
+  .wrap{grid-template-columns:minmax(0,1fr) 340px}
+  .drawer{display:none;position:fixed;left:16px;top:12px;bottom:16px;width:300px;z-index:30;box-shadow:0 24px 60px rgba(31,50,41,.25);max-height:calc(100svh - 28px)}
+  body.demo-open .drawer{display:flex}
+}
+@media (max-width:1080px){.wrap{grid-template-columns:1fr}.copilot{order:-1;max-height:420px}}
+
+.col-h{display:flex;align-items:center;gap:8px;font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--chrome-muted);margin:2px 2px 10px}
+.col-h::after{content:"";flex:1;height:1px;background:var(--chrome-line)}
+
+#board{max-width:880px;margin:0 auto;display:grid;gap:12px}
+#board:focus{outline:none}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px}
+.card.agent-in{animation:enter .26s ease-out both}
+.card h2{margin:8px 0 4px;font:600 20px/1.3 var(--display);color:var(--ink);text-wrap:balance}
+.card h2 .ctx{font:300 15px var(--display);color:var(--muted)}
+.card p{margin:0;font-size:14px;line-height:1.5;color:var(--muted)}
+.card p.say{color:var(--ink)}
+.tier.t1{border:2.5px solid transparent;background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(125deg,var(--cyan),var(--violet) 55%,var(--magenta)) border-box;box-shadow:0 18px 44px rgba(31,50,41,.14);padding:22px;border-radius:22px}
+.tier.t1 h2{font-size:22px}
+.tier.t2{border:1.5px solid transparent;background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(125deg,rgba(95,180,214,.7),rgba(82,181,132,.55)) border-box}
+.tier.t2.warn{background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(125deg,rgba(82,181,132,.65),rgba(226,196,136,.6)) border-box}
+.tier.t2.calm{border:1px solid var(--line);background:var(--surface)}
+
+.eyebrow{display:flex;align-items:center;gap:8px;font:600 11px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.eyebrow .pip{width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--magenta));flex:none}
+.eyebrow svg{width:16px;height:16px;color:var(--ink)}
+.chip-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tri-chip{display:inline-flex;align-items:center;gap:7px;font:600 11px var(--display);letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:6px 11px;background:var(--raised);color:var(--ink)}
+.tri-chip .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.tri-chip .dot.grad{background:conic-gradient(from 210deg,var(--cyan),var(--violet),var(--magenta),var(--cyan))}
+.tri-chip .dot.vio{background:var(--violet);transform:rotate(45deg);border-radius:2px}
+.tri-chip .dot.cya{background:var(--cyan);border-radius:2px}
+.tri-chip .dot.gry{background:var(--muted)}
+.deadline{display:inline-flex;align-items:center;gap:6px;font:700 13px var(--display);color:var(--alert)}
+.deadline svg{width:15px;height:15px}
+.tag{display:inline-flex;font:600 10.5px var(--display);letter-spacing:.05em;color:var(--muted);background:var(--raised);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+
+.focus{font-size:15px;line-height:1.55;color:var(--ink);margin-top:8px}
+.focus b{font-weight:700;background:linear-gradient(125deg,var(--cyan),var(--violet),var(--magenta)) no-repeat 0 100%/100% 3px;padding-bottom:2px}
+.t2 .focus b{background:none;box-shadow:inset 0 -2px 0 var(--violet);padding-bottom:1px}
+
+.deciding{display:flex;gap:14px;align-items:center;margin:14px 0 4px;flex-wrap:wrap}
+.deciding .waf-wrap{display:grid;gap:4px;justify-items:center}
+.deciding .waf-wrap svg{width:84px;height:84px}
+.deciding .waf-wrap span{font:600 11px/1.35 var(--display);color:var(--muted);text-align:center;max-width:120px}
+.deciding .facts{flex:1;min-width:150px;display:grid;gap:8px}
+.fact{display:flex;align-items:baseline;gap:8px;font:600 14px var(--display);color:var(--ink)}
+.fact .n{font-size:17px}
+.fact small{font:500 12px var(--sans);color:var(--muted)}
+.mini-chart{width:100%;height:auto;margin-top:6px}
+
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.btn{min-height:50px;border-radius:14px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);font:600 15px var(--display);padding:0 14px;width:100%}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn:disabled{opacity:.55;cursor:default}
+.under{margin-top:12px;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.src-row{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.src{border:1px solid var(--line);background:var(--raised);border-radius:999px;font:600 12px var(--display);color:var(--ink);padding:6px 13px}
+.src:hover{border-color:var(--violet)}
+.lnk{border:0;background:none;font:600 13px var(--display);color:var(--accent-text);padding:4px 2px}
+
+.done-line{position:relative;display:grid;gap:8px;border:1px solid rgba(30,122,84,.4);background:linear-gradient(rgba(30,122,84,.07),rgba(30,122,84,.07)),var(--surface);border-radius:18px;padding:14px 16px}
+.done-line.agent-in{animation:enter .26s ease-out both}
+.done-line .dl-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.done-line .ok{width:26px;height:26px;border-radius:50%;background:var(--done-tint);color:var(--done);display:grid;place-items:center;flex:none;animation:pop .4s ease-out both}
+.done-line .ok svg{width:15px;height:15px}
+.done-line b{font:600 14px/1.35 var(--display);color:var(--ink)}
+.k-chip{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--display);color:var(--done);background:var(--done-tint);border:1px solid rgba(30,122,84,.35);border-radius:999px;padding:5px 11px}
+.k-chip .ic{width:6px;height:6px;border-radius:50%;background:var(--done)}
+.k-chip.mut{color:var(--muted);background:var(--raised);border-color:var(--line)}
+.k-chip.mut .ic{background:var(--muted)}
+
+.steady-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:14px;background:var(--raised);border:1px solid var(--line)}
+.steady-row+.steady-row{margin-top:8px}
+.steady-row .t1l{font:600 10.5px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.steady-row .t2l{font:600 14px/1.3 var(--display);color:var(--ink)}
+.av{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--violet));color:#fff;display:grid;place-items:center;font:600 12px var(--display);flex:none}
+
+.findings{display:grid;gap:12px;margin-top:6px}
+.finding{display:grid;grid-template-columns:26px 1fr;gap:10px}
+.finding .n{width:26px;height:26px;border-radius:9px;background:var(--raised);display:grid;place-items:center;font:600 13px var(--display);color:var(--ink)}
+.finding p{color:var(--ink);font-size:14px;line-height:1.5}
+.finding p b{font-weight:700}
+.finding .f-src{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.finding .f-src .src{padding:4px 10px;font-size:11px}
+.validators{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font:600 12px var(--display);color:var(--done)}
+.validators svg{width:15px;height:15px}
+
+.kn{display:grid;gap:14px}
+.kn .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:760px){.kn .grid2{grid-template-columns:1fr}}
+.kn svg.num{width:100%;height:auto;display:block}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kpi .big{font:600 24px/1.1 var(--display);color:var(--ink)}
+.kpi .big.low{color:var(--alert)}
+.kpi .t-s{display:block;font:500 12.5px/1.4 var(--sans);color:var(--muted);margin:4px 0 8px}
+.kpi .t-s b{color:var(--ink)}
+.kpi svg{width:100%;height:14px}
+.ax{font:500 10.5px var(--sans);fill:var(--muted)}
+.ax-hot{font:600 10.5px var(--sans);fill:var(--alert)}
+.lab{font:600 11px var(--display);fill:var(--ink)}
+.lab-hot{font:600 11px var(--display);fill:var(--alert)}
+
+.pw{margin-top:14px;border:1.5px solid transparent;border-radius:18px;padding:16px;background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(125deg,var(--cyan),var(--violet) 55%,var(--magenta)) border-box}
+.pw .pw-lab{display:flex;align-items:center;gap:7px;font:600 10.5px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.pw .pw-lab svg{width:14px;height:14px}
+.pw .pw-body{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.pw .pw-body h3{margin:6px 0 0;font:600 15px/1.35 var(--display);color:var(--ink)}
+.pw .pw-body p{margin:6px 0 0;font-size:14px;line-height:1.45;color:var(--ink)}
+.pw .pw-chips{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.pw .pw-chips span{border:1px solid var(--line);border-radius:12px;padding:8px 14px;font:600 13px var(--display);color:var(--ink);background:transparent;opacity:.75}
+
+textarea.draft{width:100%;min-height:84px;border:1px solid var(--line);border-radius:12px;background:var(--raised);color:var(--ink);font:500 13.5px/1.5 var(--sans);padding:10px 12px;resize:vertical;margin-top:10px}
+textarea.draft.edit{background:var(--surface)}
+
+.q-row{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface);margin-bottom:8px}
+.q-row .qn{width:22px;height:22px;border-radius:8px;background:var(--raised);display:grid;place-items:center;font:600 11px var(--display);color:var(--ink)}
+.q-row input.q-txt{width:100%;min-height:36px;border:0;border-bottom:1px dashed var(--line);background:transparent;color:var(--ink);font:500 13px var(--sans);padding:4px 2px}
+.q-row select{border:1px solid var(--line);border-radius:9px;background:var(--surface);font:600 11.5px var(--display);color:var(--ink);padding:5px 6px}
+.q-row .q-x{border:0;background:none;color:var(--muted);font:600 14px var(--display);padding:2px 6px}
+.addq{border:1px dashed var(--line);background:none;border-radius:12px;font:600 12.5px var(--display);color:var(--accent-text);padding:9px;width:100%}
+
+.ans-rows{display:grid;gap:0;margin-top:4px}
+.ans-rows .r{display:flex;align-items:baseline;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+.ans-rows .r:first-child{border-top:0}
+.ans-rows .q{font:600 13.5px/1.4 var(--display);color:var(--ink);flex:1}
+.ans-rows .a{font:600 14px var(--display);color:var(--ink);flex:none}
+.ans-rows .a em{font:500 13.5px var(--sans);font-style:italic;color:var(--muted)}
+
+.copilot{position:sticky;top:12px;display:flex;flex-direction:column;max-height:calc(100svh - 26px);background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.cp-hd{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:linear-gradient(rgba(95,180,214,.08),rgba(226,196,136,.06)),var(--surface)}
+.cp-hd .sp{width:32px;height:32px;border-radius:10px;background:conic-gradient(from 210deg,var(--cyan),var(--violet),var(--magenta),var(--cyan));display:grid;place-items:center;flex:none}
+.cp-hd .sp svg{width:24px;height:24px;background:var(--surface);border-radius:7px;padding:4px;color:var(--ink)}
+.cp-hd b{display:block;font:600 13.5px var(--display);color:var(--ink)}
+.cp-hd span{font-size:11px;color:var(--muted)}
+.msgs{flex:1;overflow-y:auto;display:grid;gap:10px;padding:14px;align-content:start}
+.msg{display:grid;gap:6px;animation:enter .22s ease-out both}
+.msg .who{display:flex;align-items:center;gap:6px;font:600 10px var(--display);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.msg .who .dot{width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--magenta))}
+.msg .bubble{background:var(--raised);border-radius:14px 14px 14px 5px;padding:10px 12px;font-size:13px;line-height:1.5;color:var(--ink)}
+.msg.doc{justify-items:end}
+.msg.doc .who{flex-direction:row-reverse}
+.msg.doc .bubble{background:var(--done-tint);border:1px solid rgba(30,122,84,.3);border-radius:14px 14px 5px 14px}
+.msg .tool{display:flex;align-items:center;gap:8px;font:600 11.5px var(--display);color:var(--accent-text);background:var(--surface);border:1px dashed rgba(29,110,150,.45);border-radius:10px;padding:7px 10px}
+.msg .tool svg{width:13px;height:13px;flex:none}
+.msg .tool .ok-badge{margin-left:auto;color:var(--done);font-size:11px}
+.cp-quick{display:flex;gap:7px;flex-wrap:wrap;padding:0 14px 10px}
+.cp-quick button{border:1px solid var(--line);background:var(--surface);border-radius:999px;font:600 11.5px var(--display);color:var(--ink);padding:7px 11px}
+.cp-quick button:hover{border-color:var(--violet);background:var(--raised)}
+.retrieve-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 14px 10px}
+.retrieve-bar>span{font:600 10.5px var(--display);letter-spacing:.09em;text-transform:uppercase;color:var(--alert)}
+.retrieve-bar button{border:1px solid rgba(179,64,42,.45);background:var(--alert-tint);color:var(--alert);border-radius:999px;font:600 11.5px var(--display);padding:7px 12px}
+.retrieve-bar button:hover:not(:disabled){background:rgba(179,64,42,.16)}
+.retrieve-bar button:disabled{border-color:var(--line);background:transparent;color:var(--muted);opacity:.75;cursor:default}
+.cp-input{display:flex;gap:8px;padding:11px 13px;border-top:1px solid var(--line)}
+.cp-input input{flex:1;min-width:0;min-height:42px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--ink);font:500 12.5px var(--sans);padding:8px 12px}
+.cp-input input::placeholder{color:var(--muted)}
+.cp-input button{min-height:42px;border-radius:11px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-ink);font:600 12.5px var(--display);padding:0 14px}
+
+.demo-brand{display:flex;gap:10px;align-items:center}
+.demo-brand svg{width:28px;height:28px;flex:none}
+.demo-brand b{display:block;font:600 13.5px var(--display)}
+.demo-brand span{font-size:11.5px;color:var(--muted)}
+.demo-grp{font:600 10.5px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.sc-btn{min-height:42px;border-radius:11px;border:1px solid var(--line);background:transparent;color:var(--ink);font:600 11.5px var(--display);padding:6px;text-align:left}
+.sc-btn.on{border-color:var(--violet);background:var(--raised)}
+.insp{display:grid;gap:6px}
+.insp .i-row{font:500 11px/1.5 var(--sans);color:var(--muted);border-left:2px solid var(--line);padding-left:8px}
+.insp .i-row b{color:var(--ink);font-weight:600}
+.insp .i-row.ok{border-left-color:var(--done)}
+.insp .i-row.ok b{color:var(--done)}
+
+.src-pop{position:fixed;z-index:50;right:24px;top:70px;width:min(460px,92vw);max-height:min(600px,80svh);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 24px 60px rgba(31,50,41,.3);display:none}
+.src-pop.on{display:block;animation:enter .18s ease-out}
+.src-pop h3{margin:0 0 4px;font:600 15px var(--display);color:var(--ink)}
+.src-pop .close{position:sticky;top:0;float:right;border:0;background:var(--raised);border-radius:999px;font:600 11.5px var(--display);padding:5px 10px}
+.src-pop .ev{display:grid;gap:5px;padding:11px 0;border-top:1px solid var(--line)}
+.src-pop .ev:first-of-type{border-top:0}
+.src-pop .ev p{margin:0;font-size:12px;line-height:1.55;color:var(--ink)}
+.src-pop .ev small{font-size:11px;line-height:1.5;color:var(--muted)}
+.src-pop .ev a{font:600 11px var(--display);color:var(--accent-text);text-decoration:none}
+
+@keyframes enter{from{opacity:0;transform:translateY(10px)}}
+@keyframes pop{0%{transform:scale(.55);opacity:0}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+body.off-charts .kn{display:none}
+body.off-detail .src-row,body.off-detail .under,body.off-detail .validators{display:none}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g-mark" gradientUnits="userSpaceOnUse" x1="6" y1="24" x2="27" y2="8"><stop offset="0" style="stop-color:var(--cyan)"/><stop offset=".55" style="stop-color:var(--violet)"/><stop offset="1" style="stop-color:var(--magenta)"/></linearGradient>
+  </defs>
+  <symbol id="mark-a" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" style="fill:var(--tile)"/><path d="M6.5 22.8C9.3 22.8 10.4 8.8 13.3 8.8C16.9 8.8 18.8 17.6 24.6 19.9" style="fill:none;stroke:url(#g-mark)" stroke-width="2.7" stroke-linecap="round"/><circle cx="24.8" cy="19.9" r="2.3" style="fill:var(--magenta)"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7" style="fill:none;stroke:currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" style="fill:none;stroke:currentColor" stroke-width="1.9"/><path d="M12 7.5V12l3 2" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5 13.9 9.6 20 11.5 13.9 13.4 12 19.5 10.1 13.4 4 11.5 10.1 9.6Z" style="fill:none;stroke:currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-team" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3" style="fill:none;stroke:currentColor" stroke-width="1.9"/><circle cx="17" cy="9.5" r="2.3" style="fill:none;stroke:currentColor" stroke-width="1.9"/><path d="M3.5 19c.7-3 2.8-4.6 5.5-4.6s4.8 1.6 5.5 4.6M14.6 14.9c2.5-.3 4.8 1 5.7 4" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5Z" style="fill:none;stroke:currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" style="fill:none;stroke:currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</svg>
+
+<header class="topbar">
+  <button class="mark" type="button" aria-label="Agentic Kinetic"><svg role="img"><use href="#mark-a"/></svg></button>
+  <div class="tt"><b>Clinic Board</b><span>Elena Cruz · kidney-transplant panel · synthetic demo data</span></div>
+  <span class="status-chip hot" id="status-chip"><i class="dot"></i><span id="status-text">Needs your decision</span></span>
+  <span class="ai-chip"><svg><use href="#i-spark"/></svg>This board uses AI</span>
+  <div class="seg" role="group" aria-label="View preset">
+    <button type="button" id="vw-all" class="on">View everything</button>
+    <button type="button" id="vw-key">Actions and key numbers</button>
+  </div>
+  <button type="button" class="btn2 ghost" id="btn-demo">Demo</button>
+</header>
+
+<div class="wrap">
+  <aside class="drawer" id="drawer" aria-label="Demo panel">
+  <div class="demo-brand"><svg><use href="#mark-a"/></svg><div><b>Demo · scenarios</b><span>each state re-composes the whole board</span></div></div>
+  <div class="demo-grp">Scenarios</div>
+  <div class="demo-grid" id="sc-grid">
+    <button class="sc-btn on" type="button" data-sc="S1">1 · Decision due</button>
+    <button class="sc-btn" type="button" data-sc="S2">2 · Review required</button>
+    <button class="sc-btn" type="button" data-sc="S3">3 · Approval pending</button>
+    <button class="sc-btn" type="button" data-sc="S4">4 · Why · digest</button>
+    <button class="sc-btn" type="button" data-sc="S5">5 · Survey composing</button>
+    <button class="sc-btn" type="button" data-sc="S6">6 · Sent · waiting</button>
+    <button class="sc-btn" type="button" data-sc="S7">7 · Survey answered</button>
+    <button class="sc-btn" type="button" data-sc="S8">8 · After deciding</button>
+    <button class="sc-btn" type="button" data-sc="S9">9 · All clear</button>
+  </div>
+  <div class="demo-grp">Knowledge inspector</div>
+  <div class="insp" id="insp">
+    <div class="i-row"><b>Context</b> · PatientContextSummary{troughs:4, doses:30, question:answered, pending_offer:true}</div>
+    <div class="i-row"><b>Plan</b> · none yet</div>
+    <div class="i-row ok"><b>Validators</b> · idle</div>
+  </div>
+  <div class="demo-grp">Rules always on</div>
+  <div class="insp">
+    <div class="i-row">The gate is deterministic — no language model decides escalation</div>
+    <div class="i-row">Exactly accepted or declined — never a default</div>
+    <div class="i-row">Never a dose amount written by the software</div>
+    <div class="i-row">Troughs are dots; the prediction is a range capsule</div>
+    <div class="i-row">Nothing reaches Elena without your Send</div>
+  </div>
+</aside>
+  <main>
+    <div class="col-h">The board sorts before you read · one decision owns the screen</div>
+    <div id="board" tabindex="-1" aria-live="polite"></div>
+  </main>
+
+  <aside class="copilot" aria-label="Copilot chat">
+    <header class="cp-hd">
+      <span class="sp"><svg><use href="#i-spark"/></svg></span>
+      <div><b>Board agent</b><span>chat changes this board and, with your approval, her app</span></div>
+    </header>
+    <div class="msgs" id="msgs">
+      <div class="msg">
+        <div class="who"><i class="dot"></i>board agent</div>
+        <div class="bubble">One decision is waiting on Elena’s record. The board has put it in front of you; everything else is sorted behind it. Ask me “why”, or tell me to draft something for her app — nothing reaches her without your Send.</div>
+      </div>
+    </div>
+    <div class="cp-quick" id="quick">
+      <button type="button" data-say="Why is she on my list?">Why is she on my list?</button>
+      <button type="button" data-say="Draft a recommendation">Draft a recommendation</button>
+      <button type="button" data-say="Ask her if she started any new medicine">Ask her a question</button>
+      <button type="button" data-say="Send a survey about energy and sleep">Send a survey</button>
+      <button type="button" data-say="What is quiet right now?">What is quiet?</button>
+    </div>
+    <div class="retrieve-bar" id="retrieve-bar"><span>Misclick?</span><button type="button" id="retrieve-btn" data-retrieve="" disabled>Nothing to retrieve</button></div>
+    <div class="cp-input">
+      <input type="text" id="chat-in" placeholder="Tell the agent what to change…" aria-label="Message the board agent">
+      <button type="button" id="chat-send">Send</button>
+    </div>
+  </aside>
+</div>
+
+<div class="src-pop" id="src-pop" role="dialog" aria-label="Sources">
+  <button class="close" type="button" data-src-close>Close ✕</button>
+  <h3>Sources · 3</h3>
+  <div id="src-list"></div>
+</div>
+
+<script>
+var NS='http://www.w3.org/2000/svg',uid=0;
+var TROUGHS=[[143.75,4.035,'18 Sep'],[311.75,4.5242,'25 Sep'],[479.75,4.4931,'2 Oct'],[647.75,5.9728,'9 Oct']];
+var PRED={t:719.75,lo:2.4705,med:4.7373,hi:7.2926};
+var TARGET=[5,10];
+var CLEAR={v:40.50,lo:33.66,hi:48.74};
+var POP={typical:26.5,lo:15.83,hi:44.36};
+var TODAY=673.67,XMAX=768;
+var INK='#1F3229',HOT='#B3402A',LINE='#E3DAC6';
+var EVIDENCE=[
+ {claim:'Population pharmacokinetic parameters, between-patient variability and residual error are taken unchanged from the published model: Fernandez-Alarcon B, et al. Guiding the starting dose of the once-daily formulation of tacrolimus in de novo adult renal transplant patients: a population approach. Front Pharmacol 2024;15:1456565. doi:10.3389/fphar.2024.1456565',url:'https://doi.org/10.3389/fphar.2024.1456565',limit:'Derived in 138 DE NOVO adult renal transplant recipients on extended-release tacrolimus, sampled on days 5 to 15 after transplantation. A maintenance patient months post-transplant is an extrapolation.'},
+ {claim:'Therapeutic range 5-10 ng/mL, as written in this patient\'s own care plan: Fernandez-Alarcon B, et al. Front Pharmacol 2024;15:1456565 — the SAME study this project\'s population prior is taken from: "a predefined therapeutic target of 5-10 ng/mL" in de novo adult renal transplant recipients on ADVAGRAF (Astellas), the once-daily prolonged-release formulation.',url:'https://doi.org/10.3389/fphar.2024.1456565',limit:'The range is the clinician\'s, not the software\'s. It is applied as written and is never adjusted, widened or inferred.'},
+ {claim:'Absorption was held at the population value, not estimated: this fit has no post-dose samples able to identify it.',url:'https://doi.org/10.3389/fphar.2024.1456565',limit:'Three of the model\'s six parameters are individualised at most. Absorption is not one of them here.'}
+];
+var RECO_TEXT='Take your temperature at the same time each morning for the next three days, and message us in the app the same day if you feel feverish or unwell.';
+var Q_TEXT='Did you start any new medicine this week?';
+var SURVEY_D=[
+ {t:'Did you start any new medicine this week?',ty:'ternary',req:true},
+ {t:'How has your energy been this week?',ty:'scale',req:true},
+ {t:'Anything you want to tell your care team?',ty:'text',req:false}
+];
+var TYL={ternary:'Yes · No · Not sure',scale:'Scale 1–5',text:'Free text'};
+var TERN={yes:'Yes',no:'No',not_sure:'Not sure'};
+var FINDINGS=[
+ {h:'Next trough · 12 Oct',b:'Predicted <b>4.7 ng/mL</b>, 90% prediction interval <b>2.5–7.3</b> — it reaches her 5–10 target boundary, with a <b>57 in 100</b> chance it lands below 5.'},
+ {h:'Measured troughs',b:'Four on record (<b>4.0 · 4.5 · 4.5 · 6.0</b> ng/mL); three of four sit below her target. The profile rests on troughs alone and cannot be independently checked today.'},
+ {h:'What extra samples buy',b:'Three fingersticks narrow the 24-h exposure width from <b>36% to 26%</b> and make the estimate <b>independently checkable</b> — parameter precision stays secondary.'},
+ {h:'Variability',b:'Time in range <b>22%</b> of the last 21 days; variability <b>18%</b>, under the 30% mark. Judgement rests on profiles, not single troughs.'}
+];
+
+var S={scenario:'S1',decided:null,draft:null,survey:'idle',surveyQ:JSON.parse(JSON.stringify(SURVEY_D)),answers:[],doneLines:[],undoStack:[],reviewed:false};
+
+var $=function(id){return document.getElementById(id)};
+function el(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e}
+function mk(parent,name,attrs,text,tip){var e=document.createElementNS(NS,name);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;if(tip){var t=document.createElementNS(NS,'title');t.textContent=tip;e.appendChild(t)}parent.appendChild(e);return e}
+function svgEl(vb,label){var s=document.createElementNS(NS,'svg');s.setAttribute('viewBox',vb);s.setAttribute('role','img');if(label)s.setAttribute('aria-label',label);s.classList.add('num');return s}
+function low(v){return v<TARGET[0]}
+
+function capsule(svg,rect,warm){
+  var id='cap'+(++uid);
+  var defs=mk(svg,'defs',{});var cp=mk(defs,'clipPath',{id:id});
+  mk(cp,'rect',rect);
+  var fill={};for(var k in rect)fill[k]=rect[k];
+  fill.fill='rgba(95,180,214,.16)';mk(svg,'rect',fill);
+  if(warm){warm['clip-path']='url(#'+id+')';warm.fill='rgba(179,64,42,.28)';mk(svg,'rect',warm)}
+  var edge={};for(var j in rect)edge[j]=rect[j];
+  edge.fill='none';edge.stroke='#1D6E96';edge['stroke-width']=1.5;
+  return mk(svg,'rect',edge)
+}
+function chart(svg,o){
+  var x0=o.l,x1=o.W-o.r,y0=o.top,y1=o.bottom;
+  function X(t){return x0+t/XMAX*(x1-x0)}
+  function Y(c){return y1-c/12*(y1-y0)}
+  mk(svg,'rect',{x:x0,y:Y(TARGET[0]),width:x1-x0,height:Y(0)-Y(TARGET[0]),fill:'rgba(179,64,42,.06)'});
+  mk(svg,'rect',{x:x0,y:Y(TARGET[1]),width:x1-x0,height:Y(TARGET[0])-Y(TARGET[1]),rx:6,fill:'rgba(30,122,84,.10)'});
+  [0,5,10].forEach(function(v){mk(svg,'text',{x:x0-8,y:Y(v)+4,'text-anchor':'end','class':'ax'},String(v))});
+  mk(svg,'text',{x:x0+8,y:Y(TARGET[1])-5,'class':'ax'},'target 5–10 · her care plan');
+  mk(svg,'text',{x:x0+8,y:Y(0)-5,'class':'ax-hot'},'below range');
+  var tx=X(TODAY);
+  mk(svg,'line',{x1:tx,x2:tx,y1:y0-2,y2:y1,stroke:LINE,'stroke-width':1.5});
+  mk(svg,'text',{x:tx,y:y0-6,'text-anchor':'middle','class':'ax'},'today');
+  o.ticks.forEach(function(d){mk(svg,'text',{x:X(d[0]),y:o.axisY,'text-anchor':'middle','class':'ax'},d[1])});
+  TROUGHS.forEach(function(p){
+    var isLow=low(p[1]);
+    mk(svg,'circle',{cx:X(p[0]),cy:Y(p[1]),r:o.dotR,fill:isLow?HOT:INK,stroke:'#FFFDF8','stroke-width':2.5},null,'Trough '+p[2]+': '+p[1].toFixed(2)+' ng/mL · measured'+(isLow?' · below range':''));
+    mk(svg,'text',{x:X(p[0]),y:Y(p[1])-o.dotR-8,'text-anchor':'middle','class':isLow?'lab-hot':'lab'},p[1].toFixed(1)+(isLow?' ↓':''))
+  });
+  var px=X(PRED.t),w=o.barW;
+  var r={x:px-w/2,y:Y(PRED.hi),width:w,height:Y(PRED.lo)-Y(PRED.hi),rx:w/2};
+  capsule(svg,r,{x:px-w/2,y:Y(TARGET[0]),width:w,height:Y(PRED.lo)-Y(TARGET[0])});
+  mk(svg,'line',{x1:px-w/2-5,x2:px+w/2+5,y1:Y(PRED.med),y2:Y(PRED.med),stroke:INK,'stroke-width':3,'stroke-linecap':'round'},null,'Next trough 12 Oct · median 4.74 ng/mL · 90% prediction interval 2.47–7.29');
+  mk(svg,'text',{x:px+w/2+8,y:Y(PRED.med)-4,'class':'lab'},'12 Oct');
+  mk(svg,'text',{x:px+w/2+8,y:Y(PRED.med)+13,'class':'ax'},'2.5–7.3');
+}
+function numline(svg,o){
+  var W=o.W||340,x0=64,x1=W-40,top=26,TH=40;
+  var bottom=top+o.tracks.length*TH;
+  svg.setAttribute('viewBox','0 0 '+W+' '+(bottom+28));
+  function X(v){return x0+(v-o.min)/(o.max-o.min)*(x1-x0)}
+  if(o.lowZone){
+    mk(svg,'rect',{x:x0,y:top,width:X(o.band[0])-x0,height:bottom-top,fill:'rgba(179,64,42,.07)'});
+    mk(svg,'text',{x:x0+4,y:top-9,'class':'ax-hot'},'below range')
+  }
+  mk(svg,'rect',{x:X(o.band[0]),y:top,width:X(o.band[1])-X(o.band[0]),height:bottom-top,rx:6,fill:'rgba(30,122,84,.10)'});
+  if(o.bandLabel)mk(svg,'text',{x:X(o.band[0])+8,y:top-9,'class':'ax'},o.bandLabel);
+  mk(svg,'line',{x1:x0,x2:x1,y1:bottom,y2:bottom,stroke:LINE,'stroke-width':1.5});
+  o.ticks.forEach(function(t){
+    mk(svg,'line',{x1:X(t),x2:X(t),y1:bottom,y2:bottom+5,stroke:LINE,'stroke-width':1.5});
+    mk(svg,'text',{x:X(t),y:bottom+21,'text-anchor':'middle','class':'ax'},String(t))
+  });
+  if(o.marker){
+    var mx=X(o.marker.v);
+    mk(svg,'line',{x1:mx,x2:mx,y1:top-4,y2:bottom,stroke:INK,'stroke-width':2},null,o.marker.tip);
+    mk(svg,'text',{x:mx,y:top-9,'text-anchor':'middle','class':'lab'},o.marker.label)
+  }
+  o.tracks.forEach(function(tr,i){
+    var mid=top+TH*i+TH/2;
+    mk(svg,'text',{x:0,y:mid+4,'class':'ax'},tr.label);
+    if(tr.kind==='dots'){
+      var prev=-99,stack=0;
+      tr.values.slice().sort(function(a,b){return a.v-b.v}).forEach(function(p,j){
+        var x=X(p.v);
+        stack=x-prev<13?stack+1:0;prev=x;
+        var dy=stack===0?0:(stack%2?-11:11);
+        var flag=p.v<o.band[0]||p.v>o.band[1];
+        mk(svg,'circle',{cx:x,cy:mid+dy,r:6.5,fill:flag?HOT:INK,stroke:'#FFFDF8','stroke-width':2},null,p.tip)
+      })
+    }else if(tr.kind==='interval'){
+      var rect={x:X(tr.lo),y:mid-7,width:X(tr.hi)-X(tr.lo),height:14,rx:7};
+      capsule(svg,rect,tr.lo<o.band[0]?{x:X(tr.lo),y:mid-7,width:X(Math.min(o.band[0],tr.hi))-X(tr.lo),height:14}:null);
+      mk(svg,'line',{x1:X(tr.mid),x2:X(tr.mid),y1:mid-12,y2:mid+12,stroke:INK,'stroke-width':3,'stroke-linecap':'round'},null,tr.tip)
+    }else if(tr.kind==='estimate'){
+      mk(svg,'line',{x1:X(tr.lo),x2:X(tr.hi),y1:mid,y2:mid,stroke:HOT,'stroke-opacity':.4,'stroke-width':6,'stroke-linecap':'round'});
+      mk(svg,'circle',{cx:X(tr.v),cy:mid,r:7.5,fill:HOT,stroke:'#FFFDF8','stroke-width':2.5},null,tr.tip);
+      mk(svg,'text',{x:X(tr.hi)+10,y:mid+5,'class':'lab-hot'},tr.text)
+    }
+  })
+}
+function bullet(svg){
+  var v=parseFloat(svg.getAttribute('data-v'));
+  mk(svg,'rect',{x:0,y:3,width:200,height:8,rx:4,fill:'#EFE9DA'});
+  mk(svg,'rect',{x:0,y:3,width:v*2,height:8,rx:4,fill:svg.hasAttribute('data-flag')?HOT:INK});
+  if(svg.hasAttribute('data-mark')){
+    var m=parseFloat(svg.getAttribute('data-mark'));
+    mk(svg,'line',{x1:m*2,x2:m*2,y1:0,y2:14,stroke:INK,'stroke-width':2.5,'stroke-linecap':'round'})
+  }
+}
+function waffle(svg){
+  var gid='g-waf'+(++uid);
+  var gd=mk(mk(svg,'defs',{}),'linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:0,y1:84,x2:84,y2:0});
+  [['0','#5FB4D6'],['.55','#52B584'],['1','#E2C488']].forEach(function(s){mk(gd,'stop',{offset:s[0],'stop-color':s[1]})});
+  for(var n=0;n<100;n++)mk(svg,'rect',{x:(n%10)*8.4+.5,y:Math.floor(n/10)*8.4+.5,width:7.4,height:7.4,rx:2,fill:n<57?'url(#'+gid+')':'#E3DAC6'});
+}
+
+function pw(label,inner,chips){
+  var w=el('div','pw');
+  w.appendChild(el('div','pw-lab','<svg><use href="#i-phone"/></svg>What Elena will see · '+label));
+  var b=el('div','pw-body',inner);
+  if(chips){var c=el('div','pw-chips');chips.forEach(function(t){c.appendChild(el('span',null,t))});b.appendChild(c)}
+  w.appendChild(b);
+  return w;
+}
+
+var REG={};
+REG.DecisionCard=function(){
+  var c=el('article','card tier t1');
+  c.setAttribute('aria-label','Tier 1 · needs your decision');
+  c.innerHTML='<div class="chip-row"><span class="tri-chip"><i class="dot grad"></i>Needs your decision</span><span class="deadline"><svg><use href="#i-clock"/></svg>Decide by Sun 09:40</span></div>'+
+   '<h2>Request 3 extra samples? <span class="ctx">so this estimate can be checked</span></h2>'+
+   '<p class="focus">Her predicted trough reaches the <b>5–10 ng/mL</b> boundary of her care plan — a <b>57 in 100</b> chance it lands below 5 — and nothing can independently check the estimate until post-dose samples exist.</p>';
+  var d=el('div','deciding');
+  var ww=el('div','waf-wrap');ww.appendChild(svgEl('0 0 84 84','57 of 100 squares filled'));ww.appendChild(el('span',null,'57 in 100 chance her next trough is below 5'));
+  d.appendChild(ww);
+  var f=el('div','facts');
+  f.appendChild(el('div','fact','<span class="n">36% → 26%</span><small>estimate width</small>'));
+  f.appendChild(el('div','fact','<span class="n">3</span><small>fingerstick draws · fasting</small>'));
+  var mc=svgEl('0 0 260 120','Mini trough chart: 18 Sep 4.0, 25 Sep 4.5, 2 Oct 4.5, 9 Oct 6.0 ng/mL, target band 5 to 10, prediction capsule 2.5 to 7.3 on 12 Oct');
+  mc.classList.add('mini-chart');f.appendChild(mc);
+  d.appendChild(f);c.appendChild(d);
+  var b=el('div','btns');
+  var a=el('button','btn','Request extra samples');a.type='button';a.dataset.decide='accepted';
+  var dd=el('button','btn ghost','Not now');dd.type='button';dd.dataset.decide='declined';
+  if(S.decided){a.disabled=true;dd.disabled=true}
+  b.appendChild(a);b.appendChild(dd);c.appendChild(b);
+  c.appendChild(el('p','under','If not now: the estimate still rests on 4 troughs, and nothing can check it until post-dose samples exist. Nothing reaches Elena unless you accept. The software never suggests a dose.'));
+  var sr=el('div','src-row');
+  var s1=el('button','src','Sources · 3');s1.type='button';s1.dataset.src='';
+  var s2=el('button','lnk','Why is she on my list? → digest');s2.type='button';s2.dataset.why='';
+  sr.appendChild(s1);sr.appendChild(s2);c.appendChild(sr);
+  c._draw=function(){waffle(c.querySelector('.waf-wrap svg'));chart(mc,{W:260,l:24,r:34,top:14,bottom:88,axisY:110,dotR:4.5,barW:10,ticks:[[143.75,'18 Sep'],[647.75,'9 Oct']]})};
+  return c;
+};
+REG.ReviewCard=function(promoted){
+  var c=el('article','card tier '+(promoted?'t1':'t2 warn'));
+  c.setAttribute('aria-label','Tier · needs review');
+  c.innerHTML='<div class="chip-row"><span class="tri-chip"><i class="dot '+(promoted?'grad':'vio')+'"></i>'+(promoted?'Needs your decision':'Needs review')+'</span></div>'+
+   '<h2 style="font-size:'+(promoted?'22px':'17px')+'">Review: her troughs are running low <span class="ctx">why she is on your list</span></h2>'+
+   '<p class="focus">Patient B · record could not be fully evaluated — <b>open the record to read the reason</b> before anything else. Never counted as steady.</p>';
+  var b=el('div','btns');var o=el('button','btn ghost','Open Patient B’s record');o.type='button';o.dataset.openRecord='';b.appendChild(o);c.appendChild(b);
+  return c;
+};
+REG.ApprovalCard=function(){
+  var d=S.draft||{kind:'reco',text:RECO_TEXT};
+  var c=el('article','card tier t2');
+  c.setAttribute('aria-label','Tier · needs approval');
+  c.innerHTML='<div class="chip-row"><span class="tri-chip"><i class="dot cya"></i>Needs your approval</span></div>'+
+   '<h2 style="font-size:17px">'+(d.kind==='question'?'Send Elena this question?':'Send Elena this note?')+' <span class="ctx">drafted by the agent · sent in your words</span></h2>';
+  var ta=el('textarea','draft');ta.value=d.text;ta.readOnly=true;ta.setAttribute('aria-label','Draft text');c.appendChild(ta);
+  if(d.kind==='question'){c.appendChild(pw('her home screen, the big widget','<div class="eyebrow"><svg><use href="#i-team"/></svg>Your care team asks</div><h3>'+d.text+'</h3>',['Yes','No','Not sure']))}
+  else{c.appendChild(pw('her home screen, the big widget','<div class="eyebrow"><svg><use href="#i-team"/></svg>A note from your care team</div><p>'+d.text+'</p>',['Got it']))}
+  var b=el('div','btns');
+  var send=el('button','btn','Send to Elena’s app');send.type='button';send.dataset.draftSend='';
+  var edit=el('button','btn ghost','Edit');edit.type='button';edit.dataset.draftEdit='';
+  b.appendChild(send);b.appendChild(edit);c.appendChild(b);
+  c.appendChild(el('p','under','Information-gathering words only — the agent never drafts instructions about doses, and an unapproved draft never renders in her app.'));
+  return c;
+};
+REG.DigestCard=function(){
+  var c=el('article','card');
+  c.innerHTML='<div class="chip-row"><span class="eyebrow" style="margin:0"><svg><use href="#i-spark"/></svg>Digest · board agent</span><span class="tri-chip" style="margin-left:auto"><i class="dot gry" style="background:var(--done)"></i>4 findings · every figure from the backend</span></div>';
+  var f=el('div','findings');
+  FINDINGS.forEach(function(fd,i){
+    var d=el('div','finding','<span class="n">'+(i+1)+'</span><div><p><b>'+fd.h+'.</b> '+fd.b+'</p><div class="f-src"><button class="src" type="button" data-src="">Sources</button><span class="tag">population limit applies</span></div></div>');
+    f.appendChild(d)
+  });
+  c.appendChild(f);
+  c.appendChild(el('div','validators','<svg><use href="#i-check"/></svg>4/4 checks passed · findings ⊆ clinician payload · no figure computed in this browser'));
+  return c;
+};
+REG.KeyNumbersCard=function(){
+  var c=el('article','card kn');
+  c.innerHTML='<div class="chip-row"><span class="eyebrow" style="margin:0"><i class="pip" style="width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--magenta))"></i>The complete basis</span><span class="tag" style="margin-left:auto">ng/mL · hours since 12 Sep 09:40</span></div>';
+  var g=el('div');
+  var focus=svgEl('0 0 660 236','Trough chart. Measured troughs as dots: 18 Sep 4.0, 25 Sep 4.5, 2 Oct 4.5, 9 Oct 6.0 ng/mL, first three below the 5 to 10 target band. Prediction for 12 Oct: median 4.7, 90 percent prediction interval 2.5 to 7.3, shown as a capsule.');
+  g.appendChild(focus);c.appendChild(g);
+  var grid=el('div','grid2');
+  var nl1=svgEl('','Trough number line, 0 to 12 with target band 5 to 10 from her care plan. Measured: 4.0, 4.5, 4.5 below range, 6.0 in range. 12 Oct prediction interval 2.47 to 7.29 with median 4.74.');
+  var nl2=svgEl('','Clearance number line, 0 to 60 litres per hour. Population 90 percent band 15.8 to 44.4 shaded, average 26.5 marked. Her estimate 40.5 with interval 33.7 to 48.7, labelled approximate.');
+  grid.appendChild(nl1);grid.appendChild(nl2);c.appendChild(grid);
+  var k=el('div','kpis');
+  var k1=el('div','kpi','<span class="big low">22%</span><span class="t-s"><b>Time in range</b> · her last 21 days · <b style="color:var(--alert)">below target</b></span>');
+  var b1=svgEl('0 0 200 14','22 percent of the last 21 days inside her target range');b1.classList.add('bullet');b1.setAttribute('data-v','21.9');b1.setAttribute('data-flag','1');k1.appendChild(b1);
+  var k2=el('div','kpi','<span class="big">18%</span><span class="t-s"><b>Variability</b> · under the 30% mark</span>');
+  var b2=svgEl('0 0 200 14','18 percent against a 30 percent mark');b2.classList.add('bullet');b2.setAttribute('data-v','17.7');b2.setAttribute('data-mark','30');k2.appendChild(b2);
+  k.appendChild(k1);k.appendChild(k2);c.appendChild(k);
+  c._draw=function(){
+    chart(focus,{W:660,l:34,r:78,top:24,bottom:160,axisY:196,dotR:6.5,barW:16,ticks:[[0,'12 Sep'],[168,'19 Sep'],[336,'26 Sep'],[504,'3 Oct'],[672,'10 Oct']]});
+    numline(nl1,{min:0,max:12,band:TARGET,bandLabel:'target 5–10 · her care plan',lowZone:true,ticks:[0,5,10,12],tracks:[
+      {kind:'dots',label:'Measured',values:TROUGHS.map(function(p){return{v:p[1],tip:p[2]+': '+p[1].toFixed(2)+' ng/mL'+(low(p[1])?' · below range':'')}})},
+      {kind:'interval',label:'12 Oct',lo:PRED.lo,mid:PRED.med,hi:PRED.hi,tip:'Predicted 12 Oct trough · median 4.74 · 90% interval 2.47–7.29 ng/mL'}
+    ]});
+    numline(nl2,{min:0,max:60,band:[POP.lo,POP.hi],ticks:[0,15,30,45,60],marker:{v:POP.typical,label:'average 26.5',tip:'Population average'},tracks:[
+      {kind:'estimate',label:'Her estimate',v:CLEAR.v,lo:CLEAR.lo,hi:CLEAR.hi,text:'her 40.5 (approx.)',tip:'Her clearance 40.5 L/h · interval 33.7–48.7'}
+    ]});
+    bullet(b1);bullet(b2);
+  };
+  return c;
+};
+REG.SurveyComposerCard=function(){
+  var c=el('article','card tier t2');
+  c.innerHTML='<div class="chip-row"><span class="tri-chip"><i class="dot cya"></i>Composing</span><span class="tag" style="margin-left:auto">closed answer types only</span></div><h2 style="font-size:17px">A few questions from her care team <span class="ctx">she answers in her app</span></h2>';
+  var list=el('div');list.id='q-list';c.appendChild(list);
+  var add=el('button','addq','+ Add a question');add.type='button';add.dataset.addq='';c.appendChild(add);
+  var prev=pw('the big widget on her home screen','<div class="eyebrow"><svg><use href="#i-team"/></svg>Your care team asks</div><h3 id="pv-q"></h3><p id="pv-t"></p>');
+  c.appendChild(prev);
+  var b=el('div','btns');
+  var send=el('button','btn','Send to Elena’s app');send.type='button';send.dataset.surveySend='';
+  var back=el('button','btn ghost','Back to the board');back.type='button';back.dataset.back='';
+  b.appendChild(send);b.appendChild(back);c.appendChild(b);
+  c.appendChild(el('p','under','Questions relay verbatim once you send. Free text is optional; her words are never paraphrased. Nothing is sent until you press Send.'));
+  c._draw=function(){
+    list.innerHTML='';
+    S.surveyQ.forEach(function(q,i){
+      var r=el('div','q-row','<span class="qn">'+(i+1)+'</span>');
+      var inp=document.createElement('input');inp.type='text';inp.className='q-txt';inp.value=q.t;inp.dataset.qt=i;inp.setAttribute('aria-label','Question '+(i+1));
+      var sel=document.createElement('select');sel.dataset.qy=i;sel.setAttribute('aria-label','Answer type');
+      Object.keys(TYL).forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=TYL[k];if(q.ty===k)o.selected=true;sel.appendChild(o)});
+      var x=el('button','q-x','✕');x.type='button';x.dataset.qx=i;
+      r.appendChild(inp);r.appendChild(sel);r.appendChild(x);list.appendChild(r)
+    });
+    updatePreview();
+  };
+  function updatePreview(){
+    var q=S.surveyQ[0]||{t:'',ty:'ternary'};
+    var pq=c.querySelector('#pv-q'),pt=c.querySelector('#pv-t');
+    if(pq){pq.textContent=q.t;pt.textContent=(q.req?'Required · ':'Optional · ')+TYL[q.ty]}
+  }
+  c._preview=updatePreview;
+  return c;
+};
+REG.WaitingCard=function(){
+  var c=el('div','done-line');
+  c.innerHTML='<div class="dl-row"><span class="ok"><svg><use href="#i-check"/></svg></span><b>Survey sent · she’ll answer in her app</b><span class="k-chip"><i class="ic"></i>'+S.surveyQ.length+' questions · Sat 10 Oct 11:20</span></div>'+
+   '<div class="dl-row"><span class="k-chip mut"><i class="ic"></i>Waiting on Elena</span><button class="lnk" type="button" data-she-answers="">demo · she answers now</button></div>';
+  return c;
+};
+REG.SurveyAnswersCard=function(){
+  var c=el('article','card tier t2 warn');
+  c.innerHTML='<div class="chip-row"><span class="tri-chip"><i class="dot vio"></i>Answers in</span><span class="tri-chip" style="background:var(--done-tint);color:var(--done);border-color:rgba(30,122,84,.35)"><i class="ic" style="width:6px;height:6px;border-radius:50%;background:var(--done)"></i>Answered · Sat 10 Oct</span></div><h2 style="font-size:17px">Elena answered your survey <span class="ctx">free text verbatim</span></h2>';
+  var rows=el('div','ans-rows');
+  S.surveyQ.forEach(function(q,i){
+    var a=S.answers[i]||{val:'—',text:null};
+    var lab=q.ty==='ternary'?(TERN[a.val]||a.val):q.ty==='scale'?(a.val+' of 5'):'free text';
+    var val=q.ty==='text'?'<em>"'+(a.text||'')+'"</em>':lab;
+    rows.appendChild(el('div','r','<span class="q">'+q.t+'</span><span class="a">'+val+'</span>'))
+  });
+  c.appendChild(rows);
+  var b=el('div','btns');var m=el('button','btn ghost','Mark reviewed');m.type='button';m.dataset.reviewed='';b.appendChild(m);c.appendChild(b);
+  return c;
+};
+REG.AllClearCard=function(){
+  var c=el('article','card tier t2 calm');
+  c.innerHTML='<div class="chip-row"><span class="eyebrow" style="margin:0"><svg><use href="#i-check"/></svg>All clear</span></div>'+
+   '<h2>Nothing needs you right now.</h2><p class="say" style="font-size:15px">Nine patients steady · no decisions waiting · no approvals pending. The board will take the frame the moment that changes.</p>';
+  var b=el('div','src-row');var l=el('button','lnk','Show the basis for Elena anyway →');l.type='button';l.dataset.why='';b.appendChild(l);c.appendChild(b);
+  return c;
+};
+
+var PLANS={
+ S1:{hot:['DecisionCard'],steady:true,label:'Needs your decision',hotChip:true},
+ S2:{hot:[['ReviewCard',false]],label:'Needs review',hotChip:true},
+ S3:{hot:['ApprovalCard'],label:'Needs your approval',hotChip:true},
+ S4:{hot:['DigestCard','KeyNumbersCard'],label:'Reviewing the basis'},
+ S5:{hot:['SurveyComposerCard'],label:'Composing to her app',hotChip:true},
+ S6:{hot:['WaitingCard'],steady:true,label:'Waiting on Elena'},
+ S7:{hot:['SurveyAnswersCard'],label:'Answers in',hotChip:true},
+ S8:{hot:[['ReviewCard',true]],label:'Next · needs review',hotChip:true},
+ S9:{hot:['AllClearCard'],steady:true,label:'Quiet'}
+};
+
+function doneGroup(){
+  if(!S.doneLines.length)return null;
+  var g=el('div','agent-in');
+  S.doneLines.forEach(function(dl,i){
+    var c=el('div','done-line agent-in');c.style.animationDelay=(i*50)+'ms';
+    var row=el('div','dl-row','<span class="ok"><svg><use href="#i-check"/></svg></span><b>'+dl.text+'</b>');
+    (dl.chips||[]).forEach(function(ch){row.appendChild(el('span','k-chip'+(ch.mut?' mut':''),'<i class="ic"></i>'+ch.t))});
+    c.appendChild(row);g.appendChild(c)
+  });
+  return g;
+}
+function steadyGroup(){
+  var g=el('div');
+  g.appendChild(el('div','col-h','Steady · 9'));
+  ['Patient C','Patient D','Patient E'].forEach(function(n,i){
+    var r=el('div','steady-row','<span class="av">'+n.split(' ')[1][0]+'</span><span><span class="t1l">Steady</span><span class="t2l">'+n+'</span></span><span class="k-chip mut" style="margin-left:auto"><i class="ic"></i>Steady · 9</span>');
+    g.appendChild(r)
+  });
+  return g;
+}
+
+function renderBoard(){
+  var plan=PLANS[S.scenario];
+  var b=$('board');b.innerHTML='';
+  plan.hot.forEach(function(name,i){
+    var fn=Array.isArray(name)?REG[name[0]].bind(null,name[1]):REG[name];
+    var c=fn();
+    c.classList.add('agent-in');c.style.animationDelay=(i*70)+'ms';
+    b.appendChild(c);
+    if(c._draw)c._draw()
+  });
+  if(S.scenario!=='S6'){
+    var dg=doneGroup();if(dg){dg.classList.add('agent-in');dg.style.animationDelay=(plan.hot.length*70)+'ms';b.appendChild(dg)}
+  }
+  if(plan.steady){var sg=steadyGroup();sg.classList.add('agent-in');sg.style.animationDelay=((plan.hot.length+1)*70)+'ms';b.appendChild(sg)}
+  var chip=$('status-chip');
+  chip.classList.toggle('hot',!!plan.hotChip);
+  $('status-text').textContent=plan.label;
+  document.querySelectorAll('#sc-grid .sc-btn').forEach(function(x){x.classList.toggle('on',x.dataset.sc===S.scenario)});
+  $('insp').innerHTML=
+   '<div class="i-row"><b>Context</b> · PatientContextSummary{troughs:4, doses:30, question:answered, pending_offer:'+(!S.decided)+'}</div>'+
+   '<div class="i-row"><b>Plan</b> · '+plan.hot.map(function(h){return Array.isArray(h)?h[0]:h}).join(' → ')+(plan.steady?' → steady×3':'')+'</div>'+
+   '<div class="i-row ok"><b>Validators</b> · one hot card ✓ · figures ⊆ payload ✓ · verbatim ✓</div>';
+  updateRetrieveBar();
+}
+
+function msg(who,html,tool){
+  var m=el('div','msg'+(who==='you'?' doc':''));
+  m.appendChild(el('div','who',who==='you'?'you':'<i class="dot"></i>board agent'));
+  m.appendChild(el('div','bubble',html));
+  if(tool){var t=el('div','tool','<svg><use href="#i-spark"/></svg>'+tool+'<span class="ok-badge">✓</span>');m.appendChild(t)}
+  $('msgs').appendChild(m);
+  $('msgs').scrollTop=$('msgs').scrollHeight;
+  return m;
+}
+
+function setScenario(sc,silent){
+  S.scenario=sc;
+  if(sc==='S3'&&!S.draft)S.draft={kind:'reco',text:RECO_TEXT};
+  if(sc==='S6'&&S.survey!=='waiting'&&S.survey!=='answered'){S.survey='waiting'}
+  if(sc==='S7'){
+    if(S.survey!=='answered'){S.survey='answered';S.answers=[{i:0,val:'no'},{i:1,val:4},{i:2,text:'Been sleeping better this week.'}]}
+    if(!silent)msg('agent','Elena answered all '+S.surveyQ.length+' questions. Free text relays verbatim: “Been sleeping better this week.” Every answer logged with timestamp.','survey_answers()');
+  }
+  if(sc==='S8'&&!S.decided){S.decided='accepted';addDone('You requested extra samples. She now sees the booking in her app.',[{t:'Booked · Sun 11 Oct 09:40'}])}
+  renderBoard();
+}
+function addDone(text,chips){var dl={text:text,chips:chips||[]};S.doneLines.unshift(dl);return dl}
+
+function pushUndo(label){
+  S.undoStack.push({label:label,snap:JSON.parse(JSON.stringify({scenario:S.scenario,decided:S.decided,draft:S.draft,survey:S.survey,surveyQ:S.surveyQ,answers:S.answers,doneLines:S.doneLines}))});
+  updateRetrieveBar();
+}
+function updateRetrieveBar(){
+  var n=S.undoStack.length,btn=$('retrieve-btn');
+  if(!n){btn.disabled=true;btn.textContent='Nothing to retrieve';$('retrieve-bar').querySelector('span').textContent='Misclick?';return}
+  btn.disabled=false;
+  btn.textContent='Retrieve · '+S.undoStack[n-1].label;
+  $('retrieve-bar').querySelector('span').textContent=n>1?'Undo stack · '+n+' deep · pops the latest':'Misclick?';
+}
+function retrieveLast(){
+  var e=S.undoStack.pop();
+  updateRetrieveBar();
+  if(!e)return;
+  msg('you','That was a misclick — retrieve the latest action.');
+  var s=e.snap;
+  S.scenario=s.scenario;S.decided=s.decided;S.draft=s.draft;S.survey=s.survey;
+  S.surveyQ=s.surveyQ;S.answers=s.answers;S.doneLines=s.doneLines;
+  msg('agent','Retrieved — “'+e.label+'” is undone and the board is back to where it was before it. Nothing reaches Elena without your Send.','board_state_retrieved()');
+  renderBoard();
+}
+
+function decide(d){
+  if(S.decided)return;
+  pushUndo(d==='accepted'?'extra-samples decision':'not-now decision');
+  S.decided=d;
+  if(d==='accepted'){
+    addDone('You requested extra samples. She now sees the booking in her app.',[{t:'Booked · Sun 11 Oct 09:40'},{t:'3 draws · fasting · before dose 1 h 3 h 6 h',mut:true}]);
+    msg('agent','Decision recorded: accepted. Proposed sampling — before dose, 1 h, 3 h, 6 h, fasting. The booking is already in her app; the next item takes the frame.','clinician_decision(accepted)');
+  }else{
+    addDone('Not now · flagged for review.',[{t:'Flagged · offers window closed',mut:true}]);
+    msg('agent','Decision recorded: declined. Flagged for review; the offer does not reach her phone.','clinician_decision(declined)');
+  }
+  setScenario('S8');
+}
+
+function agentCommand(txt){
+  msg('you',txt);
+  var t=txt.toLowerCase();
+  var lab=null;
+  if(t.indexOf('why')>-1||t.indexOf('digest')>-1||t.indexOf('explain')>-1||t.indexOf('basis')>-1||t.indexOf('list')>-1)lab='why digest';
+  else if(t.indexOf('survey')>-1)lab='survey composing';
+  else if(t.indexOf('ask')>-1||t.indexOf('question')>-1||t.indexOf('medicine')>-1)lab='ask question';
+  else if(t.indexOf('recommend')>-1||t.indexOf('note')>-1||t.indexOf('tell')>-1)lab='draft recommendation';
+  else if(t.indexOf('quiet')>-1||t.indexOf('clear')>-1||t.indexOf('steady')>-1||t.indexOf('nothing')>-1)lab='quiet view';
+  if(lab)pushUndo(lab);
+  if(lab==='why digest'){
+    msg('agent','Digesting Elena’s record against her clinician payload — four findings with their sources, and the complete basis underneath. Every number comes from the backend.','compose_board(S4)');
+    setScenario('S4');
+  }else if(lab==='survey composing'){
+    S.survey='composing';
+    msg('agent','Composing a survey from your request. Questions below are editable — answer types are closed (Yes/No/Not sure · scale · free text). Preview shows exactly what she’ll see.','compose_survey()');
+    setScenario('S5');
+  }else if(lab==='ask question'){
+    S.draft={kind:'question',text:Q_TEXT};
+    msg('agent','Drafting one question from her care plan’s watch list. It goes to her app verbatim, once you send it.','draft_question()');
+    setScenario('S3');
+  }else if(lab==='draft recommendation'){
+    S.draft={kind:'reco',text:RECO_TEXT};
+    msg('agent','Drafting a short note in your own words — information-gathering only, never a dose. It renders in her app word for word once you send it.','draft_recommendation()');
+    setScenario('S3');
+  }else if(lab==='quiet view'){
+    msg('agent','Nothing needs you right now. Nine steady, no decisions waiting, no approvals pending. The board re-composes the moment that changes.','compose_board(S9)');
+    setScenario('S9');
+  }else{
+    msg('agent','I can re-compose this board or draft for her app. Try: “why is she on my list”, “draft a recommendation”, “ask her a question”, “send a survey”, or “what is quiet”.');
+  }
+}
+
+document.addEventListener('click',function(e){
+  var t=e.target.closest('button');if(!t)return;
+  var d=t.dataset;
+  if(d.decide)decide(d.decide);
+  if(d.retrieve!=null)retrieveLast();
+  if(d.why!=null){
+    if(S.scenario!=='S4'){msg('agent','Pulling the complete, cited basis for the decision.','compose_board(S4)')}
+    setScenario('S4');
+  }
+  if(d.back!=null){setScenario(S.decided?'S8':'S1')}
+  if(d.draftEdit!=null){var ta=t.closest('.card').querySelector('textarea.draft');ta.readOnly=false;ta.classList.add('edit');ta.focus();t.textContent='Editing…'}
+  if(d.draftSend!=null){
+    var card=t.closest('.card');
+    var txt=card.querySelector('textarea.draft').value.trim();
+    var kind=S.draft?S.draft.kind:'reco';
+    pushUndo(kind==='question'?'sent question':'sent note');
+    S.draft={kind:kind,text:txt};
+    addDone(kind==='question'?'Question sent · she sees it in her app.':'Note sent · she sees it in her app.',[{t:'Sent · Sat 10 Oct 11:20'}]);
+    msg('agent','Sent verbatim. She’ll see it as the big widget on her home screen; your approval is on the audit trail.',kind==='question'?'question_approved()':'reco_approved()');
+    setScenario(S.decided?'S8':'S1');
+  }
+  if(d.addq!=null){S.surveyQ.push({t:'New question?',ty:'ternary',req:true});renderBoard();var inp=$('q-list').querySelector('.q-row:last-child .q-txt');if(inp)inp.focus()}
+  if(d.qx!=null){S.surveyQ.splice(+d.qx,1);renderBoard()}
+  if(d.surveySend!=null){
+    pushUndo('survey');
+    S.survey='waiting';
+    msg('agent','Survey sent — '+S.surveyQ.length+' questions. It is now the big widget on her home screen; her answers arrive here, verbatim.','survey_sent()');
+    setScenario('S6');
+  }
+  if(d.sheAnswers!=null){
+    msg('agent','Elena answered all '+S.surveyQ.length+' questions. Free text relays verbatim: “Been sleeping better this week.” Every answer logged with timestamp.','survey_answers()');
+    S.answers=[{i:0,val:'no'},{i:1,val:4},{i:2,text:'Been sleeping better this week.'}];S.survey='answered';
+    setScenario('S7');
+  }
+  if(d.reviewed!=null){
+    addDone('Survey reviewed · filed to her record.',[{t:'Reviewed · you'}]);
+    msg('agent','Filed. Her answers are on the record with your review on the audit trail.','survey_reviewed()');
+    setScenario(S.decided?'S8':'S1');
+  }
+  if(d.openRecord!=null){alert('Demo placeholder — Patient B’s record view is out of scope for this prototype.')}
+  if(d.src!=null){openSrc()}
+  if(d.srcClose!=null){$('src-pop').classList.remove('on')}
+  if(d.sc!=null){
+    var sc=d.sc;
+    S.undoStack=[];
+    if(sc==='S1'){S.decided=null;S.doneLines=[]}
+    if(sc==='S3'&&!S.draft)S.draft={kind:'reco',text:RECO_TEXT};
+    if(sc==='S5')S.survey='composing';
+    setScenario(sc,sc==='S7'||sc==='S6');
+    if(sc==='S6')msg('agent','Survey sent — she’ll answer in her app. The board goes quiet; her answers take the frame when they land.','survey_sent()');
+    if(sc==='S8'&&!S.decided){}else if(sc==='S8'){msg('agent','Next item takes the frame: Patient B needs review.','compose_board(S8)')}
+    if(sc==='S2')msg('agent','Review required is its own outcome — never steady. Patient B takes the frame.','compose_board(S2)');
+  }
+  if(d.say!=null){agentCommand(d.say)}
+});
+
+document.addEventListener('input',function(e){
+  var t=e.target;
+  if(t.dataset.qt!=null){
+    S.surveyQ[+t.dataset.qt].t=t.value;
+    var card=t.closest('.card');if(card&&card._preview)card._preview();
+  }
+});
+document.addEventListener('change',function(e){
+  var t=e.target;
+  if(t.dataset.qy!=null)S.surveyQ[+t.dataset.qy].ty=t.value;
+  if(t.dataset.qt!=null){S.surveyQ[+t.dataset.qt].t=t.value}
+});
+
+function openSrc(){
+  var l=$('src-list');l.innerHTML='';
+  EVIDENCE.forEach(function(ev,i){
+    var d=el('div','ev');
+    d.innerHTML='<p><b>'+(i+1)+'.</b> '+ev.claim+'</p><a href="'+ev.url+'" target="_blank" rel="noopener">'+ev.url+'</a><small>Population limit: '+ev.limit+'</small>';
+    l.appendChild(d)
+  });
+  $('src-pop').classList.add('on');
+}
+
+$('chat-send').addEventListener('click',function(){
+  var i=$('chat-in');if(!i.value.trim())return;agentCommand(i.value.trim());i.value='';
+});
+$('chat-in').addEventListener('keydown',function(e){if(e.key==='Enter'){$('chat-send').click()}});
+$('vw-all').addEventListener('click',function(){this.classList.add('on');$('vw-key').classList.remove('on');document.body.classList.remove('off-charts','off-detail')});
+$('vw-key').addEventListener('click',function(){this.classList.add('on');$('vw-all').classList.remove('on');document.body.classList.add('off-charts','off-detail')});
+var narrowView=window.matchMedia('(max-width:1240px)');
+$('btn-demo').addEventListener('click',function(){
+  if(narrowView.matches)document.body.classList.toggle('demo-open');
+  else document.body.classList.toggle('demo-closed');
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){document.body.classList.remove('demo-open');$('src-pop').classList.remove('on')}});
+
+renderBoard();
+</script>
+</body>
+</html>
