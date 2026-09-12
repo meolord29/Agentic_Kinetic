@@ -2,7 +2,7 @@ const { getDefaultConfig } = require("expo/metro-config");
 
 const config = getDefaultConfig(__dirname);
 
-// §5.4: the ggml-base whisper model (raw) and the demo voice fixture (wav) are
+// §5.4: the whisper model (raw .bin) and the demo voice fixture (wav) are
 // bundled in the APK as Metro assets.
 for (const ext of ["bin", "wav"]) {
   if (!config.resolver.assetExts.includes(ext)) config.resolver.assetExts.push(ext);

@@ -12,15 +12,17 @@ import AudioRecord from "react-native-audio-record";
  *
  * The context is lazily initialised on the first hold-to-talk (avoids startup
  * cost); in-flight transcribes are cancellable for "Say it again". The
- * ggml-base model is bundled in the APK (metro assetExts "bin"; fetch once
+ * ggml-tiny model is bundled in the APK (metro assetExts "bin"; fetch once
  * with scripts/fetch-whisper-model.sh).
  */
 
 // Metro turns the require into an asset number; whisper.rn resolves its path.
 // If the model file is missing from assets this require still succeeds — the
 // init call is what fails, and the FAB hides (deterministic guard below).
+// User decision P4: ggml-tiny multilingual f16 (~75 MB) instead of base —
+// demo clips are short; accuracy tradeoff accepted, APK halves.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const MODEL_ASSET = require("../../assets/whisper/ggml-base.bin");
+const MODEL_ASSET = require("../../assets/whisper/ggml-tiny.bin");
 // §5.5 dev harness: bundled fixture clip ("I have a flu", 16 kHz mono WAV).
 // Same on-device whisper context as the mic path — only the recorder differs.
 // eslint-disable-next-line @typescript-eslint/no-require-imports

@@ -1,0 +1,15 @@
+--------- beginning of main
+09-12 16:08:16.110  7101  7121 I ReactNativeJS: '[compose_overlay] commit', 'sick'
+09-12 16:09:11.826  7101  7121 I ReactNativeJS: [run] start
+09-12 16:09:12.676  7101  7121 I ReactNativeJS: '[compose] commit', 'plan-1789200553097', 6, 'tiles'
+09-12 16:09:12.686  7101  7121 I ReactNativeJS: '[run] ok', 900, 'ms'
+09-12 16:09:12.758  7101  7121 I ReactNativeJS: [run] start
+09-12 16:09:12.796  7101  7121 I ReactNativeJS: '[compose] commit', 'plan-1789200553704', 6, 'tiles'
+09-12 16:09:12.798  7101  7121 I ReactNativeJS: '[run] ok', 82, 'ms'
+09-12 16:09:21.225  7101  7121 I ReactNativeJS: '[action]', '{"type":"answer_temperature","value":"v38_plus"}'
+09-12 16:09:21.278  7101  7121 I ReactNativeJS: [run] start
+09-12 16:09:21.325  7101  7121 I ReactNativeJS: [run] start
+09-12 16:09:21.325  7101  7121 I ReactNativeJS: '[run] ok', 95, 'ms'
+09-12 16:09:22.276  7101  7121 I ReactNativeJS: '[compose] commit', 'plan-1789200562695', 5, 'tiles'
+09-12 16:09:22.279  7101  7121 I ReactNativeJS: '[run] ok', 1002, 'ms'
+09-12 16:18:30.376  7101  7121 I ReactNativeJS: '[compose_overlay] commit', 'command_unmatched'
