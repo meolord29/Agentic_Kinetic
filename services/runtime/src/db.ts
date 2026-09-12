@@ -5,8 +5,9 @@ import {
 } from "@kinetic/ui-schema";
 
 /**
- * P0 db module (user decision: the agent talks to Postgres directly; Auth0 +
- * delegated data-api auth arrive in P1). Fixed demo patient — no bearer token.
+ * P0 db module (user decision: the agent talks to Postgres directly with the
+ * least-privilege kinetic_agent role; user auth dropped entirely — single-user
+ * local demo, §3.1). Fixed demo patient — no bearer token, no auth provider.
  */
 const DEMO_USER_ID = "00000000-0000-4000-8000-0000000000e1";
 

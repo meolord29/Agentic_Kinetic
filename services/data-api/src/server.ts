@@ -2,9 +2,10 @@ import Fastify from "fastify";
 import { Pool } from "pg";
 
 /**
- * data-api (P0 skeleton). P0 runs no-auth: no JWKS verify, no scope checks —
- * those land with Auth0 in P1 (§3). Endpoints declare their returned fields
- * (minimum-necessary discipline starts now).
+ * data-api (P0 skeleton). No user auth by design — single-user local demo (§3.1):
+ * every request is attributed to the fixed demo user, the loopback binding is
+ * the boundary, and endpoints declare their returned fields (minimum-necessary
+ * discipline starts now). Real auth is a precondition for any hosted run (§9.5).
  */
 
 const DEMO_USER_ID = "00000000-0000-4000-8000-0000000000e1";

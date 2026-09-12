@@ -7,7 +7,7 @@ import { RUNTIME_URL } from "./src/config/serverConfig";
 import ProbeHome from "./src/screens/ProbeHome";
 
 /**
- * App root (§5.3, P0 probe shape — no Auth0, no navigation until P1):
+ * App root (§5.3, P0 probe shape — no user auth by design (§3.1), no navigation until P1):
  *   CopilotKitProvider(runtimeUrl = 10.0.2.2:8200) → tools (once) → screen.
  */
 export default function App() {

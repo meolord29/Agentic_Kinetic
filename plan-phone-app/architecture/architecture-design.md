@@ -5,8 +5,9 @@
 > and `plan-functionality/clinic-board-monitoring-25.md`.
 >
 > **Target stack:** React Native (Android `.apk`) · CopilotKit React Native (`@copilotkit/react-native/headless` ≥ 1.64.0)
-> · CopilotKit Runtime v2 agents in TypeScript · **Auth0** user authentication + delegated authorization
-> (Auth0 for AI Agents) · **Postgres 16 in Docker** reached with the agent service's *own* least-privilege role.
+> · CopilotKit Runtime v2 agents in TypeScript · **No user auth** — the demo is a single-user, machine-local
+> system; identity collapses to the seeded demo user (§3) · **Postgres 16 in Docker** reached with the agent
+> service's *own* least-privilege role.
 > **On-device STT:** `whisper.rn` (whisper.cpp binding), `ggml-base` multilingual model bundled in the APK (§5.4).
 > **Local-first:** the whole backend is one `docker compose up`; the app runs in an Android emulator **on the
 > same Ubuntu machine** and reaches it via the emulator's `10.0.2.2` host alias — a single-box demo, no LAN setup.
@@ -39,13 +40,6 @@ The patient app is a **projection**: it displays her own data and her clinician'
 ## 2. System topology
 
 ```text
-                ┌─────────────────────────────────────────┐
-                │     Auth0 tenant (cloud)                │
-                │   Universal Login · API · JWKS · PKCE   │
-                └────────────────────┬────────────────────┘
-                                     │ PKCE · kinetic:// (Custom Tab inside the emulator)
-                                     ▼
-
  ┌────────────────────────────────────────────────────────────────────────────┐
  │ ONE UBUNTU LAPTOP — the whole demo runs on this machine                    │
  │                                                                            │
@@ -54,14 +48,14 @@ The patient app is a **projection**: it displays her own data and her clinician'
  │  │   /api/copilotkit (SSE)                │   │ CopilotKitProvider       │ │
  │  │   ├─ ui_agent  (UI planner)            │   │ runtimeUrl               │ │
  │  │   └─ router    (voice/typed intents)   │   │  http://10.0.2.2:8200    │ │
- │  │   JWKS verify ◄── Auth0 (cloud)        │   │                          │ │
+ │  │   no auth — single-user local demo (§3)│   │                          │ │
  │  │   model calls ──► OpenRouter (BYOK)    │   │ whisper.rn STT           │ │
  │  │                                        │   │ (on-device; mic = laptop │ │
- │  │   ▲ tool calls · delegated user token  │   │  mic passthrough)        │ │
+ │  │   ▲ tool calls (fixed demo user)       │   │  mic passthrough)        │ │
  │  │   │                                    │   │ notifee local notifs     │ │
  │  │ data-api :8080 ◄── REST 10.0.2.2:8080 ─┼───┤ offline queue (§5.6)     │ │
  │  │   Fastify · node-cron sweep · audit    │   └──────────────────────────┘ │
- │  │   JWKS verify ◄── Auth0 (cloud)        │                                │
+ │  │   no auth — loopback only              │                                │
  │  │     │                                  │                                │
  │  │     │ kinetic_agent role · least priv. │                                │
  │  │     ▼                                  │                                │
@@ -78,11 +72,11 @@ The patient app is a **projection**: it displays her own data and her clinician'
 |---|---|---|
 | Mobile shell | Expo SDK + prebuild, Android target, `.apk` via **local Gradle release build** (whisper.rn requires the NDK toolchain anyway) → installed straight into the demo AVD | Config plugins manage cleartext/permissions safely; headless CopilotKit needs no native peers; bare-RN escape hatch stays open |
 | CopilotKit client | `@copilotkit/react-native/headless` **≥ 1.64.0** only | Provider + hooks with zero native peer deps (no `expo-document-picker` / `@gorhom/bottom-sheet` pull-in) |
-| Agent framework | TypeScript + CopilotKit Runtime v2 (`CopilotRuntime` + agents + `defineTool`) — **user decision** | One language, one deployable; Auth0 AI JS SDK support |
+| Agent framework | TypeScript + CopilotKit Runtime v2 (`CopilotRuntime` + agents + `defineTool`) — **user decision** | One language, one deployable |
 | Database | **Postgres 16 in Docker** (`db` compose service) — **user decision** | Workflow data is strongly relational and enum-typed (check-in answers, temperature buckets, question approval states); needs transactions for the `logDose → checkins+1 → badge threshold` invariant; local = zero cloud ops for the demo |
 | Service hosting | **Full docker-compose**: `db` + `data-api` + `runtime` — **user decision** | One command up; bind-mounted source + `tsx watch` keeps the dev loop fast; reproducible on any laptop |
 | Connectivity | App and backend on the **same machine**: emulator → `10.0.2.2` (host-loopback alias) over HTTP; compose ports bind `127.0.0.1` only | Zero network setup and zero external exposure; `adb reverse` stays as a debugging fallback (§9.4) |
-| Identity | Auth0 (Universal Login, first-party API audience, JWKS) — **user decision** | Auth0 for AI Agents: user auth + delegated authorization to first-party APIs; works from any network because redirects use the `kinetic://` app scheme |
+| Identity | **None** — dropped (user decision): Auth0 is a cloud dependency, and this product runs entirely on one machine as a single user | The demo path must never touch the internet for identity; the security story lives at the DB-role + audit layer (§3.3, §3.4). Any future hosted run would add real auth first (§9.5) |
 | Push/nudges | **Local notifications** (notifee) scheduled on-device from synced reminders; FCM payload shapes documented as future swap-in | Zero Firebase setup; works fully on the single-box demo (§8) |
 | STT | **`whisper.rn`** (whisper.cpp binding) — `ggml-base` multilingual **bundled in the `.apk`** — **user decision** | Fully on-device: audio never leaves the device (the strongest form of the privacy line), no cloud-STT proxy and no Google SpeechRecognizer dependency, transcription works even with the backend down. Realtime streaming (VAD) is a documented v2 upgrade (§5.4) |
 | i18n | `en` + `zh-Hant` strings from the contract (monitoring-25 #22) | Care plan carries both languages; copy constants are keyed, not hardcoded |
@@ -91,64 +85,59 @@ The patient app is a **projection**: it displays her own data and her clinician'
 
 ## 3. Identity and security architecture
 
-Three distinct identities, three distinct jobs. The requirement — *"an AI agent that has its own authentication
-to a database"* — is identity **C**: the Data API owns a dedicated, least-privilege Postgres role that no other
-component (and no user) ever uses.
+**No user authentication exists — settled decision.** Auth0 was dropped: it is a cloud service, and this
+product must run entirely on one machine with zero cloud identity dependencies. The system is single-user by
+construction (the seeded demo user, Elena), and every endpoint is reachable only from the machine's loopback.
+
+The original requirement — *"an AI agent that has its own authentication to a database"* — survives intact as
+identity **C**: the Data API owns a dedicated, least-privilege Postgres role that no other component (and no
+user) ever uses. What was the delegated-token story (A/B) collapses into fixed demo-user attribution.
 
 ```text
- Elena (RN app)               Auth0 (cloud)                 runtime :8200                data-api :8080         Postgres (db)
- ══════════════               ═════════════                 ═════════════                ══════════════         ═════════════
+ Elena (RN app)               runtime :8200                data-api :8080         Postgres (db)
+ ══════════════               ═════════════                ══════════════         ═════════════
 
-──────────────────────────────────────────────── A · USER AUTHENTICATION — once per session ────────────────────────────────────────────────
-        ├─Universal Login (PKCE)───►│                             │                             │                     │
-        │ kinetic:// redirect       │                             │                             │                     │
-        │◄─ID token + access token──┤                             │                             │                     │
-        │ aud=kinetic-data-api      │                             │                             │                     │
-        │ refresh → Keystore        │                             │                             │                     │
+──────────────────────────────────────────── B · UI CHANNEL — no auth, loopback only ────────────────────────────────────────────
+        ├─SSE /api/copilotkit (no credentials)──────────────────►│                             │
+        │                                                        │ fixed demo user (§3.1)      │
 
-─────────────────────────────────────────────────────── B · UI CHANNEL AUTHORISATION ───────────────────────────────────────────────────────
-        ├─SSE /api/copilotkit · Bearer <user access token>───────►│                             │                     │
-        │                           │◄─JWKS verify (sig·aud·exp)──┤                             │                     │
+───────────────────────────── C1 · AGENT TOOL CALLS — attributed, not authenticated ────────────────────────────────────────────
+        │                                                        ├─tool call (fixed demo user)─►│
+        │                                                        │ get_due_items · create_handoff …
+        │                                                        │                             │ field projection + audit row
 
-───────────────────────────── C1 · DELEGATED AUTHORISATION — the agent acts for the user (Auth0 for AI Agents) ─────────────────────────────
-        │                           │                             ├─tool call (user token)─────►│                     │
-        │                           │                             │ get_due_items · create_handoff …                  │
-        │                           │◄─JWKS verify → sub=Elena · scopes=consent─────────────────┤                     │
-        │                           │                             │                             │ field projection + audit row
-
-───────────────────────────────────────────────── C2 · THE SERVICE'S OWN DATABASE IDENTITY ─────────────────────────────────────────────────
-        │                           │                             │                             ├─connect as─────────►│
-        │                           │                             │                             │ kinetic_agent role  │
-        │                           │                             │                             │ (pw from .env · scoped grants)
+───────────────────────────────────────────────── C2 · THE SERVICE'S OWN DATABASE IDENTITY ────────────────────────────────────
+        │                                                        │                             ├─connect as─────────►│
+        │                                                        │                             │ kinetic_agent role  │
+        │                                                        │                             │ (pw from .env · scoped grants)
 ```
 
-### 3.1 Identity A — the user (Auth0 Universal Login)
+### 3.1 Identity A — the user (fixed demo user, no login)
 
-- `react-native-auth0`, PKCE, refresh-token rotation; tokens live in Android Keystore via the SDK's secure storage.
-- Auth0 **API** `kinetic-data-api` registered with scopes mirroring consent: `care:read`, `care:write`,
-  `research_deid:read` (granted only when `consent.deidentifiedResearch = on`).
-- Redirects use the custom app scheme (`kinetic://login-callback`) — works identically in the emulator and in
-  any future hosted deployment; the Auth0 tenant's **Allowed Callback URLs** list the scheme, not a server address.
-- Access-token lifetime short (tighten to 1 h); rotation handled by the SDK; the CopilotKit header set is
-  refreshed through React state (see §5.1).
-- Re-entry path matches prototype `scr-access`: Face ID / biometric prompt (BiometricPrompt) unlocks the
-  locally cached session — never a re-login loop.
+- There is **no login screen, no token, no session**. The RN app carries no credentials at all.
+- `data-api` and `runtime` resolve every request to the single seeded demo user (`DEMO_USER_ID` constant);
+  audit rows attribute `actor_type: user` to that user.
+- The `consent` model (§3.4) still governs what data may leave the machine and in what projection — consent is
+  a data invariant, not an auth mechanism, and it stays.
+- The prototype's `scr-access` lock overlay remains a **UI affordance only** (local screen lock, §6 build
+  ledger) — it guards no data path because the data path has no other user.
+- If this system is ever deployed beyond one machine (§9.5), real user auth is a **precondition**, not an
+  add-on: the identity seams (per-request attribution in the data-api, per-request user in agent context) are
+  kept in the code so an OIDC provider can be introduced without re-shaping the services.
 
-### 3.2 Identity B/C1 — delegated authorization (agent acts for the user)
-
-Per Auth0 for AI Agents *call-first-party-apis-on-user's-behalf*:
+### 3.2 Identity B/C1 — agent tool calls (attributed to the demo user)
 
 1. The agent's server tools (`get_patient_state`, `get_due_items`, `create_handoff`, `share_diary_entry`, …) run
-   inside the Runtime container.
-2. Each tool call forwards **the user's own access token** to the Data API — the agent never holds long-lived
-   user credentials and never has "broad, unrestricted access".
-3. The Data API validates the JWT (Auth0 JWKS, `aud`, `exp`), resolves `sub → user_id`, enforces scope
-   (consent-tested at the moment of use), projects only the fields the endpoint declares, and writes an audit row.
-4. Request-scoped token propagation inside the Runtime uses `AsyncLocalStorage` middleware that captures the
-   `Authorization` header per SSE request; `defineTool` handlers read the current user's token from that context.
+   inside the Runtime container and call the Data API over the internal compose network — no token to forward;
+   attribution is the fixed demo user.
+2. The Data API enforces **endpoint field projection** (only fields the endpoint declares may leave Postgres)
+   and writes an audit row per request (§3.4).
+3. Scope checks derived from consent (`care:read`, `research_deid:read` …) are modeled as **endpoint allow-lists
+   keyed by consent state** — tested at the moment of use. They are consent rules, not credentials.
 
-> This is what makes P4 structural: the agent literally cannot read data the user token doesn't open, and the
-> API refuses any field not declared by the endpoint (monitoring-25 #25).
+> This still makes P4 structural: the agent cannot see fields no endpoint declares, and the API refuses any
+> field not declared by the endpoint (monitoring-25 #25). What changed is only *who* is asking: always Elena,
+> by construction.
 
 ### 3.3 Identity C2 — the service's own database authentication (local)
 
@@ -171,20 +160,20 @@ The `data-api` container owns the database identity. Nobody else has one:
 
 | Identity | Holder | Authenticates to | Credential | Lifetime |
 |---|---|---|---|---|
-| A · Elena | RN app | Auth0, data-api, runtime | OIDC access token (PKCE) | hours |
-| B · session | runtime → data-api | Data API | Elena's access token (delegated) | same as A |
+| A · Elena | RN app (fixed `DEMO_USER_ID`) | data-api, runtime | none — single-user by construction | n/a |
+| B · session | runtime → data-api | Data API | none — internal compose network | n/a |
 | C · service | `data-api` container | Postgres (`kinetic_agent`) | role password from `.env`, scoped grants | static, revocable by role drop |
 
 ### 3.4 Consent and audit
 
 - `consents` is an append-only audit table (monitoring-25 #24: revocation recorded, exclusions carried never
-  dropped). Scope checks read the latest row at request time.
+  dropped). Consent-state checks read the latest row at request time.
 - `audit_log` rows: `(actor_type user|agent|clinician|system, actor_id, user_id, action, fields[], purpose, at)`.
-  The Data API middleware writes one row per request from the decoded JWT + endpoint field manifest.
+  The Data API middleware writes one row per request from the fixed demo user + endpoint field manifest.
 - The de-identified research path reads through a separate projection endpoint that strips identifiers
   before rows leave Postgres; the training path never sees identifiable data.
-- Transport on the demo machine is plain HTTP by design (dev/demo); the JWKS-verified token, scoped role and audit
-  trail are the controls that matter. §9.5 notes TLS termination for any future hosted run.
+- Transport on the demo machine is plain HTTP by design (dev/demo); the loopback-only binding, scoped DB role
+  and audit trail are the controls that matter. §9.5 notes TLS termination for any future hosted run.
 
 ---
 
@@ -197,7 +186,7 @@ The `data-api` container owns the database identity. Nobody else has one:
 | receives a state summary (context) and returns **what the home screen should look like** | mutates care data directly (mutations are typed client actions → Data API) |
 | sizes every tile (`cols`, `rows`), tints it (`tone`), orders the stack, picks copy from fixed constants | authors questions, answers, tasks, reminders or badge rules (closed enums + server-side rules only) |
 | drives overlays (first-time tour steps, voice-popover result states) | answers health questions (router turns those into handoffs, workflow-07) |
-| explains nothing in free prose to the user — the chat surface does not exist in the product | sees data the delegated token doesn't open (Auth0 scope enforcement, §3.2) |
+| explains nothing in free prose to the user — the chat surface does not exist in the product | sees fields no endpoint declares (field projection, §3.2) |
 
 Its system prompt is a *renderer of the plan docs*: the sizing grid, tone table, stack rules, priority ladder,
 reward rules, copy rules and anti-patterns from `gamification-guidelines.md` are embedded verbatim as
@@ -476,12 +465,11 @@ log + **all-clear fallback plan** (never a broken screen, never a partial stack)
  ═════             ══════                ══════════════         ════════════════════════
 
    │                  ├─GET /me/snapshot───────►│                           │
-   │                  │ (Bearer user token)     │                           │
    │                  │◄─context + snapshot─────┤                           │
    │                  ├─useAgentContext(...) → runAgent────────────────────►│
 
    │                  │                         │◄─get_due_items────────────┤
-   │                  │                         │ (delegated user token)    │
+   │                  │                         │ (fixed demo user, §3.2)   │
    │                  │                         ├─due facts────────────────►│
    │                  │                         │ dose due? question waiting? booking tomorrow?
 
@@ -539,7 +527,7 @@ valid plan plus a quiet "reconnecting" state; check-in chips still work through 
 | Hermes lacks Web streams/encoding/crypto | `import "@copilotkit/react-native/polyfills"` on line 2 (barrel; provider re-installs idempotently) |
 | `jose` (via telemetry dep) breaks release bundles on `node:` imports | Metro `resolveRequest` override forcing `unstable_conditionNames: ["browser"]` **for `jose` only** (never global) |
 | Package exports need Metro ≥ 0.82 / RN ≥ 0.79 | pin RN 0.79+ |
-| Provider `headers` is resolved **on render**, not per request | token held in React state → rotation re-renders provider; plus `copilotkit.setHeaders()` on refresh for safety |
+| Provider `headers` is resolved **on render**, not per request | unused in the no-auth demo (§3); if any future auth lands, tokens must live in React state → rotation re-renders provider, plus `copilotkit.setHeaders()` on refresh |
 | Cloud props (`publicApiKey`/`licenseToken`) unsupported | self-hosted `runtimeUrl` only — by design here |
 | No Inspector, no `@copilotkit/voice`, no `threadId` on `useAgent` | §5.5 dev harness; §5.4 own STT; thread scoping deferred (backend threads table ready) |
 | Register frontend tools **once per agent** | tool registration isolated in `src/agent/tools.ts`, mounted at App root |
@@ -558,7 +546,7 @@ embeds only the headless client. Every quickstart step has a direct RN equivalen
 |---|---|
 | Next.js app scaffold | `apps/mobile` Expo prebuild (§5.3) |
 | `CopilotRuntime` + built-in agent framework | `services/runtime` (§6.1): `ui_agent` + `router` as `BuiltInAgent` instances |
-| `<CopilotKit runtimeUrl>` chat provider | `<CopilotKitProvider runtimeUrl headers={state}>` with token rotation (§5.1) |
+| `<CopilotKit runtimeUrl>` chat provider | `<CopilotKitProvider runtimeUrl>` with no auth headers (single-user local demo, §3) |
 | Chat UI / `useCopilotChat` | **none — headless by design (P1)**: `useFrontendTool` composes the plan, `useAgentContext` feeds state (§4.3–4.4) |
 | Cloud-hosted playground testing | self-hosted only; verification via `copilotkit verify --round-trip` + on-device `KnowledgeInspector` (§9.4) |
 
@@ -579,10 +567,10 @@ React Navigation native-stack, 2 navigators, deep links `kinetic://now?focus=<ti
 ```
 apps/mobile/
   index.js                     # 1: react-native-get-random-values  2: polyfills  3: everything else
-  App.tsx                      # Auth0Provider → CopilotKitProvider(headers=state) → Navigation
+  App.tsx                      # CopilotKitProvider(runtimeUrl, no auth — §3) → Navigation
   src/
     agent/
-      provider.tsx             # runtimeUrl from serverConfig, headers {Authorization}, onError
+      provider.tsx             # runtimeUrl from serverConfig, onError (headers reserved for future auth)
       tools.ts                 # compose_home · compose_overlay  (registered once, app root)
       usePatientContext.ts     # useAgentContext(summary) — re-registered on snapshot change
       useCareRouter.ts         # transcript → router agent (addMessage + runAgent)
@@ -590,7 +578,7 @@ apps/mobile/
       store.ts                 # zustand: { plan, commit(), appliedAt }
       validate.ts              # zod + §4.6 invariants (client-side double-check)
       registry.ts              # name → component map (typed, exhaustive)
-    screens/                   # Welcome · Consent · Access · Permissions · Home · Milestone · Settings · Lock
+    screens/                   # Welcome · Onboarding · Home · Milestone · Settings · Lock (local lock UI only)
     components/                # the 17 registry components + Header/FabWrap/VoicePop/TourLayer/Toast/Sheet
     voice/
       whisper.ts               # whisper.rn context lifecycle: lazy init on first hold-to-talk, release on
@@ -692,12 +680,11 @@ Build & packaging ledger — the `.apk` checklist (none optional by P5):
 | App identity | `applicationId ai.kinetic.patient` (placeholder — confirm before P0) · `versionCode` bumped per build · display name "Agentic Kinetic" |
 | Signing | local keystore generated once into `deploy/android-keystore.*` (gitignored), wired via Gradle; `eas.json` `preview` profile builds the `.apk` — no store submission in scope |
 | Icon / splash | adaptive icon from the `mark-a` gradient mark; splash = ground color + mark (`expo-splash-screen`) |
-| Manifest permissions | `RECORD_AUDIO` (runtime-prompted via the wf-00 permissions screen) · `POST_NOTIFICATIONS` (Android 13+ runtime prompt — the permissions screen's notification row) · `RECEIVE_BOOT_COMPLETED` (notifee re-schedules synced reminders after reboot) · `INTERNET` |
-| Auth0 manifest placeholder | `appAuthRedirectScheme=kinetic` (config plugin) — enables the `kinetic://login-callback` redirect (§3.1) |
+| Manifest permissions | `RECORD_AUDIO` (runtime-prompted via the onboarding permissions screen) · `POST_NOTIFICATIONS` (Android 13+ runtime prompt — the permissions screen's notification row) · `RECEIVE_BOOT_COMPLETED` (notifee re-schedules synced reminders after reboot) · `INTERNET` |
 | Cleartext | demo flavor `network-security-config` scoped to `10.0.2.2` (loopback) (§9.4); hosted flavor omits it |
 | `call_care_team` action | `Linking.openURL("tel:…")` from `care_team_members.phone`; empty number → honest toast ("No direct line stored — I'll pass a message instead") + handoff suggestion. Never a silent no-op |
 | Background sync (§8) | `expo-background-task` (WorkManager) 60-min periodic sync, best-effort; foreground sync remains primary (no FCM limitation documented in §8) |
-| Lock overlay trigger | app resume with an expired/absent local session, or manual lock from the menu sheet. (The prototype's tap-the-clock lock is a demo affordance and does not ship) |
+| Lock overlay trigger | app resume (local screen lock — a UI affordance only; no session exists under it, §3.1) or manual lock from the menu sheet. (The prototype's tap-the-clock lock is a demo affordance and does not ship) |
 | i18n | `i18n-js` + `en`/`zh-Hant` JSON catalogs in `packages/ui-schema` (keys mirror the copy constants); language from `users.language` |
 | Monorepo tooling | npm workspaces + TypeScript project references; single `tsconfig.base.json`; all four workspaces consume `packages/ui-schema` |
 
@@ -713,23 +700,20 @@ import { createServer } from "node:http";
 import { CopilotRuntime } from "@copilotkit/runtime/v2";
 import { createCopilotNodeListener } from "@copilotkit/runtime/v2/node";
 import { uiAgent, routerAgent } from "./agents";
-import { userContext } from "./middleware/userContext"; // captures Bearer token into ALS
 
 const runtime = new CopilotRuntime({
   agents: { ui_agent: uiAgent, router: routerAgent },
 });
 
 createServer(
-  userContext(
-    createCopilotNodeListener({ runtime, basePath: "/api/copilotkit" }),
-  ),
+  createCopilotNodeListener({ runtime, basePath: "/api/copilotkit" }),
 ).listen(Number(process.env.PORT ?? 8200));
 ```
 
 - Runs as the `runtime` compose service (bind-mounted source + `tsx watch`); publishes `8200` on loopback
   (`127.0.0.1:8200`) — the emulator reaches it via `10.0.2.2`.
-- JWKS verification middleware rejects requests without a valid user token (the provider's `headers` carries it).
-- `AsyncLocalStorage` exposes `currentUser.token` to every tool handler — request-scoped delegated auth (§3.2).
+- No auth middleware (§3) — the loopback binding is the boundary; every request is attributed to the fixed
+  demo user.
 - All outbound Data-API calls go to `DATA_API_URL` (`http://data-api:8080` on the compose network).
 - Model wiring: `BuiltInAgent({ model })` string form honors OpenAI-compatible base-URL overrides → **OpenRouter
   works without code changes**; the key itself is BYOK per request (§9.3) with an optional env fallback.
@@ -789,7 +773,7 @@ monitoring-25 #14), and append-only consent/audit trails.
 ### 7.2 Schema (derived from every workflow's "State mutations" tables)
 
 ```sql
-users            (id, auth0_sub UNIQUE, display_name, language, timezone, created_at)
+users            (id, display_name, language, timezone, created_at)          -- single demo user; auth is dropped (§3)
 consents         (id, user_id, scope own_care|deidentified_research|named_research,
                   state always_on|off|not_offered, actor, changed_at)          -- append-only audit
 checkins         (id, user_id, kind dose, answer taken|late|missed|not_sure,
@@ -902,9 +886,7 @@ emulator 37.1.11 — **first AVD boot completed in ~24 s**. One-time setup:
 | 5 | AVD | `avdmanager create avd -n kinetic -k "system-images;android-35;google_apis;x86_64" -d pixel_7` |
 
 Android Studio is an optional GUI alternative for steps 3–5; the CLI path is sufficient. Budget ~12 GB disk
-for SDK + system image; the bundled `ggml-base` model adds ~148 MB to the `.apk`. AVD caveat: Auth0 Universal
-Login opens a Custom Tab — verify a browser is present in the AVD image (install a lightweight browser `.apk`
-into the emulator if not).
+for SDK + system image; the bundled `ggml-base` model adds ~148 MB to the `.apk`.
 
 **First-boot verification & known warnings** (all observed on the demo laptop's live boot — this table is the
 bootstrap success check):
@@ -931,13 +913,12 @@ is started.
    `emulator -avd kinetic -no-metrics`; the seeded release `.apk` is already installed. The script exports
    `ANDROID_HOME` and PATH itself and uses absolute `$ANDROID_HOME` tool paths — it never relies on the
    caller's shell environment.
-3. App → Auth0 (cloud): PKCE login in a Custom Tab, `kinetic://` callback caught by the emulator → tokens in
-   Android Keystore.
-4. App → `http://10.0.2.2:8200/api/copilotkit` (SSE; Bearer token + `x-model-key` + `x-model-id`):
+3. App → `http://10.0.2.2:8200/api/copilotkit` (SSE; no credentials — single-user local demo, §3; optional
+   `x-model-key` + `x-model-id` BYOK headers, §9.3):
    `useAgentContext` registers state up, `compose_home` / `compose_overlay` deliver plans down.
-5. Runtime agent tools → `http://data-api:8080` on the internal compose network → Postgres as `kinetic_agent`.
-6. Chip taps / confirmations → REST to `http://10.0.2.2:8080` → offline queue if compose is down (§5.6).
-7. Hold-to-talk → recorded on the emulator (laptop mic passthrough) → whisper.rn transcribes **on-device** →
+4. Runtime agent tools → `http://data-api:8080` on the internal compose network → Postgres as `kinetic_agent`.
+5. Chip taps / confirmations → REST to `http://10.0.2.2:8080` → offline queue if compose is down (§5.6).
+6. Hold-to-talk → recorded on the emulator (laptop mic passthrough) → whisper.rn transcribes **on-device** →
    transcript to the router agent. Notifications fire in the emulator tray via notifee.
 
 ### 9.1 Full compose stack
@@ -969,8 +950,6 @@ services:
     command: npm run dev                          # tsx watch over bind mount
     environment:
       DATABASE_URL: postgres://kinetic_agent:${DB_PASSWORD}@db:5432/kinetic
-      AUTH0_ISSUER: https://${AUTH0_TENANT}/
-      AUTH0_AUDIENCE: kinetic-data-api
       PORT: 8080
     ports:
       - "127.0.0.1:8080:8080"                     # loopback only — the emulator reaches it via 10.0.2.2
@@ -982,8 +961,6 @@ services:
     command: npm run dev
     environment:
       DATA_API_URL: http://data-api:8080          # internal — never exposed
-      AUTH0_ISSUER: https://${AUTH0_TENANT}/
-      AUTH0_AUDIENCE: kinetic-data-api
       PORT: 8200
     ports:
       - "127.0.0.1:8200:8200"                     # loopback only — the emulator reaches it via 10.0.2.2
@@ -1006,8 +983,7 @@ REVOKE ALL ON app.audit_log FROM kinetic_agent;               -- insert-only via
 GRANT INSERT ON app.audit_log TO kinetic_agent;               -- audit is append-only at role level
 ```
 
-- `deploy/.env` (gitignored; `.env.example` committed): `DB_PASSWORD`, `MIGRATOR_PASSWORD`,
-  `AUTH0_TENANT`.
+- `deploy/.env` (gitignored; `.env.example` committed): `DB_PASSWORD`, `MIGRATOR_PASSWORD`.
 - One command: `docker compose --env-file .env up --build` (or `deploy/demo.sh` for the full demo flow,
   §9.0). Rebuild-on-change is avoided by bind mounts + `tsx watch`; a fresh laptop clone → demo in ~5 minutes
   (image pulls dominate).
@@ -1020,7 +996,7 @@ GRANT INSERT ON app.audit_log TO kinetic_agent;               -- audit is append
 | App delivery | seeded release `.apk` installed in the demo AVD | internet → HTTPS domain |
 | Device network | emulator loopback → `http://10.0.2.2` | internet → HTTPS domain |
 | Model auth | **BYOK** OpenRouter token from Settings (primary); env key optional | central key in Secret Manager |
-| Auth0 | dev tenant, `kinetic://` callbacks (Custom Tab in emulator) | prod tenant, same scheme |
+| User auth | **none** — single-user local demo (§3) | real auth is a **precondition** for any public deployment (§9.5) |
 | DB credential | `kinetic_agent` role, `.env` | same role model; IAM DB auth optional upgrade |
 | Push | notifee local (synced) | FCM |
 | Cleartext | allowed, scoped to `10.0.2.2` (demo flavor) | TLS only |
@@ -1071,10 +1047,14 @@ discussion moves with the hosted appendix (§9.5).
 
 ### 9.5 Future: hosted appendix (out of scope now, mapped for later)
 
-The service boundaries are drawn so hosting is a re-plumb, not a rewrite:
+The service boundaries are drawn so hosting is a re-plumb, not a rewrite. **Precondition: user auth must be
+designed before any hosted run exists** — the no-auth demo works only because every byte stays on one machine
+and there is exactly one user (§3). The identity seams are kept in place (per-request attribution in `data-api`,
+fixed demo user in agent context) so an OIDC provider can be slotted in without re-shaping the services:
 
 | Local | Hosted swap |
 |---|---|
+| no user auth (single-user demo) | **real user auth (OIDC) first — precondition for anything public**; per-user attribution replaces the fixed `DEMO_USER_ID` |
 | `runtime` container | Cloud Run `kinetic-runtime` (min-instances 1, SSE supported, timeout ≥ 300 s) |
 | `data-api` container | Cloud Run `kinetic-data-api` behind TLS |
 | `db` container + volume | Cloud SQL Postgres — same `kinetic_agent` role model; credential becomes IAM DB auth |
@@ -1136,7 +1116,7 @@ Agentic_Kinetic/
   deploy/
     docker-compose.yml         db + migrations + data-api + runtime   ← §9.1
     db/init/                   01-roles.sql (kinetic_agent) + seed
-    .env.example               DB_PASSWORD · MIGRATOR_PASSWORD · AUTH0_TENANT
+    .env.example               DB_PASSWORD · MIGRATOR_PASSWORD
     demo.sh                    compose up → adb daemon → boot AVD → install .apk → seed scenario (§9.0);
                                self-contained: exports ANDROID_HOME/PATH, absolute tool paths
   plan-phone-app/              this doc, workflows/, prototype/
@@ -1149,7 +1129,7 @@ Agentic_Kinetic/
 | Phase | Ships | Exit proof |
 |---|---|---|
 | **P0** skeleton | monorepo, tokens, ui-schema, **compose stack (`db` + roles + migrations) up**, runtime + data-api containers green, `verify --round-trip`, Metro/polyfill wiring, AVD bootstrap (`demo.sh` skeleton) | `docker compose up` → both `/healthz` green; round-trip green via `10.0.2.2` from the emulator |
-| **P1** data + identity | Data API + audit + offline dedup, Auth0 user auth + delegated tool calls, server-address default (`10.0.2.2`) + `/healthz` probe | release build in emulator: chip tap → audit row + snapshot change; network-off tap flushes later |
+| **P1** data + audit | Data API endpoints + audit + offline dedup, server-address default (`10.0.2.2`) + `/healthz` probe | release build in emulator: chip tap → audit row + snapshot change; network-off tap flushes later |
 | **P2** core loop | ui_agent planner + compose_home + registry; workflows 01, 09, done rows, sub tiles | morning → answer → thanks → all-clear, in the emulator against the compose backend (`10.0.2.2`) |
 | **P3** voice + router | hold-to-talk with on-device `whisper.rn` transcription, router agent, workflows 07/08/11/12 chains | sick-day voice transcribed **on-device** → confirmed symptoms → vomit+temp chain; STT path proven airplane-mode (no network needed for transcription) |
 | **P4** growth surfaces | workflows 02/03/04/05 scheduling, 06 badges, 10 tour, **reminder sync + notifee local notifications** | badge day celebration; evening-before takeover; lock-screen-style local notification logs a dose |
@@ -1166,7 +1146,7 @@ Agentic_Kinetic/
 | D3 | Notifications — **default: local (notifee) now, FCM shapes preserved for swap-in** | confirm at P4 |
 | D4 | ~~STT provider (on-device vs cloud proxy)~~ — **resolved**: `whisper.rn` (whisper.cpp) fully on-device, `ggml-base` multilingual bundled in the APK; cloud proxy dropped (§5.4) | decided |
 | R1 | **Backend unreachable** (compose stopped/crashed) — top operational risk of local-first: mitigated by offline queue + last-valid-plan + server-side reward recompute (§5.6, §7.3) | mitigated |
-| R2 | **Emulator constraints** — KVM acceleration required (§9.0); adb server must start before the emulator (§9.0 first-boot rule); whisper.cpp runs natively on x86_64 (no ARM translation); `ggml-base` f16 transcription accepted slower in-emulator; AVD needs a browser present for Auth0 Custom Tabs (§9.0); demo-laptop GPU driver falls back to software rendering (llvmpipe) — accepted, whisper is CPU-bound (§9.0) | accepted |
+| R2 | **Emulator constraints** — KVM acceleration required (§9.0); adb server must start before the emulator (§9.0 first-boot rule); whisper.cpp runs natively on x86_64 (no ARM translation); `ggml-base` f16 transcription accepted slower in-emulator; demo-laptop GPU driver falls back to software rendering (llvmpipe) — accepted, whisper is CPU-bound (§9.0) | accepted |
 | R3 | Cleartext HTTP on the demo `.apk` — network-security-config scoped to `10.0.2.2` loopback only; acceptable for a research-prototype build; removed in any hosted flavor | accepted |
 | R4 | CopilotKit RN fast-moving (`useRenderTool` shim removal, threads pending) — pin versions; ledger §5.1 in CI | mitigated |
 | R5 | LLM planner drift — validators make violations invisible to users and loud in dev | mitigated |

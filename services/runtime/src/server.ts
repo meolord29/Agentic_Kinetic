@@ -14,7 +14,7 @@ const DETERMINISTIC = process.env.PLANNER_MODE !== "llm"; // P0: deterministic-f
  * ui_agent — emits `compose_home` as a frontend tool call (§4.3):
  *   ↓ UI     useFrontendTool({ name: "compose_home" }) on the device renders it
  *   ↑ state  the deterministic P0 planner reads the snapshot via the db module
- *            (Auth0-delegated `get_due_items` arrives in P1 — §3.2)
+ *            (data-api `get_due_items` arrives in P1 — §3.2; no auth — single-user local demo)
  */
 const uiAgent = new BuiltInAgent({
   type: "custom",
