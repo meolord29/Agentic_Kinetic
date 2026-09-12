@@ -1,0 +1,81 @@
+# deploy/docker-compose.yml — architecture-design.md §9.1 (P0 no-auth mode)
+# Ports bind 127.0.0.1 only — the emulator reaches them via 10.0.2.2.
+# Services run from the hoisted workspace install on the host (bind-mounted in),
+# so one `npm install` at the repo root covers db-api + runtime containers.
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: kinetic
+      POSTGRES_USER: migrator
+      POSTGRES_PASSWORD: ${MIGRATOR_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U migrator -d kinetic"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  migrations:
+    image: node:22-alpine
+    working_dir: /app
+    command: node deploy/migrate.mjs
+    environment:
+      DATABASE_URL: postgres://migrator:${MIGRATOR_PASSWORD}@db:5432/kinetic
+    volumes:
+      - ..:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  data-api:
+    image: node:22-alpine
+    working_dir: /app/services/data-api
+    command: npm run dev
+    environment:
+      DATABASE_URL: postgres://kinetic_agent:${DB_PASSWORD}@db:5432/kinetic
+      PORT: "8080"
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ..:/app
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+
+  runtime:
+    image: node:22-alpine
+    working_dir: /app/services/runtime
+    command: npm run dev
+    environment:
+      DATA_API_URL: http://data-api:8080
+      DATABASE_URL: postgres://kinetic_agent:${DB_PASSWORD}@db:5432/kinetic
+      PORT: "8200"
+      # P0: model provider via env (BYOK per-request header arrives in P1+)
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      MODEL_ID: ${MODEL_ID}
+    ports:
+      - "127.0.0.1:8200:8200"
+    volumes:
+      - ..:/app
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8200/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata: {}

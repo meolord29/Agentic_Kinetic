@@ -1,0 +1,20 @@
+node_modules/
+.env
+*.log
+
+# Expo / React Native
+.expo/
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/.expo/
+*.keystore
+!debug.keystore
+
+# Android build outputs
+*.apk
+*.aab
+
+# OS / editor
+.DS_Store
+Thumbs.db
+node_modules/

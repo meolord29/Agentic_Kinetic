@@ -1,0 +1,25 @@
+{
+  "name": "agentic-kinetic",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "up": "docker compose --env-file deploy/.env -f deploy/docker-compose.yml up --build -d",
+    "down": "docker compose -f deploy/docker-compose.yml down",
+    "logs": "docker compose -f deploy/docker-compose.yml logs -f runtime data-api",
+    "dev:runtime": "npm run dev -w services/runtime",
+    "dev:data-api": "npm run dev -w services/data-api",
+    "typecheck": "tsc --noEmit -p packages/ui-schema && tsc --noEmit -p packages/design-tokens && tsc --noEmit -p services/runtime && tsc --noEmit -p services/data-api"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

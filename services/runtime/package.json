@@ -1,0 +1,20 @@
+{
+  "name": "@kinetic/runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "@ag-ui/core": "^0.0.59",
+    "@copilotkit/runtime": "1.71.1",
+    "@kinetic/ui-schema": "*",
+    "pg": "^8.13.1",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
+  }
+}
