@@ -177,14 +177,16 @@ export function buildPlan({ snapshot, recentDoseAnswer, badgeDefs }: KineticData
     });
   }
 
+  // Workflow-09 all-clear: nothing due anywhere (prototype reg weight −1).
+  // Done rows coexist with the all-clear card ("All logged") — they are not
+  // due items, matching the prototype's `when` exactly.
   const nothingDue =
     due.dose.status !== "due" &&
     !due.teamQuestion.waiting &&
     !due.temperature.due &&
     !(due.nextSample.booked && due.nextSample.tomorrow) &&
     !recentDoseAnswer &&
-    !unlock &&
-    tiles.every((t): boolean => t.component === "BadgesSquare" || t.component === "CareTeamSquare");
+    !unlock;
 
   if (nothingDue) {
     tiles.unshift({

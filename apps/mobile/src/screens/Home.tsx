@@ -1,33 +1,35 @@
 import { useAgent, useCopilotKit } from "@copilotkit/react-native/headless";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, ToastAndroid, View, useWindowDimensions } from "react-native";
-import { colors, grid, radius, toneBackground, toneBorder } from "@kinetic/design-tokens";
-import type { Action, HomePlan, Tile } from "@kinetic/ui-schema";
+import { colors, grid, radius } from "@kinetic/design-tokens";
+import { type Action, type HomePlan, type Tile } from "@kinetic/ui-schema";
 import { usePlanStore } from "../plan/store";
-import { dispatchAction, useSnapshotLifecycle, useSnapshotStore } from "../data/snapshot";
+import { TileView } from "../plan/registry";
+import { ScenarioDrawer, type ScenarioName } from "../dev/ScenarioDrawer";
+import { dispatchAction, probeAndRefresh, useSnapshotLifecycle, useSnapshotStore } from "../data/snapshot";
 
 type RunState = "idle" | "running" | "ok" | "error";
 
 /**
- * P1 probe screen: the §4.7 plan loop, end to end —
+ * Home (§4.7 plan loop, P2 registry edition):
  *   chip tap → dispatchAction (optimistic + §5.6 queue) → runAgent
- *   → compose_home → ui-schema gate → commit → bento re-render.
- * The full 17-component registry is P2 — tiles render as tone-tinted cards.
+ *   → compose_home → ui-schema gate → commit → registry render.
+ * Tiles render through the §4.5 registry (real components for the P2 demo
+ * set, probe cards for the rest). Dev chip opens the ScenarioDrawer (§5.5).
  */
-export default function ProbeHome() {
+export default function Home() {
   useSnapshotLifecycle();
 
   const { copilotkit } = useCopilotKit();
   const { agent, isReady } = useAgent({ agentId: "ui_agent" });
   const plan = usePlanStore((s) => s.plan);
-  const committedAt = usePlanStore((s) => s.committedAt);
+  const dismissedBadgeN = usePlanStore((s) => s.dismissedBadgeN);
   const parseError = usePlanStore((s) => s.parseError);
   const connectivity = useSnapshotStore((s) => s.connectivity);
   const queued = useSnapshotStore((s) => s.queued);
   const planNonce = useSnapshotStore((s) => s.planNonce);
   const [runState, setRunState] = useState<RunState>("idle");
-  const [runMs, setRunMs] = useState<number | null>(null);
-  const [runs, setRuns] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const run = useCallback(async () => {
     setRunState("running");
@@ -38,13 +40,11 @@ export default function ProbeHome() {
       await new Promise((r) => setTimeout(r, 30));
       console.log("[run] start");
       await copilotkit.runAgent({ agent });
-      setRunMs(Date.now() - t0);
-      setRuns((n) => n + 1);
       setRunState("ok");
       console.log("[run] ok", Date.now() - t0, "ms");
     } catch (err) {
       setRunState("error");
-      console.warn("[probe] runAgent failed:", err);
+      console.warn("[home] runAgent failed:", err);
     }
   }, [copilotkit, agent]);
 
@@ -57,13 +57,28 @@ export default function ProbeHome() {
 
   const onChip = useCallback((action: Action) => {
     console.log("[action]", JSON.stringify(action));
-    ToastAndroid.show(JSON.stringify(action), ToastAndroid.SHORT);
+    if (action.type === "dismiss_celebration") {
+      // P2 demo accommodation — server ack lands in P4; suppress locally until
+      // the next scenario seed (the §5.6 celebration window stays live).
+      usePlanStore.getState().dismissCelebration();
+      ToastAndroid.show("Nice — keep going!", ToastAndroid.SHORT);
+      return;
+    }
     dispatchAction(action);
+  }, []);
+
+  const onScenarioSeeded = useCallback((name: ScenarioName) => {
+    usePlanStore.getState().resetDismissal();
+    ToastAndroid.show(`scenario: ${name}`, ToastAndroid.SHORT);
+    void (async () => {
+      await probeAndRefresh();
+      dispatchAction({ type: "toast", message: "re-plan" }); // bump → agent run
+    })();
   }, []);
 
   const statusLine =
     connectivity === "online"
-      ? `ui_agent · ${runState}${runMs !== null ? ` · ${runMs}ms` : ""} · run #${runs}`
+      ? `ui_agent · ${runState}`
       : connectivity === "offline"
         ? `reconnecting…${queued > 0 ? ` · ${queued} queued` : ""}`
         : "connecting…";
@@ -71,37 +86,38 @@ export default function ProbeHome() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.statusRow}>
-        <Text
-          style={[
-            styles.statusText,
-            (runState === "error" || connectivity === "offline") && styles.statusTextWarn,
-          ]}
-        >
+        <Text style={[styles.statusText, (runState === "error" || connectivity === "offline") && styles.statusTextWarn]}>
           {statusLine}
         </Text>
-        <Pressable style={styles.replanBtn} onPress={() => dispatchAction({ type: "toast", message: "Re-plan requested" })}>
-          <Text style={styles.replanText}>Re-plan</Text>
-        </Pressable>
+        <View style={styles.statusBtns}>
+          <Pressable style={styles.replanBtn} onPress={() => dispatchAction({ type: "toast", message: "Re-plan requested" })}>
+            <Text style={styles.replanText}>Re-plan</Text>
+          </Pressable>
+          <Pressable style={[styles.replanBtn, styles.scenarioBtn]} onPress={() => setDrawerOpen(true)}>
+            <Text style={styles.replanText}>Scenarios</Text>
+          </Pressable>
+        </View>
       </View>
       {parseError !== null && <Text style={styles.errorText}>rejected: {parseError}</Text>}
       {plan ? (
-        <PlanBody plan={plan} committedAt={committedAt} dispatch={onChip} />
+        <PlanBody plan={plan} dismissedBadgeN={dismissedBadgeN} dispatch={onChip} />
       ) : (
         <Text style={styles.muted}>
           {connectivity === "offline" ? "Backend unreachable — will sync automatically." : "Waiting for the first compose_home…"}
         </Text>
       )}
+      <ScenarioDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} onSeeded={onScenarioSeeded} />
     </ScrollView>
   );
 }
 
 function PlanBody({
   plan,
-  committedAt,
+  dismissedBadgeN,
   dispatch,
 }: {
   plan: HomePlan;
-  committedAt: number | null;
+  dismissedBadgeN: number | null;
   dispatch: (action: Action) => void;
 }) {
   const { width } = useWindowDimensions();
@@ -118,20 +134,18 @@ function PlanBody({
           <Text style={styles.dateLabel}>{plan.header.dateLabel}</Text>
         </View>
       </View>
-      <Text style={styles.muted}>
-        planId {plan.planId} · {plan.tiles.length} tiles · committed{" "}
-        {committedAt ? new Date(committedAt).toLocaleTimeString() : "—"}
-      </Text>
       <View style={styles.grid}>
-        {plan.tiles.map((tile) => (
-          <ProbeTile key={tile.id} tile={tile} colWidth={colWidth} dispatch={dispatch} />
-        ))}
+        {plan.tiles
+          .filter((t) => !(t.component === "BadgeCelebrationCard" && t.props.n === dismissedBadgeN))
+          .map((tile) => (
+            <TileFrame key={tile.id} tile={tile} colWidth={colWidth} dispatch={dispatch} />
+          ))}
       </View>
     </>
   );
 }
 
-function ProbeTile({
+function TileFrame({
   tile,
   colWidth,
   dispatch,
@@ -140,47 +154,14 @@ function ProbeTile({
   colWidth: number;
   dispatch: (action: Action) => void;
 }) {
-  const width = tile.layout.cols === 1 ? colWidth * 2 + grid.gutter : colWidth;
+  // cols is the span count out of 2 (§4.2): 2 = full width, 1 = half width.
+  const width = tile.layout.cols === 2 ? colWidth * 2 + grid.gutter : colWidth;
   const height = tile.layout.rows * grid.rowUnit + (tile.layout.rows - 1) * grid.gutter;
   return (
-    <View
-      style={[
-        styles.tile,
-        {
-          width,
-          minHeight: height,
-          backgroundColor: toneBackground[tile.tone],
-          borderColor: toneBorder[tile.tone],
-        },
-      ]}
-    >
-      <View style={styles.tileTop}>
-        <Text style={styles.tileName}>{tile.component}</Text>
-        <Text style={styles.tileTone}>{tile.tone}</Text>
-      </View>
-      <Text style={styles.tileBody}>{summarizeProps(tile)}</Text>
-      {"chips" in tile && tile.chips.length > 0 && (
-        <View style={styles.chipRow}>
-          {tile.chips.map((chip) => (
-            <Pressable key={chip.label} style={styles.chip} onPress={() => dispatch(chip.action)}>
-              <Text style={styles.chipText}>{chip.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
+    <View style={{ width, minHeight: height, flexDirection: "row" }}>
+      <TileView tile={tile} dispatch={dispatch} />
     </View>
   );
-}
-
-function summarizeProps(tile: Tile): string {
-  const entries = Object.entries(tile.props).map(([k, v]) => {
-    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
-      return `${k}: ${v}`;
-    }
-    if (Array.isArray(v)) return `${k}: [${v.length}]`;
-    return `${k}: ${JSON.stringify(v)}`;
-  });
-  return entries.join(" · ").slice(0, 200);
 }
 
 const styles = StyleSheet.create({
@@ -189,12 +170,16 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   statusText: { color: colors.chromeInk, fontSize: 12, fontWeight: "600", flexShrink: 1 },
   statusTextWarn: { color: "#B3402E" },
+  statusBtns: { flexDirection: "row", gap: 8 },
   replanBtn: {
     backgroundColor: colors.btn,
     borderRadius: radius.chip,
     paddingHorizontal: 14,
     paddingVertical: 8,
+    minHeight: 36,
+    justifyContent: "center",
   },
+  scenarioBtn: { backgroundColor: colors.cyan },
   replanText: { color: colors.btnInk, fontSize: 12, fontWeight: "700" },
   errorText: { color: "#B3402E", fontSize: 11 },
   muted: { color: colors.chromeMuted, fontSize: 11 },
@@ -214,22 +199,4 @@ const styles = StyleSheet.create({
   greeting: { color: colors.ink, fontSize: 22, fontWeight: "800" },
   dateLabel: { color: colors.chromeMuted, fontSize: 12 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: grid.gutter, marginTop: 4 },
-  tile: {
-    borderRadius: radius.card,
-    borderWidth: 1,
-    padding: 14,
-    gap: 8,
-  },
-  tileTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  tileName: { color: colors.ink, fontSize: 13, fontWeight: "800" },
-  tileTone: { color: colors.chromeMuted, fontSize: 10, textTransform: "uppercase" },
-  tileBody: { color: colors.chromeInk, fontSize: 12, lineHeight: 17 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: "auto" },
-  chip: {
-    backgroundColor: colors.btn,
-    borderRadius: radius.chip,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  chipText: { color: colors.btnInk, fontSize: 11, fontWeight: "700" },
 });

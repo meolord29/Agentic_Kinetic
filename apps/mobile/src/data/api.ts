@@ -79,4 +79,8 @@ export const api = {
   ackReminder(id: string, eventId: string): Promise<{ status: string }> {
     return jsonFetch(`${DATA_API_URL}/me/reminders/${id}/ack`, post({ eventId }), 8000);
   },
+  // Dev-only demo harness (§5.5): reseed the backend into a scenario state.
+  scenario(name: "morning" | "question" | "badge" | "clear"): Promise<{ status: string }> {
+    return jsonFetch(`${DATA_API_URL}/dev/scenario/${name}`, post({}), 8000);
+  },
 };

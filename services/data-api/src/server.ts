@@ -167,6 +167,86 @@ app.post("/me/reminders/:id/ack", async (req, reply) => {
   return { status: r.rowCount ? "ok" : "noop", id };
 });
 
+// -- dev-only demo harness (§5.5): reseed the demo user into a scenario state --
+// Loopback-bound local demo (§3.1); every reseed writes one audit row like any
+// other request. Scenarios cover the P2 demo walk: morning, question, badge, clear.
+
+const SCENARIOS = ["morning", "question", "badge", "clear"] as const;
+const QUESTION_VERBATIM = "Did you start any new medicine this week?";
+
+app.post("/dev/scenario/:name", async (req, reply) => {
+  const { name } = req.params as { name: string };
+  if (!(SCENARIOS as readonly string[]).includes(name)) {
+    return reply.code(400).send({ error: `unknown scenario — one of ${SCENARIOS.join(", ")}` });
+  }
+  const checkins = name === "badge" ? 99 : 31;
+  const doseDone = name === "question" || name === "clear"; // logged 2h ago → outside the plus window
+
+  const client = await store.connect();
+  try {
+    await client.query("BEGIN");
+    // Reseed via UPDATE/UPSERT only — the kinetic_agent role is
+    // least-privilege (§3.3: no DELETE), so instead of wiping rows we move
+    // them out of every window the snapshot derivation (§7.2) reads:
+    // today's checkins → yesterday (dose due again, plus window closed),
+    // fresh badge unlocks → out of the 5-minute celebration window,
+    // open requests/questions/reminders → fulfilled/answered/acked.
+    await client.query(
+      `UPDATE app.checkins SET dose_at = dose_at - interval '1 day', logged_at = logged_at - interval '1 day'
+       WHERE user_id = $1 AND dose_at::date = current_date`,
+      [DEMO_USER_ID],
+    );
+    await client.query(
+      `UPDATE app.badges_earned SET earned_at = earned_at - interval '1 hour'
+       WHERE user_id = $1 AND earned_at > now() - interval '5 minutes'`,
+      [DEMO_USER_ID],
+    );
+    await client.query(
+      `UPDATE app.temperature_requests SET cancelled_at = now()
+       WHERE user_id = $1 AND fulfilled_at IS NULL AND cancelled_at IS NULL`,
+      [DEMO_USER_ID],
+    );
+    await client.query(
+      `UPDATE app.care_questions SET status = 'answered', answered_at = now()
+       WHERE user_id = $1 AND status = 'waiting'`,
+      [DEMO_USER_ID],
+    );
+    await client.query(
+      `UPDATE app.reminders SET acked_at = now() WHERE user_id = $1 AND acked_at IS NULL`,
+      [DEMO_USER_ID],
+    );
+    await client.query(
+      `INSERT INTO app.gamification_state (user_id, checkins) VALUES ($1, $2)
+       ON CONFLICT (user_id) DO UPDATE SET checkins = $2, updated_at = now()`,
+      [DEMO_USER_ID, checkins],
+    );
+    if (doseDone) {
+      // Idempotent seed row (stable client_event_id) — dose done 2h ago.
+      await client.query(
+        `INSERT INTO app.checkins (user_id, kind, answer, dose_at, logged_at, client_event_id)
+         VALUES ($1, 'dose', 'taken', now() - interval '2 hours', now() - interval '2 hours', 'seed-dose')
+         ON CONFLICT (client_event_id) DO UPDATE
+         SET dose_at = now() - interval '2 hours', logged_at = now() - interval '2 hours'`,
+        [DEMO_USER_ID],
+      );
+    }
+    if (name === "question") {
+      await client.query(
+        `INSERT INTO app.care_questions (user_id, text, status) VALUES ($1, $2, 'waiting')`,
+        [DEMO_USER_ID, QUESTION_VERBATIM],
+      );
+    }
+    await client.query("COMMIT");
+    await audit("scenario.seed", ["name", "checkins"], `dev scenario reseed: ${name}`);
+    return { status: "ok", scenario: name, checkins };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+});
+
 const port = Number(process.env.PORT ?? 8080);
 app.listen({ port, host: "0.0.0.0" }).catch((err) => {
   app.log.error(err);
