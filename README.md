@@ -1,30 +1,10 @@
 <img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/d6d06622-7e64-43b7-a1f5-b630129627dc" />
 <img width="2750" height="1536" alt="Agentic Kinetic Agent" src="https://github.com/user-attachments/assets/d4997a2e-f245-4bb9-8c7a-b4b8a1482e88" />
 
-Address: 3/F, Core A, 3, Cyberport, 100 Cyberport Rd, Pok Fu Lam, Hong Kong Island, Hong Kong. Bus routes 30X, 42C, 73, 73P, 107P, or 970. Minibus routes 10, 10P, 58, 58M, 69, 69A, or 69X serve the venue.
-From Tai Wai ~1.5hrs:
-1. Take East Rail Line to Admiralty then Island Line to HKU or Kennedy Town MTR stations:
-- Via HKU Station (Island Line): Take Exit A and transfer to Citybus 30X or 970 directly to the campus. 
-- Via Kennedy Town Station (Island Line): Take Exit A and catch Green Minibus 58.
 
-Buses arrive directly at the Cyberport Public Transport Interchange: 
-From Central: Bus 30X
-From Mong Kok / Kowloon: Bus 970
-From North Point: Bus 42C
-From Causeway Bay: Green Minibus 10, 69X, or 10P
-From Stanley: Bus 73
 
-Taxi/ride-hail app: input the address as 100 Cyberport Road. Drivers can enter via the Car Park 3 Entrance, which offers direct lift access into Cyberport 3.
-
-Core A's Location: Core A sits at the far southern end of the Cyberport 3 block, closest to Cyberport 1 and Cyberport 2. [1] (https://www.cyberport.hk/en/about_us/cyberport_campus/)
-Cyberport 3 is the longest, continuous building on the campus. It is divided into six interconnected vertical blocks (labeled Core A through Core F)
-The Entryway: If you are dropped off at the main Car Park 3 Entrance, you will be right by the center blocks (C/D). To reach Core A, walk past Core B toward the south end of the main Level 1 indoor concourse.
-If you are navigating using a GPS app, search for "The Arcade at Cyberport" or "Le Méridien Hong Kong, Cyberport". Core A is directly adjacent to these landmarks, sharing the same waterfront plaza layout.
-
-The Arcade at Cyberport Google Maps link: https://maps.app.goo.gl/RtZ9fSBShw8FXdPb9
-
-Starts at 10, but they don't have enough space so we should aim to get there early. I can go earlier to reserve our spot since I'm closer.
-I'll bring an extension cable, charger, cables, banana bread.
+Exa - AITAGENTCHAT
+Invite your agent. Agent. Human. Email. Workspace (demo). Create an account & sign up to workspace. Existing or separate - Ambiguous account.
 
 
 From the Portal, this is exactly everything we need to submit:
