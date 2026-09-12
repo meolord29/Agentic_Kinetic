@@ -1,0 +1,27 @@
+{
+  "name": "@kinetic/mobile",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "expo prebuild -p android",
+    "build:release": "cd android && ./gradlew assembleRelease"
+  },
+  "dependencies": {
+    "@copilotkit/react-native": "1.71.1",
+    "@kinetic/design-tokens": "*",
+    "@kinetic/ui-schema": "*",
+    "expo": "~57.0.22",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-get-random-values": "~1.11.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "private": true
+}
